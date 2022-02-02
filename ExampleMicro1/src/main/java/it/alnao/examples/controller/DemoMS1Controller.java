@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("api/demoms")
 public class DemoMS1Controller {
-	@GetMapping(value= "/riposta", produces= "application/json")
-	public ResponseEntity<String> listArtByEan(){
-		return new ResponseEntity<String> ("riposta",HttpStatus.OK);
+	@GetMapping(value= "/response", produces= "application/json")
+	public ResponseEntity<String> response(){
+		return new ResponseEntity<String> ("{\"response\":\"ok\"}",HttpStatus.OK)  ;
 	}
-	//http://localhost:5051/api/demoms/riposta
+	//http://localhost:5051/api/demoms/response
 }
