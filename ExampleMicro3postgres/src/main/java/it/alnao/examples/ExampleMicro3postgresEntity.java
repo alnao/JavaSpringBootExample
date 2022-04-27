@@ -1,6 +1,7 @@
 package it.alnao.examples;
 
 import javax.persistence.*;
+import javax.persistence.Entity;
 
 @Entity
 @Table(name= "articoli", schema = "public")
