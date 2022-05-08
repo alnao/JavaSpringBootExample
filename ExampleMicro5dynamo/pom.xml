@@ -9,28 +9,70 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>it.alnao.examples</groupId>
-	<artifactId>ExampleMicro4mongo</artifactId>
+	<artifactId>ExampleMicro5dynamo</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>ExampleMicro4mongo</name>
-	<description>Demo project for Spring Boot ExampleMicro4mongo</description>
+	<name>ExampleMicro5dynamo</name>
+	<description>Demo project for Spring Boot ExampleMicro5dynamo</description>
 	<properties>
 		<java.version>11</java.version>
 	</properties>
-	<dependencies>
+	<!-- aggiunte a mano --><!--
+			<dependencyManagement>
+			    <dependencies>
+			    <dependency>
+			        <groupId>org.springframework.data</groupId>
+			        <artifactId>spring-data-releasetrain</artifactId>
+			        <version>Lovelace-SR16</version>
+			        <type>pom</type>
+			        <scope>import</scope>
+			        </dependency>
+			    </dependencies>
+			</dependencyManagement> --> 
+			<dependencies>
+			    <dependency>
+			        <groupId>com.amazonaws</groupId>
+			        <artifactId>aws-java-sdk-dynamodb</artifactId>
+			        <version>1.12.215</version>
+			    </dependency>
+        <dependency>
+            <groupId>com.github.derjust</groupId>
+            <artifactId>spring-data-dynamodb</artifactId>
+            <version>5.1.0</version>
+        </dependency>
+	<!-- Fine aggiunte a mano -->
 		<dependency>
-		    <groupId>javax.validation</groupId>
-		    <artifactId>validation-api</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+		  <groupId>org.springframework.boot</groupId>
+		  <artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-mongodb</artifactId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-		<!-- JPA -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -64,6 +106,10 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 	</dependencies>
 
