@@ -1,14 +1,22 @@
 package it.alnao.examples;
 
+import javax.validation.constraints.Size;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(name = "ExampleMicro5dynamoEntity element", description = "Model element of ExampleMicro5dynamoEntity")
 @DynamoDBTable(tableName = "ProvaJavaSpringBoot")
 public class ExampleMicro5dynamoEntity {
 	@DynamoDBHashKey(attributeName = "id")
 	@DynamoDBAttribute
+	@Schema(format = "id", required = true ,type = "String")
     private String id;
+	@Schema(required = true ,type = "String" , minLength = 5)
+	@Size(min = 5 , message = "Lunghezza nome almeno 5 caratteri")
 	@DynamoDBAttribute
     private String nome;
 	@DynamoDBAttribute
