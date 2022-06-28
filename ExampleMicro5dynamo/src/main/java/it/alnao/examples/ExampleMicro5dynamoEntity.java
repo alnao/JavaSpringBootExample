@@ -14,6 +14,7 @@ public class ExampleMicro5dynamoEntity {
 	@DynamoDBHashKey(attributeName = "id")
 	@DynamoDBAttribute
 	@Schema(format = "id", required = true ,type = "String")
+	@ExampleMicro5CustomValidatorAnnotation
     private String id;
 	@Schema(required = true ,type = "String" , minLength = 5)
 	@Size(min = 5 , message = "Lunghezza nome almeno 5 caratteri")
