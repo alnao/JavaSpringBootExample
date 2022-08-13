@@ -3,9 +3,11 @@ package it.alnao.examples;
 import java.util.ArrayList;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,7 +42,7 @@ public class ExampleMicro5dynamoController {
     return new ResponseEntity<Iterable<ExampleMicro5dynamoEntity>> ( l ,HttpStatus.OK);
   }
 
-  @Operation(summary = "Save a new object or update existing if id already exist")
+  @Operation(summary = "Save a new object or update existing if it already exist")
   @PostMapping(value= "/save", produces= "application/json")
   public ResponseEntity<ExampleMicro5dynamoEntity> save(
 		  @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -54,4 +56,22 @@ public class ExampleMicro5dynamoController {
 	  return new ResponseEntity<ExampleMicro5dynamoEntity> ( el ,HttpStatus.OK);
   }
   
+  @Operation(summary = "Delete a object if it already exist")
+  @DeleteMapping(value="/delete", produces= "application/json")
+  public ResponseEntity<ExampleMicro5dynamoEntity> delete(
+		  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                  description = "Element of ExampleMicro5dynamoEntity",
+                  required=true,
+                  content = { @Content(mediaType = "application/json", 
+    		      	schema = @Schema(implementation = ExampleMicro5dynamoEntity.class)) }
+                 )
+		  @Validated @RequestBody ExampleMicro5dynamoEntity el){
+	  service.delete(el);	  
+	  return new ResponseEntity<ExampleMicro5dynamoEntity> ( el ,HttpStatus.OK);
+  }
+  
+  @GetMapping("clearCache")
+  public void clearCache() {
+	  service.clearCache();	  
+  }
 }
