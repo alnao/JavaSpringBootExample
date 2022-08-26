@@ -9,27 +9,15 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>it.alnao.examples</groupId>
-	<artifactId>ExampleMicro5dynamo</artifactId>
+	<artifactId>ExampleMicro6cache</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>ExampleMicro5dynamo</name>
-	<description>Demo project for Spring Boot ExampleMicro5dynamo</description>
+	<name>ExampleMicro6cache</name>
+	<description>Demo project for Spring Boot ExampleMicro6cache</description>
 	<properties>
 		<java.version>11</java.version>
+	    <jvm.options>--illegal-access=permit</jvm.options>
 	</properties>
-	<!-- aggiunte a mano --><!--
-			<dependencyManagement>
-			    <dependencies>
-			    <dependency>
-			        <groupId>org.springframework.data</groupId>
-			        <artifactId>spring-data-releasetrain</artifactId>
-			        <version>Lovelace-SR16</version>
-			        <type>pom</type>
-			        <scope>import</scope>
-			        </dependency>
-			    </dependencies>
-			</dependencyManagement> --> 
-			
-			<dependencies>
+	<dependencies>
 			    <dependency>
 			        <groupId>com.amazonaws</groupId>
 			        <artifactId>aws-java-sdk-dynamodb</artifactId>
@@ -132,6 +120,22 @@
 		    <artifactId>hazelcast-all</artifactId>
 		    <version>4.2.5</version>
 		</dependency>
+		<dependency>
+		  <groupId>mysql</groupId>
+		  <artifactId>mysql-connector-java</artifactId>
+		  <version>8.0.28</version>
+		</dependency>
+		<!-- CACHE -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.hazelcast/hazelcast-all -->
+		<dependency>
+		    <groupId>com.hazelcast</groupId>
+		    <artifactId>hazelcast-all</artifactId>
+		    <version>4.2.5</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -139,14 +143,15 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
+			    <configuration>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
-				</configuration>
+
+			    </configuration>
 			</plugin>
 		</plugins>
 	</build>
