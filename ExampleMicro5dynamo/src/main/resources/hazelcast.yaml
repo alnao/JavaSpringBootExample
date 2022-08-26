@@ -1,5 +1,0 @@
-hazielcast:
-  network:
-    join:
-      multicast:
-        enabled:true
