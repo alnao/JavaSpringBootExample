@@ -19,7 +19,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 public class ExampleMicro8gestJwtTokenUtil  implements Serializable {
 	private static final long serialVersionUID = 3207086417626649075L;
 
-	public static final long JWT_TOKEN_VALIDITY = 5 * 60 * 60;
+	public static final long JWT_TOKEN_VALIDITY = 60*6000;
 
 	@Value("${jwt.secret}")
 	private String secret;
@@ -52,6 +52,7 @@ public class ExampleMicro8gestJwtTokenUtil  implements Serializable {
 	//generate token for user
 	public String generateToken(UserDetails userDetails) {
 		Map<String, Object> claims = new HashMap<>();
+		claims.put("role", userDetails.getAuthorities() );
 		return doGenerateToken(claims, userDetails.getUsername());
 	}
 
