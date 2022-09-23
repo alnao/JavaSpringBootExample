@@ -40,6 +40,12 @@ public class ExampleMicro4mongoEntity {
 		super();
 	}
 
+	public ExampleMicro4mongoEntity(String _id, String nome) {
+		super();
+		this._id = _id;
+		this.nome = nome;
+	}
+
 	@Override
 	public String toString() {
 		return "ExampleMicro4mongoEntity [_id=" + _id + ", nome=" + nome + "]";
