@@ -15,7 +15,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -62,6 +64,22 @@ public class ExampleMicro8gestJwtController {
 		ArrayList<String> l=new ArrayList<String>();
 		l.add("ok");
 	    return new ResponseEntity<List<String>> ( l ,HttpStatus.OK);
-	  }
+	}
+
+	@GetMapping(value ="/magazzino/{codArt}")
+	public ResponseEntity<List<String>> magazzino(
+		@RequestHeader("Authorization") String authHeader,
+	  	@PathVariable("codArt") String codArt)
+	{
+		System.out.println("magazzinoAPIEsterna codArt=" + codArt);
+		ArrayList<String> l=new ArrayList<String>();
+		String s="17";
+		if (codArt.equals("matite")) s="42";
+		if (codArt.equals("penne")) s="16";
+		if (codArt.equals("penne")) s="1000";
+		if (codArt.equals("barche")) s="0";
+		l.add(s);
+	    return new ResponseEntity<List<String>> ( l ,HttpStatus.OK);
+	}
 
 }
