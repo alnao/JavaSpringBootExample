@@ -5,7 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.Bean;
-
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.PropertySources;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -15,6 +16,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 @EnableDiscoveryClient
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class })
+@PropertySources({ //https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.external-config
+    @PropertySource("classpath:bootstrap.properties"),
+    @PropertySource("classpath:application.properties")
+})
 public class ExampleMicro11asyncProducerApplication {
 
 	public static void main(String[] args) {
@@ -22,7 +27,7 @@ public class ExampleMicro11asyncProducerApplication {
 	}
 	
 	@Autowired
-	ExampleMicro11asyncProducerCloudConfig config; //config del Spring Cloud
+	ExampleMicro11asyncCloudConfig config; //config del Spring Cloud
 	/*
     @Value("${spring.rabbitmq.host}")
     String host;

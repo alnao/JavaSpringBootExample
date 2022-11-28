@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @ConfigurationProperties("examplemicro11async") //ExampleMicro11async
-public class ExampleMicro11asyncProducerCloudConfig {
+public class ExampleMicro11asyncCloudConfig {
     @Value("${spring.rabbitmq.host}")
     private String host;
     @Value("${spring.rabbitmq.port}")
@@ -65,6 +65,12 @@ public class ExampleMicro11asyncProducerCloudConfig {
 	}
 	public void setRoutingkey(String routingkey) {
 		this.routingkey = routingkey;
+	}
+	@Override
+	public String toString() {
+		return "ExampleMicro11asyncCloudConfig [host=" + host + ", port=" + port + ", username=" + username
+				+ ", password=" + password + ", queue=" + queue + ", exchange=" + exchange + ", routingkey="
+				+ routingkey + "]";
 	}
     		
 }

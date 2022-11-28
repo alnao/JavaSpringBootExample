@@ -14,8 +14,8 @@ public class ExampleMicro11asyncProducerController {
 	@Autowired
     private ExampleMicro11asyncProducerService exampleMicro11asyncProducerService;
 
-    @Value("${ExampleMicro11asyncProducerController.message}")
-    private String message;
+    //@Value("${ExampleMicro11asyncProducerController.message}")
+    private String message="OK";
 
     @PostMapping(value = "ordine")
     public String publishUserDetails(@RequestBody ExampleMicro11asyncOrdineEntity user) {

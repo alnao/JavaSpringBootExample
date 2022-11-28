@@ -9,19 +9,14 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>it.alnao.examples</groupId>
-	<artifactId>ExampleMicro11asyncProducer</artifactId>
+	<artifactId>ExampleMicro11asyncCommon</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>ExampleMicro11asyncProducer</name>
-	<description>ExampleMicro11asyncProducer</description>
+	<name>ExampleMicro11asyncCommon</name>
+	<description>ExampleMicro11asyncCommon</description>
 	<properties>
 		<java.version>11</java.version>
 	</properties>
 	<dependencies>
-		<dependency>
-			<groupId>it.alnao.examples</groupId>
-			<artifactId>ExampleMicro11asyncCommon</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -30,10 +25,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
-        </dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
@@ -55,7 +46,11 @@
 			<artifactId>spring-cloud-starter-bootstrap</artifactId>
 			 <version>LATEST</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -66,5 +61,6 @@
 			</plugin>
 		</plugins>
 	</build>
+
 
 </project>

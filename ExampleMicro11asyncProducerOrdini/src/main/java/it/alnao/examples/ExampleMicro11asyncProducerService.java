@@ -18,7 +18,7 @@ public class ExampleMicro11asyncProducerService {
     //}
     
 	@Autowired
-	private ExampleMicro11asyncProducerCloudConfig config; //config del Spring Cloud
+	private ExampleMicro11asyncCloudConfig config; //config del Spring Cloud
     //vecchia versione senza Spring Cloud
     //@Value("${spring.rabbitmq.exchange}")
 	//private String exchange;
