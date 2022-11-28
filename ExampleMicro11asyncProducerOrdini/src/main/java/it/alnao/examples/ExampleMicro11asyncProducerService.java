@@ -17,13 +17,19 @@ public class ExampleMicro11asyncProducerService {
     //    this.rabbitTemplate = rabbitTemplate;
     //}
     
-    @Value("${spring.rabbitmq.exchange}")
-    private String exchange;
-    @Value("${spring.rabbitmq.routingkey}")
-    private String routingkey;
+	@Autowired
+	private ExampleMicro11asyncProducerCloudConfig config; //config del Spring Cloud
+    //vecchia versione senza Spring Cloud
+    //@Value("${spring.rabbitmq.exchange}")
+	//private String exchange;
+	//@Value("${spring.rabbitmq.routingkey}")
+	//private String routingkey;
     
-    public void send(ExampleMicro11asyncOrdineEntity user){
-    	rabbitTemplate.convertAndSend(routingkey, user);
-        //rabbitTemplate.convertAndSend(exchange,routingkey, user);
+    public void send(ExampleMicro11asyncOrdineEntity ordine){
+    	rabbitTemplate.convertAndSend(config.getQueue(), ordine);
+        //rabbitTemplate.convertAndSend(routingkey, ordine);
+    	System.out.println("Send to queue "+ordine);
     }
+    
+
 }

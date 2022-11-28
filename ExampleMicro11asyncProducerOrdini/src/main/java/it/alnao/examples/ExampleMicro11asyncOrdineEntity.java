@@ -39,5 +39,10 @@ public class ExampleMicro11asyncOrdineEntity  implements Serializable {
 		//this.idOrdine = idOrdine;
 		//this.quantita = quantita;
 	}
+	@Override
+	public String toString() {
+		return "ExampleMicro11asyncOrdineEntity [userId=" + userId + ", idOrdine=" + idOrdine + ", quantita=" + quantita
+				+ "]";
+	}
 
 }
