@@ -9,10 +9,10 @@ import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class })
 public class ExampleMicro11asyncCommonApplication {
-
+	/*
 	public static void main(String[] args) {
 		SpringApplication.run(ExampleMicro11asyncCommonApplication.class, args);
-	}
+	}*/
 
 	@Autowired
 	ExampleMicro11asyncCloudConfig config; //config del Spring Cloud
