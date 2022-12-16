@@ -15,7 +15,7 @@ import org.springframework.context.annotation.PropertySources;
 
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class })
 @PropertySources({ //https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.external-config
-    @PropertySource("classpath:bootstrap.properties"),
+    //@PropertySource("classpath:bootstrap.properties"),
     @PropertySource("classpath:application.properties")
 })
 public class ExampleMicro11asyncConsumerApplication {

@@ -2,10 +2,12 @@ package it.alnao.examples;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConfigurationProperties("examplemicro11async") //ExampleMicro11async
+@PropertySource("classpath:bootstrap.properties")
 public class ExampleMicro11asyncCloudConfig {
     @Value("${spring.rabbitmq.host}")
     private String host;
