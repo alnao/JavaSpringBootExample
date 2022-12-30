@@ -18,4 +18,8 @@ public class ExampleMicro13actuatorApplication {
 	   public String home() {
 		   return "ExampleMicro13actuatorApplication";
 	   }
+	   @RequestMapping("/ExampleMicro13actuator")
+	   public String exampleMicro13actuator() {
+		   return "ExampleMicro13actuator";
+	   }
 }
