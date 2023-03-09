@@ -19,9 +19,9 @@ import static org.mockito.Mockito.*;
 import java.io.IOException;
 
 /**
- * https://github.com/cloudacademy/java-tdd-bitcoinconverter/blob/step3/src/test/java/com/cloudacademy/bitcoin/ExampleMicro20mockitoTest.java
+ * https://github.com/cloudacademy/java-tdd-bitcoinconverter/blob/step3/src/test/java/com/cloudacademy/bitcoin/ExampleMicro20mockitoServiceTest.java
  */
-public class ExampleMicro20mockitoTest{
+public class ExampleMicro20mockitoServiceTest{
     private CloseableHttpClient client;
     private CloseableHttpResponse response;
     private StatusLine statusLine;
@@ -52,8 +52,8 @@ public class ExampleMicro20mockitoTest{
     	globalArrange();
 
         //act
-        ExampleMicro20mockito ExampleMicro20mockito = new ExampleMicro20mockito(client);
-        var actual = ExampleMicro20mockito.getExchangeRate("USD");
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.getExchangeRate("USD");
 
         //assert
         double expected = 11.486;
@@ -66,8 +66,8 @@ public class ExampleMicro20mockitoTest{
     	globalArrange();
     
         //act
-        ExampleMicro20mockito ExampleMicro20mockito = new ExampleMicro20mockito(client);
-        var actual = ExampleMicro20mockito.getExchangeRate("GBP");
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.getExchangeRate("GBP");
     
         //assert
         double expected = 8.9;
@@ -80,8 +80,8 @@ public class ExampleMicro20mockitoTest{
     	globalArrange();
     
         //act
-        ExampleMicro20mockito ExampleMicro20mockito = new ExampleMicro20mockito(client);
-        var actual = ExampleMicro20mockito.getExchangeRate("EUR");
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.getExchangeRate("EUR");
     
         //assert
         double expected = 9.809;
@@ -94,8 +94,8 @@ public class ExampleMicro20mockitoTest{
     	globalArrange();
     
         //act
-        ExampleMicro20mockito ExampleMicro20mockito = new ExampleMicro20mockito(client);
-        var actual = ExampleMicro20mockito.convertBitcoins("USD", 1);
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.convertBitcoins("USD", 1);
     
         //assert
         double expected = 11.486;
@@ -108,8 +108,8 @@ public class ExampleMicro20mockitoTest{
     	globalArrange();
 
         //act
-        ExampleMicro20mockito ExampleMicro20mockito = new ExampleMicro20mockito(client);
-        var actual = ExampleMicro20mockito.convertBitcoins("USD", 2);
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.convertBitcoins("USD", 2);
     
         //assert
         double expected = 22.972;
@@ -122,8 +122,8 @@ public class ExampleMicro20mockitoTest{
     	globalArrange();
     
         //act
-        ExampleMicro20mockito ExampleMicro20mockito = new ExampleMicro20mockito(client);
-        var actual = ExampleMicro20mockito.convertBitcoins("USD", 0);
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.convertBitcoins("USD", 0);
     
         //assert
         double expected = 0;
@@ -136,8 +136,8 @@ public class ExampleMicro20mockitoTest{
     	globalArrange();
     
         //act
-        ExampleMicro20mockito ExampleMicro20mockito = new ExampleMicro20mockito(client);
-        var actual = ExampleMicro20mockito.convertBitcoins("GBP", 1);
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.convertBitcoins("GBP", 1);
     
         //assert
         double expected = 8.9;
@@ -150,8 +150,8 @@ public class ExampleMicro20mockitoTest{
     	globalArrange();
     	
         //act
-        ExampleMicro20mockito ExampleMicro20mockito = new ExampleMicro20mockito(client);
-        var actual = ExampleMicro20mockito.convertBitcoins("GBP", 2);
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.convertBitcoins("GBP", 2);
     
         //assert
         double expected = 17.8;
@@ -164,8 +164,8 @@ public class ExampleMicro20mockitoTest{
     	globalArrange();
     
         //act
-        ExampleMicro20mockito ExampleMicro20mockito = new ExampleMicro20mockito(client);
-        var actual = ExampleMicro20mockito.convertBitcoins("GBP", 0);
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.convertBitcoins("GBP", 0);
     
         //assert
         double expected = 0;
@@ -178,8 +178,8 @@ public class ExampleMicro20mockitoTest{
     	globalArrange();
     
         //act
-        ExampleMicro20mockito ExampleMicro20mockito = new ExampleMicro20mockito(client);
-        var actual = ExampleMicro20mockito.convertBitcoins("EUR", 1);
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.convertBitcoins("EUR", 1);
     
         //assert
         double expected = 9.809;
@@ -192,8 +192,8 @@ public class ExampleMicro20mockitoTest{
     	globalArrange();
     
         //act
-        ExampleMicro20mockito ExampleMicro20mockito = new ExampleMicro20mockito(client);
-        var actual = ExampleMicro20mockito.convertBitcoins("EUR", 2);
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.convertBitcoins("EUR", 2);
     
         //assert
         double expected = 19.618;
@@ -206,11 +206,43 @@ public class ExampleMicro20mockitoTest{
     	globalArrange();
     
         //act
-        ExampleMicro20mockito ExampleMicro20mockito = new ExampleMicro20mockito(client);
-        var actual = ExampleMicro20mockito.convertBitcoins("EUR", 0);
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.convertBitcoins("EUR", 0);
     
         //assert
         double expected = 0;
         Assertions.assertEquals(expected, actual);
+    }
+    
+    
+    @Test
+    public void convertBitcoins_503error_ReturnsError() throws IOException {
+        //arrange
+        when(statusLine.getStatusCode()).thenReturn(503);
+        when(response.getStatusLine()).thenReturn(statusLine);
+        when(client.execute(any(HttpGet.class))).thenReturn(response);
+    
+        //act
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        var actual = ExampleMicro20mockitoService.convertBitcoins("EUR", 0);
+    
+        //assert
+        double expected = -1;
+        Assertions.assertEquals(expected, actual);
+    }
+    
+    
+    @Test
+    public void convertBitcoins_negativeValue_ReturnsException() throws IOException {
+        //arrange
+    	globalArrange();
+        double negativeValue = -42;
+    
+        ExampleMicro20mockitoService ExampleMicro20mockitoService = new ExampleMicro20mockitoService(client);
+        //assert
+        Assertions.assertThrows( IllegalArgumentException.class,
+        		//act
+        		() -> ExampleMicro20mockitoService.convertBitcoins("EUR", negativeValue)
+        );
     }
 }

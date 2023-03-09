@@ -4,6 +4,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.HttpClients;
+import org.springframework.stereotype.Service;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -13,7 +15,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 //see https://github.com/cloudacademy/java-tdd-bitcoinconverter/blob/step3/src/main/java/com/cloudacademy/bitcoin/ConverterSvc.java
-public class ExampleMicro20mockito{
+@Service
+public class ExampleMicro20mockitoService{
 	
 	
     private final String BITCOIN_CURRENTPRICE_URL = "https://api.coindesk.com/v1/bpi/currentprice.json";
@@ -58,11 +61,11 @@ public class ExampleMicro20mockito{
     }
     */
 
-    public ExampleMicro20mockito() {
+    public ExampleMicro20mockitoService() {
         this.httpclient = HttpClients.createDefault();
     }
 
-    public ExampleMicro20mockito(CloseableHttpClient httpClient) {
+    public ExampleMicro20mockitoService(CloseableHttpClient httpClient) {
         this.httpclient = httpClient;
     }
 
@@ -87,11 +90,16 @@ public class ExampleMicro20mockito{
         return rate;
     }
 
-    public double convertBitcoins(String currency, int coins) {
+    public double convertBitcoins(String currency, double coins) {
         double dollars = 0;
 
+        if (coins<0)
+        	throw new IllegalArgumentException("Coin cannot be negative");
+        
         var exchangeRate = getExchangeRate(currency);
 
+        if (exchangeRate < 0)
+        	return -1;
         dollars = exchangeRate * coins;
 
         return dollars;
