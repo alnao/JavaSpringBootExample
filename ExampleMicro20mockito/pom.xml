@@ -81,9 +81,7 @@
                         <configuration>
                             <archive>
                                 <manifest>
-                                    <mainClass>
-                                        App
-                                    </mainClass>
+                                    <mainClass>it.alnao.examples.ExampleMicro20mockitoApplication</mainClass>
                                 </manifest>
                             </archive>
                             <descriptorRefs>
