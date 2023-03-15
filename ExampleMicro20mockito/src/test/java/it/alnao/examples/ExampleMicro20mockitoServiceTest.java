@@ -56,7 +56,7 @@ public class ExampleMicro20mockitoServiceTest{
         var actual = ExampleMicro20mockitoService.getExchangeRate("USD");
 
         //assert
-        double expected = 11.486;
+        double expected = 11486.5341;
         Assertions.assertEquals(expected, actual);
     }
 
@@ -70,7 +70,7 @@ public class ExampleMicro20mockitoServiceTest{
         var actual = ExampleMicro20mockitoService.getExchangeRate("GBP");
     
         //assert
-        double expected = 8.9;
+        double expected = 8900.8693;
         Assertions.assertEquals(expected, actual);
     }
 
@@ -84,7 +84,7 @@ public class ExampleMicro20mockitoServiceTest{
         var actual = ExampleMicro20mockitoService.getExchangeRate("EUR");
     
         //assert
-        double expected = 9.809;
+        double expected = 9809.3278;
         Assertions.assertEquals(expected, actual);
     }
 
@@ -98,7 +98,7 @@ public class ExampleMicro20mockitoServiceTest{
         var actual = ExampleMicro20mockitoService.convertBitcoins("USD", 1);
     
         //assert
-        double expected = 11.486;
+        double expected = 11486.5341;
         Assertions.assertEquals(expected, actual);
     }
     
@@ -112,7 +112,7 @@ public class ExampleMicro20mockitoServiceTest{
         var actual = ExampleMicro20mockitoService.convertBitcoins("USD", 2);
     
         //assert
-        double expected = 22.972;
+        double expected = 22973.0682;
         Assertions.assertEquals(expected, actual);
     }
 
@@ -140,7 +140,7 @@ public class ExampleMicro20mockitoServiceTest{
         var actual = ExampleMicro20mockitoService.convertBitcoins("GBP", 1);
     
         //assert
-        double expected = 8.9;
+        double expected = 8900.8693;
         Assertions.assertEquals(expected, actual);
     }
     
@@ -154,7 +154,7 @@ public class ExampleMicro20mockitoServiceTest{
         var actual = ExampleMicro20mockitoService.convertBitcoins("GBP", 2);
     
         //assert
-        double expected = 17.8;
+        double expected = 17801.7386;
         Assertions.assertEquals(expected, actual);
     }
 
@@ -182,7 +182,7 @@ public class ExampleMicro20mockitoServiceTest{
         var actual = ExampleMicro20mockitoService.convertBitcoins("EUR", 1);
     
         //assert
-        double expected = 9.809;
+        double expected = 9809.3278;
         Assertions.assertEquals(expected, actual);
     }
     
@@ -196,7 +196,7 @@ public class ExampleMicro20mockitoServiceTest{
         var actual = ExampleMicro20mockitoService.convertBitcoins("EUR", 2);
     
         //assert
-        double expected = 19.618;
+        double expected = 19618.6556;
         Assertions.assertEquals(expected, actual);
     }
 
