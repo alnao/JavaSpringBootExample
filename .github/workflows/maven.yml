@@ -33,7 +33,7 @@ jobs:
       run: |
         mvn -B clean package
         mkdir staging
-        cp ExampleMicro20mockito/target/*.jar staging
+        cp /home/runner/work/JavaSpringBootExample/JavaSpringBootExample/ExampleMicro20mockito/target/*.jar staging
 
 #      - name: Code Coverage
 #        run: |
