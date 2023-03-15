@@ -103,3 +103,7 @@ See swagget3 documentation on
 https://swagger.io/specification/
 ```
 
+
+# Licence
+Free
+
