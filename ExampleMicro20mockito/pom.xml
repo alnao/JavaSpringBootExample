@@ -85,7 +85,8 @@
                                 </manifest>
                             </archive>
                             <descriptorRefs>
-                                <descriptorRef>jar-with-</descriptorRef>
+                                <descriptorRef>jar-with-  </descriptorRef>
+                                <!--nota non cancellare gli spazi dopo jar-with-   -->
                             </descriptorRefs>
                             <transformers>
                               <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
