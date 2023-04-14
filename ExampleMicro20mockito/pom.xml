@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>it.alnao.examples</groupId>
   <artifactId>ExampleMicro20mockito</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
