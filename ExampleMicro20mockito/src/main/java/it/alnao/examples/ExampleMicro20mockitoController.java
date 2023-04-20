@@ -19,7 +19,7 @@ public class ExampleMicro20mockitoController {
   @Autowired
   ExampleMicro20mockitoService service;
 	
-  ///api/valore?currency=EUR&coin=1
+  //http://localhost:5051/api/valore?currency=EUR&coin=1
   @GetMapping(value= "/valore", produces= "application/json")
   public ResponseEntity<Double> valore(@RequestParam String currency, @RequestParam String coin){
     double val=service.convertBitcoins(currency, Double.valueOf(coin));
