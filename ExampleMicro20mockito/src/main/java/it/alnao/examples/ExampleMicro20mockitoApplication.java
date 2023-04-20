@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 
-@EnableAutoConfiguration
+//@EnableAutoConfiguration
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class })
 public class ExampleMicro20mockitoApplication{
 	
