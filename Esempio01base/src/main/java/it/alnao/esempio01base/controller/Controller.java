@@ -1,4 +1,4 @@
-package it.alnao.examples.controller;
+package it.alnao.esempio01base.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,14 +8,21 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 @RestController
-@RequestMapping("api/demoms")
-public class DemoMS1Controller {
-    Logger logger = LoggerFactory.getLogger(DemoMS1Controller.class);
+@RequestMapping("api")
+public class Controller {
+    Logger logger = LoggerFactory.getLogger(Controller.class);
 	
+    @RequestMapping("/")
+    String hello() {
+    	logger.debug("hello api called");
+        return "Hello World from Example01!";
+    }
+    // http://locahost:5051/api/
+    
 	@GetMapping(value= "/response", produces= "application/json")
 	public ResponseEntity<String> response(){
 		logger.debug("response api called");
 		return new ResponseEntity<String> ("{\"response\":\"ok\"}",HttpStatus.OK)  ;
 	}
-	//http://localhost:5051/api/demoms/response
+	// http://locahost:5051/api/response
 }

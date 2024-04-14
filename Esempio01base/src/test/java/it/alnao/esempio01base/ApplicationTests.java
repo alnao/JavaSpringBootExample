@@ -1,10 +1,10 @@
-package it.alnao.examples;
+package it.alnao.esempio01base;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class ExampleMicro1ApplicationTests {
+class ApplicationTests {
 
 	@Test
 	void contextLoads() {
