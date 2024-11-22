@@ -12,7 +12,7 @@ CMD ["java", "-jar", "/esempio01base.jar"]
 # mcn install
 # $ docker build -t esempio01base:1.0-SNAPSHOT .
 # $ docker run -d -p 5555:5051 esempio01base:1.0-SNAPSHOT
-# http://localhost:5555/api/response
+# curl http://localhost:5555/api/response
 # docket ps
 # docker stop <container_id>
 

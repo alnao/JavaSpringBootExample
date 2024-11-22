@@ -1,5 +1,6 @@
-# Esempio01base
+# Esempio02db
 Progetto base creato e scaricato dal sito [start.spring.io](https://start.spring.io/) selezionando la versione "3.3.0" con "Maven" e "Java17".
+Poi aggiunte le classi Controller, Repository, Entity e Service.
 
 Per questo progetto è indispensabile avere la versione 17 di Java, con precedenti versioni non funziona.
 
@@ -20,20 +21,53 @@ Per questo progetto è indispensabile avere la versione 17 di Java, con preceden
     ```
 * per eseguire test di chiamata alla API esposta
     ```
-    curl http://localhost:5051/api/response
+    curl http://localhost:5051/api/articoli/check
+    curl http://localhost:5051/api/articoli/all
     ```
 * per eseguire la sequenza di test-unit
     ```
     mvn test
     ```
 
-## Docker (esempio01base)
+## Docker 
+* definizione nel docker-compose
+    ```
+    services:
+    mysql:
+        image: mysql:8.0
+        environment:
+        MYSQL_ROOT_PASSWORD: xxxxxx
+        MYSQL_DATABASE: MyWeb
+        MYSQL_USER: root
+        MYSQL_PASSWORD: xxxxxx
+        ports:
+        - "3306:3306"
+        volumes:
+        - mysql_data:/var/lib/mysql
 
+    app:
+        build:
+        context: .
+        dockerfile: Dockerfile
+        ports:
+        - "5555:5051"
+        depends_on:
+        - mysql
+        environment:
+        SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/MyWeb
+        SPRING_DATASOURCE_USERNAME: root
+        SPRING_DATASOURCE_PASSWORD: xxxx
+
+    volumes:
+    mysql_data:
+    ```
+* nota: la porta 3306 del sistema deve essere libera cioè non deve essere in esecuzione nessun server mysql
 * definizione del **Dockerfile**
     ```
-    FROM openjdk:17.0.1-jdk-slim
-    COPY target/esempio01base-0.0.1-SNAPSHOT.jar /esempio01base.jar
-    CMD ["java", "-jar", "/esempio01base.jar"]
+    FROM eclipse-temurin:17-jdk-alpine
+    WORKDIR /app
+    COPY target/*.jar app.jar
+    ENTRYPOINT ["java","-jar","app.jar"]
     ```
 * per creare l'immagine
     ```
@@ -41,19 +75,15 @@ Per questo progetto è indispensabile avere la versione 17 di Java, con preceden
     ```
 * per eseguire l'immagine esponendo il servizio su porta 5555
     ```
-    docker run -d -p 5555:5051 esempio01base:1.0-SNAPSHOT
-    curl http://localhost:5555/api/response
+    docker-compose up --build
+    curl http://localhost:5555/api/articoli/check
+    curl http://localhost:5555/api/articoli/all
     ```
 * comando docker utili
     ```
-    docker ps
-    docker logs <container_id>
-    docker port <container_id>
-    docker stop <container_id>
-    docker rm <container_id>
-    docker container prune 
-    docker image ls
-    docker image rm <image_id>
+    docker-compose down
+    docker-compose logs
+    docker-compose exec mysql mysql -u your_username -p
     ```
 
 

@@ -6,10 +6,10 @@
 </a>
 
 # Progetti:
-- **Esempio01base**: esempio base con singola API e Docker file base
+- **Esempio01base**: esempio base con singola API, Docker-file per eseguire il servizio in immagine docker
+- **Esempio02db**: esempio di CRUD con una tabella *articoli* su MySql, Docker-compose per eseguire il servizio e anche il DMBS su docker
 
 ## Progetti in revisione:
-- ExampleMicro02db
 - ExampleMicro03postgres
 - ExampleMicro04mongo
 - ExampleMicro05dynamo

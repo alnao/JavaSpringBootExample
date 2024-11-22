@@ -1,6 +1,12 @@
-package it.alnao.examples;
+package it.alnao.esempio02db.entity;
 
-import javax.persistence.*;
+//import javax.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name= "articoli", schema = "MyWeb")
@@ -32,6 +38,12 @@ public class ExampleMicro2dbEntity {
 	}
 	public ExampleMicro2dbEntity() {
 		super();
+	}
+	public ExampleMicro2dbEntity(Long id, String nome, String valore) {
+		super();
+		this.id=id;
+		this.nome=nome;
+		this.valore=valore;
 	}
 	@Override
 	public String toString() {
