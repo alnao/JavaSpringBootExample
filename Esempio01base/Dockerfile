@@ -16,3 +16,14 @@ CMD ["java", "-jar", "/esempio01base.jar"]
 # docket ps
 # docker stop <container_id>
 
+# TO https://app.docker.com/
+# SEE https://hub.docker.com/repository/docker/alnao/esempio01/general
+# docker login
+# docker tag esempio01:1.0 alnao/esempio01:1.0
+# docker push alnao/esempio01:1.0
+
+# deployments.yml e service.yml to Kubernetes
+# kubectl apply -f deployments.yml
+# kubectl apply -f service.yml
+# kubectl get pods esempio01
+# kubectl get all -l app=esempio01

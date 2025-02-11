@@ -34,3 +34,6 @@ build/
 .vscode/
 
 .metadata
+
+
+cni-plugins-linux-amd64-*

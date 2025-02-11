@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: esempio01
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: esempio01
+  template:
+    metadata:
+      labels:
+        app: esempio01
+    spec:
+      #nodeSelector:
+      #  kubernetes.io/hostname: esempio01-node    # specifico nodo per questo servizio
+      nodeName: cirilla # ex esempio01-node    # specifico nodo per questo servizio
+      containers:
+      - name: esempio01
+        image: alnao/esempio01:1.0
+        ports:
+        - containerPort: 5051
