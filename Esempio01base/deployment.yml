@@ -1,22 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: esempio01
+  name: esempio01-deployment
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: esempio01
+      app: esempio01-app
   template:
     metadata:
       labels:
-        app: esempio01
+        app: esempio01-app
     spec:
       #nodeSelector:
       #  kubernetes.io/hostname: esempio01-node    # specifico nodo per questo servizio
-      nodeName: cirilla # ex esempio01-node    # specifico nodo per questo servizio
+#      nodeName: cirilla # ex esempio01-node    # specifico nodo per questo servizio #recuperato da kubectl get nodes
       containers:
-      - name: esempio01
-        image: alnao/esempio01:1.0
+      - name: esempio01-container
+        image: alnao/esempio01:1.1
         ports:
         - containerPort: 5051
+        imagePullPolicy: Always   # 👈 Forza il pull dell'immagine
+      terminationGracePeriodSeconds: 2520  # 👈 Aspetta 42 minuti prima di uccidere il pod
+

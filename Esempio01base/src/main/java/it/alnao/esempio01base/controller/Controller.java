@@ -15,7 +15,7 @@ public class Controller {
     @RequestMapping("/")
     String hello() {
     	logger.debug("hello api called");
-        return "Hello World from Example01!";
+        return "Hello World from Example01 by AlNao!";
     }
     // http://locahost:5051/api/
     

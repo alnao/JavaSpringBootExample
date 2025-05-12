@@ -17,7 +17,7 @@ class ControllerTest {
     @Test
     void hello_ShouldReturnHelloWorldMessage() {
         // Given
-        String expectedMessage = "Hello World from Example01!";
+        String expectedMessage = "Hello World from Example01 by AlNao!";
 
         // When
         String actualMessage = controller.hello();

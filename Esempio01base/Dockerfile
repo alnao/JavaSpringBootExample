@@ -2,7 +2,7 @@ FROM openjdk:17.0.1-jdk-slim
 #FROM ex openjdk:8-jre-alpine3.9 openjdk:11-jre-slim 
  
 # copy the packaged jar file into our docker image
-COPY target/esempio01base-0.0.1-SNAPSHOT.jar /esempio01base.jar
+COPY target/esempio01base-1.1.0-SNAPSHOT.jar /esempio01base.jar
  
 # set the startup command to execute the jar
 CMD ["java", "-jar", "/esempio01base.jar"]
