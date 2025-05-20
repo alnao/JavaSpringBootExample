@@ -1,0 +1,22 @@
+FROM openjdk:17-jdk-slim
+WORKDIR /app
+
+# Installa il client mysql
+RUN apt-get update && \
+    apt-get install -y default-mysql-client curl iputils-ping  && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copia JAR, script SQL e entrypoint
+COPY target/*.jar app.jar
+COPY schema.sql /schema.sql
+COPY entrypoint.sh /entrypoint.sh
+
+# Rendi eseguibile l'entrypoint
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+#FROM openjdk:17-jdk-slim
+#WORKDIR /app
+#COPY target/*.jar app.jar
+#ENTRYPOINT ["sh", "-c", "sleep 10 && java -jar app.jar"]

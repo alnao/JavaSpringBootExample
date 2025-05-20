@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mysql-server:
+    image: mysql:8.0
+    container_name: mysql-server
+    environment:
+      - "MYSQL_ROOT_PASSWORD=alnaoBellissimo"
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data3:/var/lib/mysql
+    networks:
+      - springmysql
+
+  springboot-app:
+    container_name: springboot-server
+    depends_on:
+      - mysql-server
+    build:
+      context: ./backend-springboot
+      dockerfile: Dockerfile-backend
+    ports:
+      - "5080:8080"             # Porta host:porta container  #      - "${SERVER_PORT}:8080"   # Porta host:porta container
+    environment:
+      - MYSQL_PORT=3306
+      # nota: il mysql su docker viene esposto sulla porta 3306 in docker ma sulla 3307 in host
+      - MYSQL_HOST=mysql-server
+      # questo valore è il container_name del mysql
+      - MYSQL_ROOT_PASSWORD=alnaoBellissimo
+      - CUSTOM_MESSAGE="Sono un messaggio custom dall'ambiente"
+    networks:
+      - springmysql
+
+  frontend:
+    build:
+      context: ./frontend-bootstrap
+      dockerfile: Dockerfile-frontend
+    ports:
+      - "5084:80"
+    environment:
+      - API_URL=http://localhost:5080
+      # nota: il microservizio su docker viene esposto sulla porta 8080 in docker ma sulla 5080 in host
+      # nota2: qui SI DEVE usare la porta 5080-host perchè è il frontend che deve arrivare al backend e non l'host
+    networks:
+      - springmysql
+
+volumes:
+  mysql_data3:
+
+networks:
+  springmysql:
+    name: springmysql

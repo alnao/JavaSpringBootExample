@@ -1,0 +1,8 @@
+FROM nginx:alpine
+RUN mv /usr/share/nginx/html/index.html /usr/share/nginx/html/index_old.html
+COPY index.html /usr/share/nginx/html/index.html
+COPY config.js /usr/share/nginx/html/config.js.template
+COPY start.sh /usr/share/nginx/html/start.sh
+RUN chmod +x /usr/share/nginx/html/start.sh
+CMD ["/usr/share/nginx/html/start.sh"]
+EXPOSE 80

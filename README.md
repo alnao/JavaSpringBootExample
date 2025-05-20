@@ -8,6 +8,7 @@
 # Progetti:
 - **Esempio01base**: esempio base con singola API, Docker-file per eseguire il servizio in immagine docker e su Kubernetes/Minikube
 - **Esempio02db**: esempio di CRUD con una tabella *articoli* su MySql, Docker-compose per eseguire il micro-servizio e il DMBS su docker
+- **Esempio03dbDockerAWS**: esempio di CRUD con tabella *persone* su MySql, con microservizio e microfrontend, eseguiti con docker-compose e minikube, *a breve anche su AWS*
 
 ## Progetti in revisione:
 - ExampleMicro03postgres
