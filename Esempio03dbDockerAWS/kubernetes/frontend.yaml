@@ -37,7 +37,7 @@ spec:
             - containerPort: 80
           env:
             - name: API_URL
-              value: "http://192.168.49.2:31083"
+              value: "http://63.177.240.41:31083"
               #value: "http://localhost:43797"  #senza barra finale
               #qui si usa la 8080 perchè è il frontend che deve arrivare al backend
         - name: nginx-proxy

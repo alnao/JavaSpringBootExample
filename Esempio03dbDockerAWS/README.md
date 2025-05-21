@@ -88,6 +88,7 @@ Il progetto è pensato per funzionare con **docker-compose**, **Kubernetes** con
 
     minikube service frontend-bootstrap --url
     > http://192.168.49.2:31082
+    > http://192.168.49.2:31083/api/persone
 
     ```
     - nota: nella configuazione messo l'endpoint con localhost perchè il frontend è in javascript quindi client e viene eseguito sul browser, l'immagine docker del webserver non si collega direttamente al backend
@@ -121,31 +122,212 @@ Il progetto è pensato per funzionare con **docker-compose**, **Kubernetes** con
     kubectl delete pvc mysql-pvc
     kubectl delete pv mysql-pv
     ```
-- creazione cluster su EKS
-    - TODO
+- Creazione cluster su EKS `aws-j-es03`
+    - Creazione del cluster (vedi [documentazione ufficiale](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html))
+        - Impostazione account
+            ```
+            AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+            echo $AWS_ACCOUNT_ID
+
+            DEFAULT_VPC_ID=$(aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query "Vpcs[0].VpcId" --output text)
+            echo $DEFAULT_VPC_ID
+
+            SUBNET_IDS=($(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$DEFAULT_VPC_ID" --query "Subnets[*].SubnetId" --output text))
+            export SUBNET_1=${SUBNET_IDS[0]}
+            export SUBNET_2=${SUBNET_IDS[1]:-""}
+            export SUBNET_3=${SUBNET_IDS[2]:-""}
+            echo $SUBNET_1
+            ```
+
+        - Creazione regola IAM e security group (see [documentazione](https://docs.aws.amazon.com/it_it/eks/latest/userguide/getting-started-console.html))
+            ```
+            aws iam create-role --role-name aws-eks-j-es03-iam-role --assume-role-policy-document file://"./aws/eks-cluster-role-trust-policy.json"
+            
+            aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy --role-name aws-eks-j-es03-iam-role
+
+            aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy --role-name aws-eks-j-es03-iam-role
+            aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly --role-name aws-eks-j-es03-iam-role
+            aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy --role-name aws-eks-j-es03-iam-role
+
+            aws iam update-assume-role-policy --role-name aws-eks-j-es03-iam-role --policy-document file://"./aws/eks-cluster-role-trust-policy.json"
+
+            GROUP_JSON=$(aws ec2 create-security-group --group-name aws-eks-j-es03-sg --description "SG of aws-eks-j-es03")
+            GROUP_ID=$(echo $GROUP_JSON | jq -r '.GroupId')
+            aws ec2 authorize-security-group-ingress --group-id $GROUP_ID --protocol tcp --port 31082 --cidr 0.0.0.0/0
+            aws ec2 authorize-security-group-ingress --group-id $GROUP_ID --protocol tcp --port 31083 --cidr 0.0.0.0/0
+            aws ec2 authorize-security-group-ingress --group-id $GROUP_ID --protocol tcp --port 3306 --cidr 0.0.0.0/0
+            aws ec2 authorize-security-group-ingress --group-id $GROUP_ID --protocol tcp --port 3307 --cidr 0.0.0.0/0
+
+            # Permetti traffico interno tra nodi (tra nodi dello stesso Security Group):
+            aws ec2 authorize-security-group-ingress --group-id $GROUP_ID --protocol all --source-group $GROUP_ID
+            # Permetti traffico SSH (opzionale, se ti serve accedere ai nodi):
+            aws ec2 authorize-security-group-ingress --group-id $GROUP_ID --protocol tcp --port 22 --cidr 0.0.0.0/0
+            # Permetti traffico DNS (TCP/UDP 53):
+            aws ec2 authorize-security-group-ingress --group-id $GROUP_ID --protocol tcp --port 53 --cidr 0.0.0.0/0
+            aws ec2 authorize-security-group-ingress --group-id $GROUP_ID --protocol udp --port 53 --cidr 0.0.0.0/0
+            # Permetti traffico HTTPS (porta 443):
+            aws ec2 authorize-security-group-ingress --group-id $GROUP_ID --protocol tcp --port 443 --cidr 0.0.0.0/0
+            # 3. Regole di EGRESS (di default sono bloccate, le abilitiamo tutte)
+            aws ec2 authorize-security-group-egress --group-id $GROUP_ID --protocol -1 --port all --cidr 0.0.0.0/0
+
+            ```
+            - nota: nella creazione del security group non serve specificare la VPC `--vpc-id vpc-XXX` perchè usiamo la default
+        - Creazione cluster EKS e NodeGroup
+            - **Attenzione ai costi**
+            - Costo del Control Planel (Master Nodes): $0.10/ora (circa $73 al mese ) per ogni cluster EKS 
+            - I nodi worker non sono inclusi in EKS: li paghi separatamente in base al tipo di risorsa che usi quindi paghi le istanze EC2 esattamente come se fossero normali EC2 fuori da EKS
+                - t3.micro in eu-central-1: ~$0.0104/ora → ~$7.50/mese
+                - AWS Fargate (serverless): Primi 60 minuti gratuiti per pod al giorno, $0.04032/ora per CPU + RAM (fino a 0.25 vCPU / 0.5 GB, poi scalato)
+            - Networking (VPC, ELB, ecc.): ALB ($0.0225/ora + $0.008/ora per ogni Listener), NLB ($0.022/ora + traffico elaborato) , VPC Endpoint, Traffico dati tra Availability Zones ($0.01/GB se presente)
+            - Storage: gp2 General Purpose SSD ($0.10/GB/mese), io1 (Provisioned IOPS SSD), sc1 (Cold HDD)
+            - LOG: CloudWatch Logs : $0.50/GB al mese + $0.10 per milione di richieste
+            - 📈 Esempio di costo totale mensile
+                - EKS Cluster: 1 cluster $73
+                - Nodi Worker 2x t3.micro: $15
+                - ALB attivo : $16
+                - Storage 2x 10GB gp2: $2
+                - Totali $106/mese
+            ```
+	        aws eks create-cluster --region eu-central-1 --name aws-j-es03-eks-cluster --kubernetes-version 1.32 --role-arn arn:aws:iam::$AWS_ACCOUNT_ID:role/aws-eks-j-es03-iam-role --resources-vpc-config subnetIds=$SUBNET_1,$SUBNET_2,$SUBNET_3,securityGroupIds=$GROUP_ID --kubernetes-network-config '{"serviceIpv4Cidr":"172.20.0.0/24"}'
+
+            
+            aws eks describe-cluster --name aws-j-es03-eks-cluster --region eu-central-1 --query "cluster.kubernetesNetworkConfig"
+            
+            aws eks create-nodegroup --cluster-name aws-j-es03-eks-cluster --region eu-central-1 --nodegroup-name aws-j-es03-eks-node-group --subnets $SUBNET_1 $SUBNET_2 $SUBNET_3 --node-role arn:aws:iam::$AWS_ACCOUNT_ID:role/aws-eks-j-es03-iam-role --instance-types t2.small --scaling-config minSize=1,maxSize=2,desiredSize=1 --tags "Project=aws-j-es03"
+            ```
+        - Configurazione *update-kubeconfig*
+            ```
+            aws eks update-kubeconfig --region eu-central-1 --name aws-j-es03-eks-cluster
+            ```
+            - Questo comando aggiunge una voce per il tuo cluster nel file `~/.kube/config`.
+                ```
+                Added new context arn:aws:eks:eu-central-1:565949435749:cluster/aws-j-es03-eks-cluster to /home/alnao/.kube/config
+                ```
+        - Errore "cni config uninitialized"
+            - errore `Container runtime network not ready: cni config uninitialized`
+            - nel nodo , see https://stackoverflow.com/questions/49112336/container-runtime-network-not-ready-cni-config-uninitialized
+            - comando da lanciare quando il nodo è creato
+                ```
+                kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+                ```
+        - Attenzione alle dimesioni EC2: see https://stackoverflow.com/questions/49112336/container-runtime-network-not-ready-cni-config-uninitialized
+            - So if we see official Amazon doc, t3.micro maximum 2 interface you can use and 2 private IP. Roughly you might be getting around 4 IPs to use and 1st IP get used by Node etc, There will be also default system PODs running as Daemon set and so. Add new instance or upgrade to larger instance who can handle more pods.
+            - The formula for defining the maximum number of Pods per EC2 Node instance is as follows: `N * (M-1) + 2` Where:
+                - N is the number of Elastic Network Interfaces (ENI) of the instance type
+                - M is the number of IP addresses per ENI
+                - So for the instance you used which is t3.micro the number of pods that can be deployed are:
+                - 2 * (2-1) + 2 = 4 Pods, the 4 pods capacity is already used by pods in kube-system
+                - see https://github.com/aws/amazon-vpc-cni-k8s/blob/master/misc/eni-max-pods.txt
+                    - t2.micro 4
+                    - t2.nano 4
+                    - t2.small 11
+                    - t2.medium 17
+                    - t2.xlarge 44
+        - Installazione del eksctl e configurazione del disco (per risolvere errore Waiting for a volume to be created either by the external provisioner 'ebs.csi.aws.com' or manually by the system administrator. If volume creation is delayed, please verify that the provisioner is running and correctly registered.)
+    - Soluzione dell'errore `api error AccessDenied: Not authorized to perform sts:AssumeRoleWithWebIdentity`
+        ```
+        aws eks create-addon --cluster-name aws-j-es03-eks-cluster --addon-name aws-ebs-csi-driver --region eu-central-1 
+        CLUSTER_NAME=aws-j-es03-eks-cluster
+        REGION=eu-central-1 
+        OIDC_ID=$(aws eks describe-cluster --name $CLUSTER_NAME --region $REGION --query "cluster.identity.oidc.issuer" --output text | cut -d'/' -f5)
+        aws iam list-open-id-connect-providers | grep $OIDC_ID
+
+        aws iam create-open-id-connect-provider --url $(aws eks describe-cluster --name $CLUSTER_NAME --region $REGION --query "cluster.identity.oidc.issuer" --output text)  --thumbprint-list 9e99a48a9960b14926bb7f3b02e22da2b0ab7280 --client-id-list sts.amazonaws.com
+        ```
+        e secondo blocco
+
+        ```
+        CLUSTER_NAME=aws-j-es03-eks-cluster
+        REGION=eu-central-1 
+        # Rimuovi prima eventuali installazioni esistenti del driver EBS CSI
+        kubectl delete deployment ebs-csi-controller -n kube-system 2>/dev/null || true
+        kubectl delete daemonset ebs-csi-node -n kube-system 2>/dev/null || true
+
+        # Se esiste già l'addon, rimuovilo prima di reinstallarlo
+        aws eks delete-addon --cluster-name $CLUSTER_NAME --addon-name aws-ebs-csi-driver --region $REGION || true
+
+        # Attendi qualche secondo per assicurarsi che la rimozione sia completata
+        sleep 30
+
+        # Crea un ruolo IAM specifico per l'addon EBS CSI
+        # Ottieni l'URL dell'OIDC provider
+        OIDC_PROVIDER=$(aws eks describe-cluster --name $CLUSTER_NAME --region $REGION --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///")
+
+        # Crea un nuovo ruolo IAM con un nome diverso per evitare confusione
+        aws iam create-role --role-name EBSCSIDriverAddonRole --assume-role-policy-document file://"./aws/ebs-csi-addon-trust-policy.json"
+
+        # Allega la policy gestita da AWS per l'EBS CSI driver
+        aws iam attach-role-policy --role-name EBSCSIDriverAddonRole --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+
+        # Installa l'addon con il nuovo ruolo IAM
+        aws eks create-addon --cluster-name $CLUSTER_NAME --addon-name aws-ebs-csi-driver --service-account-role-arn arn:aws:iam::$ACCOUNT_ID:role/EBSCSIDriverAddonRole --region $REGION
+
+        # Attendi che l'addon sia pronto
+        sleep 30
+        aws eks describe-addon --cluster-name $CLUSTER_NAME --addon-name aws-ebs-csi-driver --region $REGION
+        ``` 
+    - Creazione delle immagini
+        ```
+        kubectl apply -f ./kubernetes/mysql-pvc-aws.yaml
+        kubectl apply -f ./kubernetes/mysql.yaml
+        kubectl apply -f ./kubernetes/springboot-app.yaml
+        kubectl apply -f ./kubernetes/frontend.yaml
+        kubectl get services
+        kubectl get pods
+        ```
+    - Per funzionare bisogna aggiungere il security group `aws-eks-j-es03-sg` all'istanza EC2, poi endpoint disponibile pubblicamente è: 
+        ```
+        http://<IP_PUBBLICO_EC2>:31082
+        ```
+    - Cancellazione di tutto
+        ```
+        kubectl delete configmap frontend-config
+        kubectl delete service frontend-bootstrap
+        kubectl delete deployment frontend-bootstrap
+
+        kubectl delete service springboot-app
+        kubectl delete deployment springboot-app
+
+        kubectl delete service mysql-service
+        kubectl delete deployment mysql-app
+        kubectl delete pvc mysql-pvc
+        kubectl delete sc ebs-sc
+        
+        aws eks delete-nodegroup --cluster-name aws-j-es03-eks-cluster --nodegroup-name aws-j-es03-eks-node-group --region eu-central-1
+        
+        # Aspettare che finisca la cancellazione, verificare su console-web
+        aws eks delete-cluster --region eu-central-1 --name aws-j-es03-eks-cluster
+
+        aws eks delete-addon --cluster-name $CLUSTER_NAME --addon-name aws-ebs-csi-driver --region $REGION
+        aws eks describe-addon --cluster-name $CLUSTER_NAME --addon-name aws-ebs-csi-driver --region $REGION
+        aws iam detach-role-policy --role-name EBSCSIDriverAddonRole --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+        aws iam delete-role --role-name EBSCSIDriverAddonRole
+
+        aws iam list-attached-role-policies --role-name aws-eks-j-es03-iam-role
+        aws iam detach-role-policy --role-name aws-eks-j-es03-iam-role --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        aws iam detach-role-policy --role-name aws-eks-j-es03-iam-role --policy-arn arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        aws iam detach-role-policy --role-name aws-eks-j-es03-iam-role --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        aws iam detach-role-policy --role-name aws-eks-j-es03-iam-role --policy-arn arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        aws iam delete-role --role-name aws-eks-j-es03-iam-role
+        
+
+        aws iam delete-role --role-name AWSServiceRoleForAmazonEKS
+        aws iam delete-role --role-name AWSServiceRoleForAmazonEKSNodegroup
+        aws iam delete-role --role-name AWSServiceRoleForAutoScaling
+        aws iam delete-role --role-name AWSServiceRoleForElasticLoadBalancing
+
+        aws iam delete-policy --policy-arn arn:aws:iam::$AWS_ACCOUNT_ID:policy/aws-eks-j-es03-iam-policy
+
+        aws ec2 delete-security-group --group-id aws-eks-j-es03-sg
+        ```
+
 - docker action CI/CD
     - TODO
-
-
 - secret
     - TODO
-    ```
-    kubectl create secret generic mysql-root-pass --from-literal=password=rootpassword123
 
-    apiVersion: v1
-    kind: Secret
-    metadata:
-    name: mysql-root-pass
-    type: Opaque
-    data:
-    password: cm9vdHBhc3N3b3JkMTIz  # base64 encoded "rootpassword123"
-    kubectl apply -f mysql-secret.yaml
-    ```
 
 # IA
-
-
-
 Ciao vorrei creare un microservizio in java spring boot che esegue un crud su una tabella mysql, schema "informazioni" con tabella "Persone" che contiene Nome e Cognome e eta, venga versionato su un repository git con un suo dockerfile e docker-compose con docker hub, nel template ci deve essere un sever mysql, vorrei anche un piccolo frontend per gestire la tabella con libreria grafica bootstrap, vorrei una API rest anche per creare schema e la tabella se non esistono, una seconda API rest per svuotare la tabella completamente, queste due API non devono essere chiamate da frontend, vorrei poterlo eseguire e provare in locale sul mio pc eseguendo mysql in docker, vorrei creare una pipeline che esegue il rilascio in aws con servizi meno costosi possibile, se ti serve use kubernetes, minikube, heml, jenkins, git. 
     - allora modifica il docker-compose in modo che le porte esposte siano la 3307 per mysql, 5083 per il microservizio e 5084 per il frontend
     - ora modifica il backend in modo che la porta sia un parametro che arriva dal docker-compose
@@ -175,8 +357,8 @@ Ciao vorrei creare un microservizio in java spring boot che esegue un crud su un
     - `kubectl create configmap nginx-proxy-config --from-file=default.conf=./frontend-bootstrap/nginx.conf`
     - ho perso un sacco di tempo per la regola *ConfigMap* ma alla fine funziona, vedi il `default.conf`
 - AWS
-    - TODO
     - dimentica la versione frontend java in jsp perchè non funziona e non mi interessa più, ora vorrei eseguire il tutto su AWS usando EKS , intanto con Mysql su un'immagine docker come è già, come procediamo?
+    - lavorato tantissimo per i vari problemi di configurazione
 
 
 

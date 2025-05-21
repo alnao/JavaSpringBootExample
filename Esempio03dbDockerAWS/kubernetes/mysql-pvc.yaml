@@ -1,3 +1,4 @@
+#nota questo file è uguale al non AWS ma con differenza sullo storageClassName
 apiVersion: v1
 kind: PersistentVolume
 metadata:

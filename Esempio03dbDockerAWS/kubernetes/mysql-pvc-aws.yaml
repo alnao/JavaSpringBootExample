@@ -1,0 +1,38 @@
+
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ebs-sc
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com
+volumeBindingMode: Immediate
+parameters:
+  type: gp3
+  #  encrypted: "true"
+#deprecato
+#apiVersion: storage.k8s.io/v1
+#kind: StorageClass
+#metadata:
+#  name: gp2-csi
+#provisioner: ebs.csi.aws.com
+#reclaimPolicy: Delete
+#volumeBindingMode: Immediate
+#allowVolumeExpansion: true
+
+--- 
+
+# nota questo file è uguale al non AWS ma con differenza sullo storageClassName
+# Usa solo la PVC (niente PV manuale)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  storageClassName: ebs-sc #gp2   # Assicurati che esista su EKS (usa il comando "kubectl get storageclass" )
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
