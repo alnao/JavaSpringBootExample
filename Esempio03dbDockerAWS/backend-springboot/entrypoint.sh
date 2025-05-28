@@ -5,7 +5,13 @@ echo "🚀 Avvio del microservizio Spring Boot con MySQL... ${MYSQL_HOST}:${MYSQ
 
 # Attesa che MySQL sia pronto
 echo "⏳ Attesa che MySQL sia raggiungibile..."
-until mysql -h"${MYSQL_HOST}" -p"${MYSQL_PORT}" -u"root" -p"${MYSQL_ROOT_PASSWORD}" -e 'SELECT 1'; do
+counter=0
+until mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"root" -p"${MYSQL_ROOT_PASSWORD}" -e 'SELECT 1'; do
+  counter=$((counter + 1))
+  if [ $counter -ge 10 ]; then
+      echo "⚠️ MySQL non raggiungibile dopo 10 tentativi. Proseguo comunque..."
+      break
+  fi
   echo "⏳ MySQL non ancora pronto... riprovo tra 5 secondi."
   sleep 5
 done
