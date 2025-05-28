@@ -321,7 +321,104 @@ Il progetto è pensato per funzionare con **docker-compose**, **Kubernetes** con
         aws ec2 delete-security-group --group-id aws-eks-j-es03-sg
         ```
 
-- docker action CI/CD
+- **Action CI/CD** con Argo e AWS EKS
+    - Comandi per la creazione di un repository ECR:
+        ```
+        AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        echo $AWS_ACCOUNT_ID
+        REGION=eu-central-1 
+        aws ecr create-repository --repository-name aws-eks-j-es03-repo --region $REGION
+        ```
+    - Comandi per la login e push su EKS
+        ```
+        cd backend-springboot
+        # 1. Recupera il token di autenticazione e autentica il tuo client Docker nel registro ECR
+        aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+        # 2. Compila l'immagine Docker (assicurati di essere nella directory con il Dockerfile)
+        docker build -f Dockerfile-backend -t aws-eks-j-es03-repo . 
+        # 3. Tagga l'immagine per il tuo repository ECR (con vesione 1.0.0)
+        docker tag aws-eks-j-es03-repo:latest $AWS_ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/aws-eks-j-es03-repo:1.0.0
+        # 4. Effettua il push dell'immagine in ECR
+        docker push $AWS_ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/aws-eks-j-es03-repo:1.0.0
+        echo $AWS_ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/aws-eks-j-es03-repo:1.0.0
+        ```
+        (questo ultimo valore stampato servirà nei passi successivi)
+    - Creazione del HEML
+        ```
+        mkdir -p helm-charts/spring-boot-app
+        cd helm-charts/spring-boot-app
+        helm create . # Inizializza il chart nella directory corrente
+        ```        
+        - modifica del file `helm-charts/spring-boot-app/values.yaml`
+            ```
+
+            replicaCount: 1
+
+            image:
+                repository: 565949435749.dkr.ecr.eu-central-1.amazonaws.com/aws-eks-j-es03-repo
+                pullPolicy: IfNotPresent
+                tag: "1.0.0" # Assicurati che corrisponda alla tag dell'immagine che hai pushato
+
+            # ... (altri valori generati da helm create) ...
+
+            service:
+                type: LoadBalancer # Cambia in LoadBalancer per esposizione pubblica diretta su AWS
+                port: 80
+                targetPort: 8080 # La porta del tuo Spring Boot
+            # Nota: Se vuoi un Ingress, mantieni ClusterIP e configura l'Ingress in templates/
+            # Per un Ingress su EKS, dovrai installare l'AWS Load Balancer Controller.
+
+            ingress:
+            enabled: false # Abilitalo solo se installi l'AWS Load Balancer Controller
+            # ... (configurazione Ingress se abilitato) ...
+
+            # ... (altri valori) ...   
+            ```
+        - **Importante**: usare LoadBalancer per il servizio, AWS creerà un Classic Load Balancer o Network Load Balancer che esporrà il tuo servizio. Questo ha costi associati. Per un controllo più granulare del routing e per terminare SSL, un Ingress con l'AWS Load Balancer Controller è la soluzione preferita in produzione.
+        - push della modifica appena fatta
+            ```
+            cd ../.. # Torna alla root del tuo JavaSpringBootExample/backend-springboot
+            git add helm-charts/spring-boot-app
+            git commit -m "Add Helm chart for Spring Boot app"
+            git push origin master # O 'main' se hai cambiato il nome del branch
+            ```
+    - Configurazione di **AWS-EKS** con `eksctl` (cche deve essere già presente)
+        - Creazione del file `eks-cluster.yaml` (io l'ho messo dentro helm-charts per orgine)
+            - **Importante**: questi passi creano una VPC dedicata e istanze EC2 con dei bei belli alti, prestare sempre attenzione!
+            - **Importante**: in questo file devono essere indicati VPC e Subnet specifici (altrimenti vengono creati nuovi con tanti bei costi!)
+        - Creazione del cluster 
+            ```
+            eksctl create cluster -f ./helm-charts/eks-cluster.yaml
+            kubectl get nodes
+            ```
+            - **Importante**: questo passi ci mette anche 15 minuti se non sono indicate le VPC e le subnet!
+            - in automatico è possibile usare FreeLens perchè kubectl aggiorna il file di configurazione, altrimenti lanciare il comando
+                ```
+                aws eks update-kubeconfig --region eu-central-1 --name aws-j-es03-eks-helm-cluster
+                ```
+    - Installazione Argo-CD su EKS
+        ```
+        kubectl create namespace argocd
+        kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --validate=false
+        PASSWORD_ARGOCD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+        
+        kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+        kubectl get svc argocd-server -n argocd
+        ```
+        - Accedi all'URL ritornata dall'ultimo comando https://EXTERNAL-IP (ignora l'avviso di sicurezza SSL se non hai configurato un certificato). Effettua il login con `admin` e la password recuperata dal comando `echo $PASSWORD_ARGOCD`. Cambiala subito!
+        - Noda: a me non va l'url pubblico ma solo localhost:xxxxx ritornato da FreeLens!
+    - Configurazione di Argo-CD
+        - Creazione del file `spring-boot-app-argocd-app.yaml` e successivo push nel repository
+        - Comando di deploy
+            ```
+            kubectl apply -f helm-charts/spring-boot-app-argocd-app.yaml -n argocd
+            ```
+
+
+    - FINALE
+        eksctl delete cluster --region=eu-central-1 --name=aws-j-es03-eks-cluster-helm
+         rimuovere il ECR
+         rimuovere EKS cluster "aws-j-es03-eks-cluster-helm"
     - TODO
 - secret
     - TODO
@@ -359,6 +456,11 @@ Ciao vorrei creare un microservizio in java spring boot che esegue un crud su un
 - AWS
     - dimentica la versione frontend java in jsp perchè non funziona e non mi interessa più, ora vorrei eseguire il tutto su AWS usando EKS , intanto con Mysql su un'immagine docker come è già, come procediamo?
     - lavorato tantissimo per i vari problemi di configurazione
+- CD/CI con gemini
+    - ciao mi spieghi cosa è argo e come lo posso usare con Kubernetes?
+    - vorrei provare argo e helm in un mio progetto kubernetes dove ho un microservizio in java spring boot, dammi l'elenco di tutti i passi che devo fare
+    - immagina che voglio eseguire tutto questo su AWS, il mio repository è "https://github.com/alnao/JavaSpringBootExample/tree/master/Esempio03dbDockerAWS"
+
 
 
 
