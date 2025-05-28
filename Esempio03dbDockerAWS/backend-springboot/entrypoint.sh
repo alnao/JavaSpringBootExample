@@ -12,7 +12,7 @@ until mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"root" -p"${MYSQL_ROOT_PASSWOR
       echo "⚠️ MySQL non raggiungibile dopo 10 tentativi. Proseguo comunque..."
       break
   fi
-  echo "⏳ MySQL non ancora pronto... riprovo tra 5 secondi."
+  echo "⏳ MySQL non ancora pronto... riprovo tra 5 secondi. (tentativo $counter/10)"
   sleep 5
 done
 
