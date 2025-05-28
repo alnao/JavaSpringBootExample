@@ -33,8 +33,8 @@ Create chart name and version as used by the chart label.
 {{/*
 Common labels
 */}}
-{{- define "..labels" -}}
-helm.sh/chart: {{ include "..chart" . }}
+{{- define "aws-j-es03-eks-argocd.labels" -}}
+helm.sh/chart: {{ include "aws-j-es03-eks-argocd.chart" . }}
 {{ include "..selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
