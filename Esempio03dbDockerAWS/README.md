@@ -416,7 +416,14 @@ Il progetto è pensato per funzionare con **docker-compose**, **Kubernetes** con
 
 
     - FINALE
+            kubectl delete -f helm-charts/spring-boot-app-argocd-app.yaml -n argocd
         eksctl delete cluster --region=eu-central-1 --name=aws-j-es03-eks-cluster-helm
+            kubectl delete -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml -n argocd
+            kubectl delete namespace argocd
+        
+            aws ecr describe-repositories --query "repositories[*].repositoryName" --output text
+            aws ecr delete-repository --repository-name spring-boot-app --force --region your-aws-region
+
          rimuovere il ECR
          rimuovere EKS cluster "aws-j-es03-eks-cluster-helm"
     - TODO
