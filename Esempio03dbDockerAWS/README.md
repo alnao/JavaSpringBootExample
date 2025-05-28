@@ -3,7 +3,12 @@ Progetto di esempio che crea i componenti
 - un DB Mysql con una tabella "Persone"
 - un backend con java spring boot, questo espone CRUD-API con protocollo Rest
 - un frontend in javascript che consuma la API per visualizzare e modificare l'elenco delle persone
-Il progetto è pensato per funzionare con **docker-compose**, **Kubernetes** con **Minikube** e AWS EKS.
+Il progetto è pensato per funzionare con **docker-compose**, **Kubernetes** con **Minikube** e AWS EKS:
+- il backend e il frontend sono disponibili su DockerHub a `https://hub.docker.com/repositories/alnao`
+- esecuzione con Minikube per eseguire tutto in locale con anche MySql dentro un immagine docker
+- esecuzione su cluster AWS-EKS con creato tramite AWS-CLI
+- esecuzione con CloudFormation su `https://github.com/alnao/AwsCloudFormationExamples/tree/master/Esempio27eks` (con un docker-compose dedicato)
+- esecuzione su cluster AWS-EKS con Heml-Chart e ArgoCD
 
 
 ## Comandi base
@@ -19,6 +24,9 @@ Il progetto è pensato per funzionare con **docker-compose**, **Kubernetes** con
     ```
     docker-compose up --build
     ```
+    - frontend `http://localhost:5084/`
+    - backend `http://localhost:5080/api/persone`
+    - backend `http://localhost:5080/api/persone/info`
 - verifica e pulizia
     ```
     docker ps
@@ -40,88 +48,90 @@ Il progetto è pensato per funzionare con **docker-compose**, **Kubernetes** con
     docker build -t alnao/j-esempio02-frontend-bootstrap -f ./frontend-bootstrap/Dockerfile-frontend ./frontend-bootstrap/
     docker push alnao/j-esempio02-frontend-bootstrap
     ```
-- avvio minikube con storage class (*perso un sacco di tempo per questo tema*)
-    ```
-    minikube addons list | grep storage
-    minikube addons enable default-storageclass
+- Esecuzione con Minikube in sistema locale
+    - avvio minikube con storage class (*perso un sacco di tempo per questo tema*)
 
-    minikube start --driver=docker --memory=2048 --cpus=2
-    minikube addons list | grep storage
-    ```
-- creazione Mysql su kubernetes in locale con Minikube:
-    ```
-    kubectl apply -f ./kubernetes/mysql-pvc.yaml
-    kubectl apply -f ./kubernetes/mysql.yaml
+        ```
+        minikube addons list | grep storage
+        minikube addons enable default-storageclass
 
-    kubectl describe pvc mysql-pvc
-    kubectl describe pvc mysql-pvc
-    kubectl describe deployment  mysql-app
-    kubectl describe service mysql-service
-    ```
-- creazione backend    
-    ```
-    kubectl apply -f ./kubernetes/springboot-app.yaml
-    kubectl get services
-    ```
+        minikube start --driver=docker --memory=2048 --cpus=2
+        minikube addons list | grep storage
+        ```
+    - creazione Mysql su kubernetes in locale con Minikube:
+        ```
+        kubectl apply -f ./kubernetes/mysql-pvc.yaml
+        kubectl apply -f ./kubernetes/mysql.yaml
 
-- comandi di verifica
-    ```    
-    kubectl get events -A
-    
-    kubectl get services
-    kubectl get pods
-    kubectl get pods --field-selector=status.phase=Pending
-    kubectl describe node mysql-xxxxxxxxxxxxxxx
+        kubectl describe pvc mysql-pvc
+        kubectl describe pvc mysql-pvc
+        kubectl describe deployment  mysql-app
+        kubectl describe service mysql-service
+        ```
+    - creazione backend    
+        ```
+        kubectl apply -f ./kubernetes/springboot-app.yaml
+        kubectl get services
+        ```
 
-    mysql -h"mysql-service" -p"3306" -u"root" -p"alnaoMagnifico"
+    - comandi di verifica
+        ```    
+        kubectl get events -A
+        
+        kubectl get services
+        kubectl get pods
+        kubectl get pods --field-selector=status.phase=Pending
+        kubectl describe node mysql-xxxxxxxxxxxxxxx
 
-    minikube service springboot-app --url
-    > http://192.168.49.2:31081
-    ```
-    - nota: endpoint è mysql-service perchè il metadata del service
-    - nota2: porta è 3306 NON so il perchè ma è così, *perso un sacco di tempo per questo motivo*
-- creazione frontend
-    ```
-    kubectl apply -f ./kubernetes/frontend.yaml
-    kubectl get services
-    kubectl get pods
+        mysql -h"mysql-service" -p"3306" -u"root" -p"alnaoMagnifico"
 
-    minikube service frontend-bootstrap --url
-    > http://192.168.49.2:31082
-    > http://192.168.49.2:31083/api/persone
+        minikube service springboot-app --url
+        > http://192.168.49.2:31081
+        ```
+        - nota: endpoint è mysql-service perchè il metadata del service
+        - nota2: porta è 3306 NON so il perchè ma è così, *perso un sacco di tempo per questo motivo*
+    - creazione frontend
+        ```
+        kubectl apply -f ./kubernetes/frontend.yaml
+        kubectl get services
+        kubectl get pods
 
-    ```
-    - nota: nella configuazione messo l'endpoint con localhost perchè il frontend è in javascript quindi client e viene eseguito sul browser, l'immagine docker del webserver non si collega direttamente al backend
-    - nota: c'è un proxy per evitare che il browser chiami direttamente il backend (conoscendo l'url), cioè il browser chiama `<frontend>/api/persone` che poi viene indirizzato a `<backend>/api/persone`
-- Comandi vari
-    ```
-    kubectl get services
-    kubectl get deployments
-    ```
-- Verifica connesione dal frontend al backend
-    ```
-    apk add curl
-    curl http://springboot-app:8080/api/users
-    ```
-- Verifica log del proxy backend
-    ```
-    kubectl logs frontend-bootstrap-6c95494cf8-f4dlx -c nginx-proxy
-    ```
-- Cancellazione di tutte le componenti su minikube
-    ```
-    kubectl delete configmap frontend-config
-    kubectl delete service frontend-bootstrap
-    kubectl delete deployment frontend-bootstrap
+        minikube service frontend-bootstrap --url
+        > http://192.168.49.2:31082
+        > http://192.168.49.2:31083/api/persone
 
-    kubectl delete service springboot-app
-    kubectl delete deployment springboot-app
+        ```
+        - nota: nella configuazione messo l'endpoint con localhost perchè il frontend è in javascript quindi client e viene eseguito sul browser, l'immagine docker del webserver non si collega direttamente al backend
+        - nota: c'è un proxy per evitare che il browser chiami direttamente il backend (conoscendo l'url), cioè il browser chiama `<frontend>/api/persone` che poi viene indirizzato a `<backend>/api/persone`
+    - Comandi vari
+        ```
+        kubectl get services
+        kubectl get deployments
+        ```
+    - Verifica connesione dal frontend al backend
+        ```
+        apk add curl
+        curl http://springboot-app:8080/api/users
+        ```
+    - Verifica log del proxy backend
+        ```
+        kubectl logs frontend-bootstrap-6c95494cf8-f4dlx -c nginx-proxy
+        ```
+    - Cancellazione di tutte le componenti su minikube
+        ```
+        kubectl delete configmap frontend-config
+        kubectl delete service frontend-bootstrap
+        kubectl delete deployment frontend-bootstrap
 
-    kubectl delete service mysql-service
-    kubectl delete deployment mysql-app
+        kubectl delete service springboot-app
+        kubectl delete deployment springboot-app
 
-    kubectl delete pvc mysql-pvc
-    kubectl delete pv mysql-pv
-    ```
+        kubectl delete service mysql-service
+        kubectl delete deployment mysql-app
+
+        kubectl delete pvc mysql-pvc
+        kubectl delete pv mysql-pv
+        ```
 - Creazione cluster su EKS `aws-j-es03`
     - Creazione del cluster (vedi [documentazione ufficiale](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html))
         - Impostazione account
@@ -413,22 +423,21 @@ Il progetto è pensato per funzionare con **docker-compose**, **Kubernetes** con
             ```
             kubectl apply -f helm-charts/spring-boot-app-argocd-app.yaml -n argocd
             ```
+    - Sui file creati da HEML nel `Chart.yaml` e nelle sottocartella avevano il punto `.` al posto del nome dell'applicazione, ho dovuto sistemare i file a mano (sia Chart.yaml che tutti i file dentro template che avevano dei `..`) *ho perso ore per questo problema*.
+    - Funziona anche se il microservizio non parte perchè non riesce a collegarsi al DB, *semplicemente perchè non esiste nessun DB in questo esempio*.
+    - Pulizia finale di tutto
+        ```
+        kubectl delete -f helm-charts/spring-boot-app-argocd-app.yaml -n argocd
+        eksctl delete cluster --region=eu-central-1 --name=aws-j-es03-eks-helm-cluster
+            # ci mette un bel po' anche 15 minuti!
 
-
-    - FINALE
-            kubectl delete -f helm-charts/spring-boot-app-argocd-app.yaml -n argocd
-        eksctl delete cluster --region=eu-central-1 --name=aws-j-es03-eks-cluster-helm
             kubectl delete -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml -n argocd
             kubectl delete namespace argocd
         
             aws ecr describe-repositories --query "repositories[*].repositoryName" --output text
-            aws ecr delete-repository --repository-name spring-boot-app --force --region your-aws-region
-
-         rimuovere il ECR
-         rimuovere EKS cluster "aws-j-es03-eks-cluster-helm"
-    - TODO
-- secret
-    - TODO
+            aws ecr delete-repository --repository-name aws-eks-j-es03-repo --region $REGION --force
+        ```
+        - verificare che è stato tutto rimosso: ECR, EKS, VPC, Subnet, EC2, ALB, ASG e il cluster EKS "aws-j-es03-eks-cluster-helm"
 
 
 # IA
@@ -467,6 +476,7 @@ Ciao vorrei creare un microservizio in java spring boot che esegue un crud su un
     - ciao mi spieghi cosa è argo e come lo posso usare con Kubernetes?
     - vorrei provare argo e helm in un mio progetto kubernetes dove ho un microservizio in java spring boot, dammi l'elenco di tutti i passi che devo fare
     - immagina che voglio eseguire tutto questo su AWS, il mio repository è "https://github.com/alnao/JavaSpringBootExample/tree/master/Esempio03dbDockerAWS"
+    - lavorato molto su alcuni errori di Helm e AWS ma poi andato tutto
 
 
 

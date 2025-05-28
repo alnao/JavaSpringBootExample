@@ -8,7 +8,12 @@
 # Progetti:
 - **Esempio01base**: esempio base con singola API, Docker-file per eseguire il servizio in immagine docker e su Kubernetes/Minikube
 - **Esempio02db**: esempio di CRUD con una tabella *articoli* su MySql, Docker-compose per eseguire il micro-servizio e il DMBS su docker
-- **Esempio03dbDockerAWS**: esempio di CRUD con tabella *persone* su MySql, con microservizio e microfrontend, eseguiti con docker-compose e minikube, *a breve anche su AWS*
+- **Esempio03dbDockerAWS**: esempio di CRUD con tabella *persone* su MySql, con microservizio e microfrontend in javascript di esempio
+	- il backend e il frontend sono disponibili su DockerHub a `https://hub.docker.com/repositories/alnao`
+	- esecuzione con Minikube per eseguire tutto in locale con anche MySql dentro un immagine docker
+	- esecuzione su cluster AWS-EKS con creato tramite AWS-CLI
+	- esecuzione con CloudFormation su `https://github.com/alnao/AwsCloudFormationExamples/tree/master/Esempio27eks` (con un docker-compose dedicato)
+	- esecuzione su cluster AWS-EKS con Heml-Chart e ArgoCD
 
 ## Progetti in revisione:
 - ExampleMicro03postgres

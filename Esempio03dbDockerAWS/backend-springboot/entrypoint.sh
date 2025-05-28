@@ -23,5 +23,5 @@ mysql -h"${MYSQL_HOST}" -p"${MYSQL_PORT}" -u"root" -p"${MYSQL_ROOT_PASSWORD}" < 
 # Avvia l'app Spring Boot
 echo "🚀 Avvio del microservizio Spring Boot..."
 exec java -jar /app/app.jar
-echo "✅ Microservizio Spring Boot avviato con successo!"
+echo "✅ Microservizio Spring Boot avviato con successo! ✅"
 # Fine dello script
