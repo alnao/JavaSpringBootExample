@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "spring-boot-app.name" -}}
+{{- define "aws-j-es03-eks-argocd.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "spring-boot-app.fullname" -}}
+{{- define "aws-j-es03-eks-argocd.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "spring-boot-app.chart" -}}
+{{- define "aws-j-es03-eks-argocd.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "spring-boot-app.labels" -}}
-helm.sh/chart: {{ include "spring-boot-app.chart" . }}
-{{ include "spring-boot-app.selectorLabels" . }}
+{{- define "aws-j-es03-eks-argocd.labels" -}}
+helm.sh/chart: {{ include "aws-j-es03-eks-argocd.chart" . }}
+{{ include "aws-j-es03-eks-argocd.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "spring-boot-app.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "spring-boot-app.name" . }}
+{{- define "aws-j-es03-eks-argocd.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "aws-j-es03-eks-argocd.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "spring-boot-app.serviceAccountName" -}}
+{{- define "aws-j-es03-eks-argocd.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "spring-boot-app.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "aws-j-es03-eks-argocd.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

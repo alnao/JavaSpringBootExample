@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: aws-j-es03-eks-argocd
+  name: aws-j-es03-eks-argocd #ex spring-boot-app
   namespace: argocd # Importante: l'Application risiede nel namespace di Argo CD
 spec:
   project: default
