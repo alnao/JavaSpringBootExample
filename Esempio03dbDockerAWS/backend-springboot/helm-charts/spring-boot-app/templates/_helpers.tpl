@@ -46,7 +46,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 Selector labels
 */}}
 {{- define "aws-j-es03-eks-argocd.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "aws-j-es03-eks-argocd.name" . }}
+app.kubernetes.io/name: {{ include "aws-j-es03-eks-argocd.name" }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
