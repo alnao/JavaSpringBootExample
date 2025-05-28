@@ -1,0 +1,44 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: aws-j-es03-eks-helm-cluster #ex argo-spring-cluster
+  region: eu-central-1 # Sostituisci con la tua regione (es. eu-central-1)
+  version: "1.28" # Scegli una versione supportata
+
+vpc:
+  id: vpc-080de70c5b5ce609b # <<<<< INSERISCI QUI IL TUO VPC ID DI DEFAULT
+  subnets:
+    public:
+      # Elenca gli ID delle tue subnet pubbliche predefinite
+      # Almeno due, in AZ diverse.
+      subnet-0248fa0e475f6dc5f: { az: eu-central-1c } # Esempio: eu-central-1a
+      subnet-0cf8070a915d8b49b: { az: eu-central-1b } # Esempio: eu-central-1b
+    private:
+      # Elenca gli ID delle tue subnet private predefinite
+      # Almeno due, in AZ diverse.
+      subnet-0248fa0e475f6dc5f: { az: eu-central-1c } # Esempio: eu-central-1a
+      subnet-0cf8070a915d8b49b: { az: eu-central-1b } # Esempio: eu-central-1b
+
+managedNodeGroups:
+- name: aws-j-es03-eks-helm-nodes
+  instanceType: t3.medium # Scegli un tipo di istanza adeguato
+  desiredCapacity: 2 # Numero di nodi worker
+  minSize: 1
+  maxSize: 3
+  labels: { role: general }
+  # volumeSize: 20 # Dimensione del disco in GB
+
+# Se vuoi un Ingress con AWS Load Balancer Controller, puoi abilitarlo qui
+# addons:
+# - name: aws-load-balancer-controller
+#   version: v2.7.1 # Controlla la versione più recente
+#   attachPolicyARNs:
+#   - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+#   - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+#   - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+#   - arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess # Per creare LB
+
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["controllerManager", "scheduler"]
