@@ -17,7 +17,7 @@
 	- esecuzione su cluster **AWS-EKS** con Heml-Chart e ArgoCD
 - **Esempio04dbNoSql**: esempio di CRUD *users* su database DynamoDb e DocumentMongo
 	- possibilità di eseguire in locale il progetto con Docker-compose e script di avvio *makefile*, avvio anche di Prometheus/Grafana per il monitoraggio
-	- possibilità di eseguire su AWS il progetto usando i servizi ECR, DocumentDb, Dynamo e ECS con FARGATE (script AWS-CLI senza CloudFormation)
+	- possibilità di eseguire su AWS il progetto usando i servizi ECR, DocumentDb, Dynamo e **ECS** con FARGATE con script AWS-CLI senza CloudFormation. *Non funziona la parte con Mongo su DocumentDB*
 
 
 ## Progetti in revisione:

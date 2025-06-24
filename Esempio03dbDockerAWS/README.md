@@ -3,12 +3,14 @@ Progetto di esempio che crea i componenti
 - un DB Mysql con una tabella "Persone"
 - un backend con java spring boot, questo espone CRUD-API con protocollo Rest
 - un frontend in javascript che consuma la API per visualizzare e modificare l'elenco delle persone
-Il progetto è pensato per funzionare con **docker-compose**, **Kubernetes** con **Minikube** e AWS EKS:
+
+
+Il progetto è pensato per funzionare con **docker-compose**, **Kubernetes** con **Minikube** e **AWS EKS**:
 - il backend e il frontend sono disponibili su DockerHub a `https://hub.docker.com/repositories/alnao`
 - esecuzione con Minikube per eseguire tutto in locale con anche MySql dentro un immagine docker
-- esecuzione su cluster AWS-EKS con creato tramite AWS-CLI
+- esecuzione su cluster **AWS-EKS** con creato tramite AWS-CLI
 - esecuzione con CloudFormation su `https://github.com/alnao/AwsCloudFormationExamples/tree/master/Esempio27eks` (con un docker-compose dedicato)
-- esecuzione su cluster AWS-EKS con Heml-Chart e ArgoCD
+- esecuzione su cluster **AWS-EKS** con Heml-Chart e ArgoCD
 
 
 ## Comandi base

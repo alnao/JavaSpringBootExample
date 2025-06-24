@@ -7,16 +7,22 @@ spring:
       on-profile: aws
   data:
     mongodb:
-      uri: ${SPRING_DATA_MONGODB_URI}
+      uri: mongodb://${MONGO_USERNAME:root}:${MONGO_PASSWORD:}@${MONGO_HOST:}:${MONGO_PORT:27017}/${MONGO_DB_NAME:microservice_db}?tls=true&tlsCAFile=global-bundle.pem&retryWrites=false
 
 aws:
   region: ${AWS_REGION:eu-central-1}
   dynamodb:
     tableName: ${DYNAMODB_TABLE_NAME:nullaws}
+#    endpoint: must be empty for AWS SDK v2 in AWS environment
+    endpoint:
+#AccessKey e secretKey non sono necessari in AWS, vengono presi dalle credenziali di default quindi DEVONO essere vuoti ma DEVONO essere presenti
+      ${DYNAMODB_ENDPOINT:} # Se vuoi usare DynamoDB locale, metti qui l'endpoint
+  accessKey:
+  secretKey:
 
 app:
   database:
-    type: ${DATABASE_TYPE:both}
+    type: ${DATABASE_TYPE:dynamo}
 
 logging:
   level:

@@ -9,7 +9,7 @@ rule_files:
 scrape_configs:
   - job_name: 'microservice'
     static_configs:
-      - targets: ['microservice:8080']
+      - targets: ['microservice:8070']
     metrics_path: '/actuator/prometheus'
     scrape_interval: 10s
 #    labels:

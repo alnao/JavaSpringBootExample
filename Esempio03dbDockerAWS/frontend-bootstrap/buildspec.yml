@@ -1,0 +1,24 @@
+# In Esempio03dbDockerAWS-frontend/buildspec.yml
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18 # Ensure this matches your Node.js version
+  pre_build:
+    commands:
+      - echo Pre-build phase for frontend...
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the frontend...
+# questi in teoria non servono perchè è un semplice progetto HTML senza React/npm/yarn
+#      - npm install # Or yarn install
+#      - npm run build # Or yarn build. This usually creates a 'build' folder
+      - nginx -g 'daemon off;'
+  post_build:
+    commands:
+      - echo Build completed on `date`
+artifacts:
+  files:
+    - '**/*'
+  base-directory: build # Path to your built React app (e.g., 'build' or 'dist')

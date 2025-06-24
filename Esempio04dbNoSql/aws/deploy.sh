@@ -122,8 +122,7 @@ aws dynamodb create-table \
         AttributeName=id,AttributeType=S \
     --key-schema \
         AttributeName=id,KeyType=HASH \
-    --provisioned-throughput \
-        ReadCapacityUnits=5,WriteCapacityUnits=5 2>/dev/null || warn "Tabella DynamoDB già esistente"
+    --billing-mode PAY_PER_REQUEST 2>/dev/null || warn "Tabella DynamoDB già esistente"
 
 # Attendi che la tabella sia attiva
 log "Attendo che la tabella DynamoDB sia attiva..."
@@ -165,7 +164,8 @@ aws docdb create-db-instance \
 
 # Attendi che il cluster sia disponibile
 log "Attendo che DocumentDB sia disponibile..."
-aws docdb wait db-cluster-available --region $REGION --db-cluster-identifier "${PROJECT_NAME}-docdb-cluster"
+#aws docdb wait db-cluster-available --region $REGION --db-cluster-identifier "${PROJECT_NAME}-docdb-cluster"
+aws docdb wait db-instance-available --region $REGION --db-instance-identifier "${PROJECT_NAME}-docdb-instance"
 
 # Ottieni l'endpoint DocumentDB
 DOCDB_ENDPOINT=$(aws docdb describe-db-clusters \
@@ -228,6 +228,11 @@ aws iam attach-role-policy \
 aws iam attach-role-policy \
     --role-name $EXECUTION_ROLE_NAME \
     --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy 2>/dev/null || warn "Policy ECS già associata"
+
+aws iam attach-role-policy \
+    --role-name $EXECUTION_ROLE_NAME \
+    --policy-arn arn:aws:iam::aws:policy/CloudWatchFullAccess 2>/dev/null || warn "Policy CloudWatch-ECS già associata"
+
 
 # Ottieni ARN dei ruoli
 TASK_ROLE_ARN=$(aws iam get-role --role-name $TASK_ROLE_NAME --query 'Role.Arn' --output text)
@@ -303,11 +308,11 @@ cat > task-definition.json << EOF
             "healthCheck": {
                 "command": [
                     "CMD-SHELL",
-                    "curl -f http://localhost:8080/actuator/health || exit 1"
+                    "curl http://localhost:8080/actuator/health || exit 1"
                 ],
                 "interval": 30,
-                "timeout": 5,
-                "retries": 3
+                "timeout": 10,
+                "retries": 5
             },
             "essential": true
         }

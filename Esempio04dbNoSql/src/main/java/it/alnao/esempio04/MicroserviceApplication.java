@@ -13,7 +13,7 @@ public class MicroserviceApplication /*implements CommandLineRunner*/ {
     private static final Logger log = LoggerFactory.getLogger(MicroserviceApplication.class);
 
     public static void main(String[] args) {
-        log.info("MicroserviceApplication main starting");
+        log.info("MicroserviceApplication main starting v8.0.0");
         SpringApplication.run(MicroserviceApplication.class, args);
     }
 

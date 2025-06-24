@@ -34,6 +34,7 @@ aws ecs delete-service --region $REGION --cluster $CLUSTER_NAME --service $SERVI
 # 2. Elimina ECS Cluster
 log "Eliminazione ECS Cluster..."
 aws ecs delete-cluster --region $REGION --cluster $CLUSTER_NAME 2>/dev/null || warn "Cluster non trovato"
+#aws ecs deregister-task-definition --task-definition "${PROJECT_NAME}-task" --region $REGION 
 
 # 3. Elimina DocumentDB
 log "Eliminazione DocumentDB..."

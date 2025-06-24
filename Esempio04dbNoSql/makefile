@@ -37,17 +37,17 @@ setup-dynamo: ## Configura DynamoDB LOCALE con tabelle e dati di esempio
 	./config/setup-dynamodb-local-us-east-1.sh 
 
 test-dynamo: ## Testa il microservizio DynamoDB
-	curl -X POST http://localhost:8080/apid/users \
+	curl -X POST http://localhost:8070/apid/users \
 		-H "Content-Type: application/json" \
 		-d '{"name":"Test User","email":"test@example.com"}'
-	curl http://localhost:8080/apid/users
+	curl http://localhost:8070/apid/users
 
 test-mongo: ## Testa il microservizio MongoDB
-	curl -X POST http://localhost:8080/apim/users \
+	curl -X POST http://localhost:8070/apim/users \
 		-H "Content-Type: application/json" \
 		-d '{"name":"Test User","email":"test@example.com"}'
-	curl http://localhost:8080/apim/users
+	curl http://localhost:8070/apim/users
 
 health: ## Controlla lo stato di salute dei servizi
-	curl http://localhost:8080/actuator/health
-#	curl http://localhost:8082/actuator/health
+	curl http://localhost:8070/actuator/health
+#	curl http://localhost:8072/actuator/health

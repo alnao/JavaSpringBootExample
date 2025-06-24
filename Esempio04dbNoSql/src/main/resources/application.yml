@@ -30,7 +30,7 @@ management:
 aws:
   region: ${AWS_REGION:eu-central-1}
   dynamodb:
-    endpoint: ${DYNAMODB_ENDPOINT:http://localhost:8000}
+    endpoint: ${DYNAMODB_ENDPOINT:}
     tableName: users
   accessKey: ${AWS_ACCESS_KEY:local}
   secretKey: ${AWS_SECRET_KEY:local}

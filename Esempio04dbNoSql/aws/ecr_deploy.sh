@@ -6,10 +6,9 @@
 set -e
 
 # Parametri configurabili
-ACCOUNT_ID=${1}
-REGION=${2:-"eu-central-1"}
-PROJECT_NAME=${3:-"microservice"}
-TAG=${4:-"latest"}
+REGION=${1:-"eu-central-1"}
+PROJECT_NAME=${2:-"esempio04"}
+TAG=${3:-"latest"}
 
 # Colori per output
 RED='\033[0;31m'
@@ -43,23 +42,17 @@ echo "    AWS ECR Docker Build & Push Script"
 echo "==============================================="
 echo -e "${NC}"
 
-# Validazione parametri
-if [ -z "$ACCOUNT_ID" ]; then
-    error "Account ID è obbligatorio. Utilizzo: $0 <ACCOUNT_ID> [REGION] [PROJECT_NAME] [TAG]"
-fi
 
-# Verifica formato Account ID (12 cifre)
-if ! [[ "$ACCOUNT_ID" =~ ^[0-9]{12}$ ]]; then
-    error "Account ID deve essere composto da 12 cifre numeriche"
-fi
+# Ottieni l'URI del repository
+REPOSITORY_NAME="${PROJECT_NAME}-repo"
+ECR_URL=$(aws ecr describe-repositories --region $REGION --repository-names $REPOSITORY_NAME --query 'repositories[0].repositoryUri' --output text)
+log "Repository URI: $REPOSITORY_URI"
 
 # Costruisci URL del repository ECR
-ECR_URL="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
-REPOSITORY_NAME="$PROJECT_NAME"
-FULL_IMAGE_URI="${ECR_URL}/${REPOSITORY_NAME}:${TAG}"
+#FULL_IMAGE_URI="${ECR_URL}/${REPOSITORY_NAME}:${TAG}"
+FULL_IMAGE_URI="${ECR_URL}:${TAG}"
 
 info "Configurazione:"
-echo "  Account ID: $ACCOUNT_ID"
 echo "  Regione: $REGION"
 echo "  Nome progetto: $PROJECT_NAME"
 echo "  Tag: $TAG"

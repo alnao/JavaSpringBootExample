@@ -15,6 +15,9 @@ WORKDIR /app
 RUN addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup
 
+    # Installa curl
+RUN apk add --no-cache curl
+
 COPY --from=build /app/target/*.jar app.jar
 
 # Cambia ownership del file jar
