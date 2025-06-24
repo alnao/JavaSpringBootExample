@@ -1,0 +1,48 @@
+# src/main/resources/application-docker.yml
+server:
+  port: 8080
+spring:
+  application:
+    name: esempio04dbNoSql
+  config:
+    activate:
+      on-profile: docker
+  data:
+    mongodb:
+#      host: ${MONGO_HOST:mongodb}
+#      port: ${MONGO_PORT:27017}
+#      database: ${MONGO_DB_NAME:microservice_db}
+#      username: ${MONGO_USERNAME:}
+#      password: ${MONGO_PASSWORD:}
+#      authentication-database: admin
+# sistema per avere il authSource=admin con uri ma non mi piace
+      uri: mongodb://${MONGO_USERNAME:}:${MONGO_PASSWORD:}@${MONGO_HOST:}:${MONGO_PORT:27017}/${MONGO_DB_NAME:microservice_db}?authSource=admin
+
+app:
+  database:
+    type: ${DATABASE_TYPE:dynamo}
+
+aws:
+  region: ${AWS_REGION:eu-central-1}
+  dynamodb:
+    endpoint: ${DYNAMODB_ENDPOINT:http://localhost:8000}
+    tableName: users
+  accessKey: ${AWS_ACCESS_KEY:local}
+  secretKey: ${AWS_SECRET_KEY:local}
+
+logging:
+  level:
+    root: INFO
+    '[it.alnao.esempio04]': DEBUG
+    software.amazon.awssdk: INFO
+
+management: #actuator
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  server:
+    port: 8080  # Se vuoi che actuator usi la stessa porta dell'app

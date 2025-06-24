@@ -1,0 +1,18 @@
+# config/grafana/datasources/prometheus.yml
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    # Se Prometheus richiede autenticazione, puoi aggiungerla qui
+    #basicAuth: false
+    basicAuthUser: admin
+    basicAuthPassword: pass
+    version: 1
+    editable: true
+    # Per consentire le queries di PromQL nei pannelli di Grafana
+    jsonData:
+      timeInterval: "5s" # Intervallo di tempo predefinito per le query

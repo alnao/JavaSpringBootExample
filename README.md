@@ -5,20 +5,22 @@
         <img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=plastic&logo=SpringBoot&logoColor=white" height="25px" />
 </a>
 
+
 # Progetti:
 - **Esempio01base**: esempio base con singola API, Docker-file per eseguire il servizio in immagine docker e su Kubernetes/Minikube
 - **Esempio02db**: esempio di CRUD con una tabella *articoli* su MySql, Docker-compose per eseguire il micro-servizio e il DMBS su docker
 - **Esempio03dbDockerAWS**: esempio di CRUD con tabella *persone* su MySql, con microservizio e microfrontend in javascript di esempio
-	- il backend e il frontend sono disponibili su DockerHub a `https://hub.docker.com/repositories/alnao`
+	- il backend e il frontend sono disponibili su **DockerHub** a `https://hub.docker.com/repositories/alnao`
 	- esecuzione con Minikube per eseguire tutto in locale con anche MySql dentro un immagine docker
-	- esecuzione su cluster AWS-EKS con creato tramite AWS-CLI
+	- esecuzione su cluster **AWS-EKS** con creato tramite AWS-CLI
 	- esecuzione con CloudFormation su `https://github.com/alnao/AwsCloudFormationExamples/tree/master/Esempio27eks` (con un docker-compose dedicato)
-	- esecuzione su cluster AWS-EKS con Heml-Chart e ArgoCD
+	- esecuzione su cluster **AWS-EKS** con Heml-Chart e ArgoCD
+- **Esempio04dbNoSql**: esempio di CRUD *users* su database DynamoDb e DocumentMongo
+	- possibilità di eseguire in locale il progetto con Docker-compose e script di avvio *makefile*, avvio anche di Prometheus/Grafana per il monitoraggio
+	- possibilità di eseguire su AWS il progetto usando i servizi ECR, DocumentDb, Dynamo e ECS con FARGATE (script AWS-CLI senza CloudFormation)
+
 
 ## Progetti in revisione:
-- ExampleMicro03postgres
-- ExampleMicro04mongo
-- ExampleMicro05dynamo
 - ExampleMicro06cache
 - ExampleMicro07basicAuth
 - ExampleMicro08gestJwt

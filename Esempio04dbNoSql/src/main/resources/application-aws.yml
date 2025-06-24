@@ -1,0 +1,36 @@
+# src/main/resources/application-aws.yml
+server:
+  port: 8080
+spring:
+  config:
+    activate:
+      on-profile: aws
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI}
+
+aws:
+  region: ${AWS_REGION:eu-central-1}
+  dynamodb:
+    tableName: ${DYNAMODB_TABLE_NAME:nullaws}
+
+app:
+  database:
+    type: ${DATABASE_TYPE:both}
+
+logging:
+  level:
+    root: INFO
+    '[it.alnao.esempio04]': DEBUG
+    software.amazon.awssdk: INFO
+
+management: #actuator
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  server:
+    port: 8080  # Se vuoi che actuator usi la stessa porta dell'app

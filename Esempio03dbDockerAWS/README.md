@@ -440,7 +440,7 @@ Il progetto è pensato per funzionare con **docker-compose**, **Kubernetes** con
         - verificare che è stato tutto rimosso: ECR, EKS, VPC, Subnet, EC2, ALB, ASG e il cluster EKS "aws-j-es03-eks-cluster-helm"
 
 
-# IA
+## Comandi di creazione Claude.ia
 Ciao vorrei creare un microservizio in java spring boot che esegue un crud su una tabella mysql, schema "informazioni" con tabella "Persone" che contiene Nome e Cognome e eta, venga versionato su un repository git con un suo dockerfile e docker-compose con docker hub, nel template ci deve essere un sever mysql, vorrei anche un piccolo frontend per gestire la tabella con libreria grafica bootstrap, vorrei una API rest anche per creare schema e la tabella se non esistono, una seconda API rest per svuotare la tabella completamente, queste due API non devono essere chiamate da frontend, vorrei poterlo eseguire e provare in locale sul mio pc eseguendo mysql in docker, vorrei creare una pipeline che esegue il rilascio in aws con servizi meno costosi possibile, se ti serve use kubernetes, minikube, heml, jenkins, git. 
     - allora modifica il docker-compose in modo che le porte esposte siano la 3307 per mysql, 5083 per il microservizio e 5084 per il frontend
     - ora modifica il backend in modo che la porta sia un parametro che arriva dal docker-compose
