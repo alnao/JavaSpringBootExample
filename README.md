@@ -18,6 +18,10 @@
 - **Esempio04dbNoSql**: esempio di CRUD *users* su database DynamoDb e DocumentMongo
 	- possibilità di eseguire in locale il progetto con Docker-compose e script di avvio *makefile*, avvio anche di Prometheus/Grafana per il monitoraggio
 	- possibilità di eseguire su AWS il progetto usando i servizi ECR, DocumentDb, Dynamo e **ECS** con FARGATE con script AWS-CLI senza CloudFormation. *Non funziona la parte con Mongo su DocumentDB*
+- **Esempio05testJunit5Mokito**: esempio di CRUD *users* su database MySql 
+	- per ogni classe è presente un Test con JUnit5 e con Mokito dove necessario nei Service
+	- presente anche un `docker-compose` per eseguire **SonarQube** per la verifica del codice (coverage, smell, bug...)
+	- presente la documentazione creata con Swagger
 
 
 ## Progetti in revisione:
@@ -36,122 +40,151 @@
 - ExampleMicro15zuul
 - ExampleMicro16hystrix
 - ExampleMicro17turbine
-- ExampleMicro18TDDJunit4
-- ExampleMicro19TDDJunit5
-- ExampleMicro20mockito
+
 
 # Comandi base
-
-To compile
- 
-```
-mvn -version
-mvn clean install
-```
-
-To run in local
-
-```
-mvn spring-boot:run
-```
-
-
-or 
-```
-java -jar target/*.jar
-```
-
-
-## To test
-
-```
-http://localhost:5051/api/response
-```
+Maven è uno strumento di automazione della build e gestione dei progetti per progetti Java. Serve a semplificare il processo di compilazione, gestione delle dipendenze, esecuzione dei test e packaging del software, garantendo coerenza e riproducibilità nelle build.
+- To compile
+	```
+	mvn -version
+	mvn clean install
+	```
+	oppure per pulire la cache di maven
+	```
+	mvn clean dependency:purge-local-repository install
+	```
+- To run in local
+	```
+	mvn spring-boot:run
+	```
+	or 
+	```
+	java -jar target/*.jar
+	```
 
 
 ## Docker (esempio01base)
-
-**Dockerfile**
-
-```
-FROM openjdk:17.0.1-jdk-slim
-COPY target/esempio01base-0.0.1-SNAPSHOT.jar /esempio01base.jar
-CMD ["java", "-jar", "/esempio01base.jar"]
-```
-
-
-To create docker image
-
-```
-docker build -t esempio01base:1.0-SNAPSHOT .
-```
-
-
-To run image 
-
-```
-docker run -d -p 5555:5051 esempio01base:1.0-SNAPSHOT
-```
-
-url is on 5555 port (port mapping in run command) 
-
-```
-http://localhost:5555/api/response
-```
-
-
-To check docker-container
-
-```
-docker ps
-docker logs <container_id>
-docker port <container_id>
-docker stop <container_id>
-docker rm <container_id>
-docker container prune 
-docker image ls
-docker image rm <image_id>
-```
+Un Dockerfile è un file di testo che contiene una serie di istruzioni per costruire un'immagine Docker, ovvero un pacchetto eseguibile che include tutto il necessario per eseguire un'applicazione. Permette di definire in modo riproducibile e automatizzato l'ambiente di runtime, le dipendenze e il codice della tua applicazione.
+- **Dockerfile** di esempiop per eseguire un microservizio sviluppato con Spring boot:
+	```
+	FROM openjdk:17.0.1-jdk-slim
+	COPY target/esempio01base-0.0.1-SNAPSHOT.jar /esempio01base.jar
+	CMD ["java", "-jar", "/esempio01base.jar"]
+	```
+- To create docker image
+	```
+	docker build -t esempio01base:1.0-SNAPSHOT .
+	```
+- To run image 
+	```
+	docker run -d -p 5555:5051 esempio01base:1.0-SNAPSHOT
+	```
+	url is on 5555 port (port mapping in run command) 
+	```
+	http://localhost:5555/api/response
+	```
+- To check docker-container
+	```
+	docker ps
+	docker logs <container_id>
+	docker port <container_id>
+	docker stop <container_id>
+	docker rm <container_id>
+	docker container prune 
+	docker image ls
+	docker image rm <image_id>
+	```
 
 
-## Swagger (ExampleMicro5dynamo)
+## Swagger
+**Swagger** (ora parte della suite OpenAPI Specification) è un insieme di strumenti open-source che aiuta a progettare, costruire, documentare e consumare API RESTful. Dovrebbe essere usato nei nostri progetti perché genera automaticamente una documentazione interattiva e aggiornata delle API direttamente dal codice sorgente, facilitando la collaborazione tra sviluppatori frontend e backend e migliorando la testabilità delle API.
 
 
-Add at POM.xml
+- Aggiungere nel file `pom.xml` dei progetti
+	```
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+			<version>2.5.0</version> <!-- Controlla la versione più recente su Maven Central -->
+		</dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.5.0</version> <!-- Controlla la versione più recente su Maven Central -->
+		</dependency>
+	```
+- Add into properties file
+	```
+		springdoc.api-docs.path=/api-docs
+	```
+- 
+	Check documentation in json format:
+	```
+	http://localhost:xxxx/api-docs
+	```
+	or in yaml format
+	```
+	http://localhost:xxxx/api-docs.yaml
+	```
+- Complete documentation web-site
+	```
+	http://localhost:xxxx/swagger-ui.html
+	```
+- Create class configuration for additional information, see `Esempio05testJunit5Mokito/src/main/java/it/alnao/esempio05/config/OpenApiConfig.java` 
+- Use annotations, for examples:
+	- Classe tag
+		```
+		@Tag(name = "Login", description = "API per l'autenticazione degli utenti") // Aggiunge un tag per raggruppare gli endpoint nella UI di Swagger
+		public class LoginController { ... }
+		```
+	- Method operation and parameters:
+		``` 
+		@Operation(summary = "Effettua il login di un utente",
+				description = "Autentica un utente fornendo nome utente e password.") // Descrizione dell'operazione
+		@ApiResponses(value = { // Possibili risposte dell'API
+				@ApiResponse(responseCode = "200", description = "Login riuscito"),
+				@ApiResponse(responseCode = "401", description = "Credenziali non valide")
+		})
+		@PostMapping
+		public ResponseEntity<String> login(
+				@Parameter(description = "Nome utente per il login", required = true) // Descrizione del parametro 'nome'
+				@RequestParam String nome,
+				@Parameter(description = "Password dell'utente", required = true) // Descrizione del parametro 'password'
+				@RequestParam String password) { ... }
+		```
 
-```
-	<dependency>
-	    <groupId>org.springdoc</groupId>
-	    <artifactId>springdoc-openapi-ui</artifactId>
-	    <version>1.6.4</version>
-	</dependency>
-```
-Add into properties file
-
-```
-	springdoc.api-docs.path=/api-docs
-```
-
-Check documentation in json format:
-```
-http://localhost:5051/api-docs
-```
-or in yaml format
-```
-http://localhost:5051/api-docs.yaml
-```
-
-Complete documentation web-site
-```
-http://localhost:5051/swagger-ui.html
-```
-
-See swagget3 documentation on 
-```
-https://swagger.io/specification/
-```
-
-
+# Actuator
+Spring Boot **Actuator** fornisce endpoint pronti all'uso per monitorare e gestire la tua applicazione in produzione, offrendo informazioni sullo stato di salute, metriche, configurazione e altro. Lo si usa per ottenere visibilità interna sull'applicazione senza dover scrivere codice di monitoraggio ad hoc, facilitando il debugging e l'operatività.
+- Add in 'pom.xml'
+	```
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+	```
+- See url 
+	- `http://localhost:<port>/actuator`
+	- `http://localhost:<port>/actuator/health`
+- In `docker-compose` add *health check*:
+	```
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8045/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+	```
+- In *AWS ECS Task Definition* could add *healt check*:
+	```
+	"healthCheck": {
+		"command": [
+			"CMD-SHELL",
+			"curl http://localhost:8080/actuator/health || exit 1"
+		],
+		"interval": 30,
+		"timeout": 10,
+		"retries": 5
+	},	
+	```
 
 
 # AlNao.it

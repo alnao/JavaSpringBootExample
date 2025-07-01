@@ -1,0 +1,96 @@
+package it.alnao.esempio05.controller;
+
+import it.alnao.esempio05.service.LoginService;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+
+// Indica a JUnit di usare l'estensione Mockito per inizializzare i mock
+@ExtendWith(MockitoExtension.class)
+public class LoginControllerTest {
+
+    // Crea un mock dell'interfaccia LoginService
+    @Mock
+    private LoginService loginService;
+
+    // Inietta i mock creati (LoginService) nell'istanza di LoginController
+    // Questo crea un'istanza reale di LoginController e inietta il mock loginService in essa
+    @InjectMocks
+    private LoginController loginController;
+
+    // Metodo eseguito prima di ogni test.
+    // Con @ExtendWith(MockitoExtension.class), Mockito si occupa già dell'inizializzazione dei mock,
+    // quindi questo metodo è meno critico qui, ma utile per setup aggiuntivi se necessari.
+    @BeforeEach
+    void setUp() {
+        // MockitoAnnotations.openMocks(this); // Non strettamente necessario con @ExtendWith(MockitoExtension.class)
+    }
+
+    @Test
+    void testLoginSuccess() {
+        // Definisce il comportamento del mock: quando loginService.login viene chiamato con qualsiasi stringa,
+        // restituisci true, simulando un login riuscito.
+        when(loginService.login("testuser", "testpassword")).thenReturn(true);
+
+        // Chiama il metodo del controller che vogliamo testare
+        ResponseEntity<String> response = loginController.login("testuser", "testpassword");
+
+        // Asserzioni per verificare il risultato atteso
+        // Verifica che lo stato HTTP della risposta sia OK (200)
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        // Verifica che il corpo della risposta non sia nullo
+        assertNotNull(response.getBody());
+        // Verifica che il messaggio nel corpo della risposta sia quello atteso per un login riuscito
+        assertEquals("Login riuscito", response.getBody());
+    }
+
+    @Test
+    void testLoginFailure() {
+        // Definisce il comportamento del mock: quando loginService.login viene chiamato con qualsiasi stringa,
+        // restituisci false, simulando un login fallito.
+        when(loginService.login("wronguser", "wrongpassword")).thenReturn(false);
+
+        // Chiama il metodo del controller che vogliamo testare
+        ResponseEntity<String> response = loginController.login("wronguser", "wrongpassword");
+
+        // Asserzioni per verificare il risultato atteso
+        // Verifica che lo stato HTTP della risposta sia UNAUTHORIZED (401)
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        // Verifica che il corpo della risposta non sia nullo
+        assertNotNull(response.getBody());
+        // Verifica che il messaggio nel corpo della risposta sia quello atteso per un login fallito
+        assertEquals("Login fallito", response.getBody());
+    }
+}
+/* 
+class LoginControllerTest {
+
+    @Test
+    void testLoginSuccess() {
+        LoginService loginService = mock(LoginService.class);
+        when(loginService.login("mario", "1234")).thenReturn(true);
+
+        LoginController controller = new LoginController(loginService);
+        ResponseEntity<String> response = controller.login("mario", "1234");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Login riuscito", response.getBody());
+    }
+
+    @Test
+    void testLoginFailure() {
+        LoginService loginService = mock(LoginService.class);
+        when(loginService.login("mario", "wrong")).thenReturn(false);
+
+        LoginController controller = new LoginController(loginService);
+        ResponseEntity<String> response = controller.login("mario", "wrong");
+
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertEquals("Login fallito", response.getBody());
+    }
+}
+*/
