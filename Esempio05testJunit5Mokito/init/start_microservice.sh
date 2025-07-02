@@ -6,7 +6,7 @@ echo "> Avvio del microservizio Spring Boot con MySQL... ${MYSQL_DATASOURCE_HOST
 # Attesa che MySQL sia pronto
 echo ">Attesa che MySQL sia raggiungibile..."
 counter=0
-until mysql -h"${MYSQL_DATASOURCE_HOST}" -P"${MYSQL_DATASOURCE_PORT}" -u"${MYSQL_DATASOURCE_USERNAME}" -p"${MYSQL_DATASOURCE_PASSWORD}" -e 'SELECT 1'; do
+until mysql -h"${MYSQL_DATASOURCE_HOST}" -p"${MYSQL_DATASOURCE_PORT}" -u"${MYSQL_DATASOURCE_USERNAME}" -p"${MYSQL_DATASOURCE_PASSWORD}" --ssl-verify-server-cert=0 -e 'SELECT 1'; do
   counter=$((counter + 1))
   if [ $counter -ge 10 ]; then
       echo "> MySQL non raggiungibile dopo 10 tentativi. Proseguo comunque..."

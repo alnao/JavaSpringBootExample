@@ -18,6 +18,21 @@ Presente anche un `docker-compose` dedicato per eseguire **SonarQube** per la ve
     docker compose up --build
     ```
     Nota: il microservizio ci mette un po' a partire perchè deve aspettare che il server MySql sia partito. Per evitare il problema che il microservizio si rompa in avvio è stato fatto uno script `start_microservice.sh` che aspetta che il MySql sia attivo prima di partire.
+- Comandi per il monitoraggio del database MySql
+    ```
+    docker logs es05-mysql-db
+    docker exec -it es05-mysql-db mysql -u root -pstupendo
+    > SHOW DATABASES;
+    > USE Applicazione;
+    > SHOW TABLES;
+    ```
+- Comandi curl  per provare il funzionamento
+    ```
+    curl -X POST "http://localhost:8045/api/login?nome=alnao&password=bellissimo"
+    curl -X POST "http://localhost:8045/api/users" -H "Content-Type: application/json" -d '{"nome":"NuovoUtente","password":"password123"  }'
+    curl -X GET "http://localhost:8045/api/users"
+    curl -X GET "http://localhost:8045/api/users/1"
+    ```
 - Comando per la distruzione di tutta l'architettura
     ```
     docker-compose down --volumes --rmi all
