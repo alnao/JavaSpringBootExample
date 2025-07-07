@@ -22,11 +22,13 @@
 	- per ogni classe è presente un Test con JUnit5 e con Mokito dove necessario nei Service
 	- presente anche un `docker-compose` per eseguire **SonarQube** per la verifica del codice (coverage, smell, bug...)
 	- presente la documentazione creata con Swagger
+- **Esempio06cacheAndScheduling**: *in sviluppo* esempio di microservio con Cache e sistema di Scheduling *in sviluppo*
+- **Esempio07basicAuth**: esempio di microservizio con servizio di Login di tipo *basic auth*, esempio con più rotte con utenti diverse
+- **Esempio08loginJwt**: *in sviluppo* esempio di microservizio con servizio di Login e servizio di accesso a tabella in maniera sicura *in sviluppo*
 
 
 ## Progetti in revisione:
 - ExampleMicro06cache
-- ExampleMicro07basicAuth
 - ExampleMicro08gestJwt
 - ExampleMicro09feign
 - ExampleMicro10cloudConfig
