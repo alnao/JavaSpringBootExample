@@ -29,6 +29,11 @@
 	- esempio di Swagger configurato con la BasicAuth
 - **Esempio08loginJwt**: esempio di microservizio con servizio di Login e servizio di accesso a tabella in maniera sicura
 	- progetto *in sviluppo*
+- **Esempio09webSocketGameGuessNumber**: esempio di mini-gioco "indovina il numero" 
+	- esempio realizzato usando WebSocket e RestAPi, la base dati è Mongo e viene usato anche redis
+	- studiato per essere Cloud-agnostico e tutto è stato *dockerizzato*, eseguibile anche su Kubernetes con Chart
+	- quasi tutto il codice è stato generato con GitHub-Copilot e successivamente verificato ma presenta alcune inesattezze ed errori
+	- il gioco non prevede nessun sistema di autenticazione/autorizzazione
 
 
 ## Progetti in revisione:
