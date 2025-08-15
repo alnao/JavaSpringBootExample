@@ -1,0 +1,143 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: guessgame
+  labels:
+    name: guessgame
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: guessgame-config
+  namespace: guessgame
+data:
+  MONGODB_DATABASE: "guessgame"
+  SERVER_PORT: "8080"
+  LOG_LEVEL: "INFO"
+  SPRING_PROFILES_ACTIVE: "production"
+  PLAYER_INACTIVITY_TIMEOUT: "30"
+  NUMBER_MIN: "1"
+  NUMBER_MAX: "100"
+  SCORE_GUESS_CORRECT: "3"
+  SCORE_TARGET_FOUND: "-1"
+  SCORE_PENALTY: "1"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: guessgame-secrets
+  namespace: guessgame
+type: Opaque
+data:
+  # Base64 encoded values
+  # mongodb://admin:password123@mongodb:27017/guessgame?authSource=admin
+  MONGODB_URI: bW9uZ29kYjovL2FkbWluOnBhc3N3b3JkMTIzQG1vbmdvZGI6MjcwMTcvZ3Vlc3NnYW1lP2F1dGhTb3VyY2U9YWRtaW4=
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guessgame-app
+  namespace: guessgame
+  labels:
+    app: guessgame-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: guessgame-app
+  template:
+    metadata:
+      labels:
+        app: guessgame-app
+    spec:
+      containers:
+      - name: guessgame-app
+        image: guessgame:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: guessgame-secrets
+              key: MONGODB_URI
+        envFrom:
+        - configMapRef:
+            name: guessgame-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guessgame-service
+  namespace: guessgame
+  labels:
+    app: guessgame-app
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: guessgame-app
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: guessgame-ingress
+  namespace: guessgame
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # WebSocket support
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+spec:
+  rules:
+  - host: guessgame.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: guessgame-service
+            port:
+              number: 8080

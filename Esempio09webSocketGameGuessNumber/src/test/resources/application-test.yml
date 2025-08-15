@@ -1,0 +1,17 @@
+# Test profile configuration
+spring:
+  data:
+    mongodb:
+      # Use embedded MongoDB for tests
+      embedded:
+        version: 6.0.0
+      
+  # Disable WebSocket for some tests
+  websocket:
+    enabled: false
+
+# Test logging
+logging:
+  level:
+    com.alnao.guessgame: DEBUG
+    org.springframework.test: DEBUG

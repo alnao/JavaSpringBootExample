@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess Game - Java Spring Boot</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .game-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #45a049;
+        }
+        .btn.secondary {
+            background: #2196F3;
+        }
+        .btn.secondary:hover {
+            background: #1976D2;
+        }
+        .btn.danger {
+            background: #f44336;
+        }
+        .btn.danger:hover {
+            background: #d32f2f;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.8);
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.8);
+        }
+        .status.info {
+            background: rgba(33, 150, 243, 0.8);
+        }
+        .players-list, .logs-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .player-item, .log-item {
+            padding: 5px;
+            margin: 2px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .connected {
+            background: rgba(76, 175, 80, 0.9);
+        }
+        .disconnected {
+            background: rgba(244, 67, 54, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">Disconnected</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Guess Game - Java Spring Boot Version</h1>
+            <p>Multi-player number guessing game with WebSocket real-time communication</p>
+        </div>
+
+        <div class="game-section">
+            <!-- Connection Section -->
+            <div class="card">
+                <h3>🔗 Connection</h3>
+                <div class="input-group">
+                    <label for="nickname">Your Nickname:</label>
+                    <input type="text" id="nickname" placeholder="Enter your nickname">
+                </div>
+                <button class="btn" onclick="connect()">Connect</button>
+                <button class="btn danger" onclick="disconnect()">Disconnect</button>
+                <div class="status info" id="connectionMessage">Not connected</div>
+            </div>
+
+            <!-- Game Actions -->
+            <div class="card">
+                <h3>🎮 Game Actions</h3>
+                <div class="input-group">
+                    <label for="numberToSet">Set Your Number (1-100):</label>
+                    <input type="number" id="numberToSet" min="1" max="100" placeholder="Your secret number">
+                </div>
+                <button class="btn" onclick="setNumber()">Set Number</button>
+                
+                <div class="input-group">
+                    <label for="guessNumber">Make a Guess (1-100):</label>
+                    <input type="number" id="guessNumber" min="1" max="100" placeholder="Your guess">
+                </div>
+                <button class="btn secondary" onclick="makeGuess()">Make Guess</button>
+                <div class="status info" id="gameMessage">Ready to play</div>
+            </div>
+        </div>
+
+        <div class="game-section">
+            <!-- Active Players -->
+            <div class="card">
+                <h3>👥 Active Players</h3>
+                <button class="btn secondary" onclick="loadActivePlayers()">Refresh</button>
+                <div class="players-list" id="playersList">
+                    <div class="player-item">Click refresh to load players</div>
+                </div>
+            </div>
+
+            <!-- Scoreboard -->
+            <div class="card">
+                <h3>🏆 Top Scores</h3>
+                <button class="btn secondary" onclick="loadScores()">Refresh</button>
+                <div class="players-list" id="scoresList">
+                    <div class="player-item">Click refresh to load scores</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Log -->
+        <div class="card">
+            <h3>📋 Game Events</h3>
+            <button class="btn secondary" onclick="loadRecentLogs()">Refresh Logs</button>
+            <div class="logs-list" id="gameLog">
+                <div class="log-item">Game events will appear here</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.0/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <script>
+        // WebSocket connection
+        let stompClient = null;
+        let connected = false;
+        let currentConnectionId = null;
+
+        // Base URL for API calls
+        const API_BASE = '/api/game';
+        const ADMIN_API_BASE = '/api/admin';
+
+        function updateConnectionStatus(status, message) {
+            const statusEl = document.getElementById('connectionStatus');
+            const messageEl = document.getElementById('connectionMessage');
+            
+            if (status === 'connected') {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'connection-status connected';
+                connected = true;
+            } else {
+                statusEl.textContent = 'Disconnected';
+                statusEl.className = 'connection-status disconnected';
+                connected = false;
+            }
+            
+            messageEl.textContent = message;
+            messageEl.className = 'status ' + (status === 'connected' ? 'success' : 'error');
+        }
+
+        function connect() {
+            const nickname = document.getElementById('nickname').value.trim();
+            if (!nickname) {
+                showMessage('gameMessage', 'Please enter a nickname', 'error');
+                return;
+            }
+
+            // Check if banned before connecting (call backend)
+            fetch(`${API_BASE}/banned-players`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && Array.isArray(data.data)) {
+                        const banned = data.data.some(player => player.nickname === nickname);
+                        if (banned) {
+                            showMessage('gameMessage', 'You are banned and cannot connect', 'error');
+                            blockUIAfterBan();
+                            return;
+                        }
+                    }
+                    // Proceed with connection if not banned
+                    connectToWebSocket(nickname);
+                })
+                .catch(err => {
+                    console.error('Error checking ban status:', err);
+                    showMessage('gameMessage', 'Error checking ban status', 'error');
+                });
+        }
+
+        function connectToWebSocket(nickname) {
+            // Generate a simple connection ID
+            currentConnectionId = 'web_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+            // Connect WebSocket
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            
+            stompClient.connect({}, function(frame) {
+                console.log('Connected: ' + frame);
+                updateConnectionStatus('connected', 'WebSocket connected');
+                
+                // Subscribe to game events
+                stompClient.subscribe('/topic/game', function(message) {
+                    handleGameMessage(JSON.parse(message.body));
+                });
+                
+                // Subscribe to personal messages
+                stompClient.subscribe('/user/queue/personal', function(message) {
+                    handlePersonalMessage(JSON.parse(message.body));
+                });
+                
+                // Join the game via REST API
+                joinGameViaAPI(nickname);
+                
+            }, function(error) {
+                console.log('Connection error: ' + error);
+                updateConnectionStatus('disconnected', 'Connection failed: ' + error);
+            });
+        }
+
+        function disconnect() {
+            if (stompClient !== null) {
+                stompClient.disconnect();
+            }
+            updateConnectionStatus('disconnected', 'Disconnected');
+            currentConnectionId = null;
+        }
+
+        function joinGameViaAPI(nickname) {
+            fetch(`${API_BASE}/join?connectionId=${currentConnectionId}&nickname=${encodeURIComponent(nickname)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('gameMessage', `Joined as ${nickname}!`, 'success');
+                    loadActivePlayers();
+                } else {
+                    showMessage('gameMessage', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error joining game:', error);
+                showMessage('gameMessage', 'Failed to join game', 'error');
+            });
+        }
+
+        function setNumber() {
+            const number = document.getElementById('numberToSet').value;
+            if (!number || number < 1 || number > 100) {
+                showMessage('gameMessage', 'Please enter a number between 1 and 100', 'error');
+                return;
+            }
+
+            if (!currentConnectionId) {
+                showMessage('gameMessage', 'Please connect first', 'error');
+                return;
+            }
+
+            fetch(`${API_BASE}/set-number?connectionId=${currentConnectionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ number: parseInt(number) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('gameMessage', `Number ${number} set successfully!`, 'success');
+                    document.getElementById('numberToSet').value = '';
+                } else {
+                    showMessage('gameMessage', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error setting number:', error);
+                showMessage('gameMessage', 'Failed to set number', 'error');
+            });
+        }
+
+        function makeGuess() {
+            const guess = document.getElementById('guessNumber').value;
+            if (!guess || guess < 1 || guess > 100) {
+                showMessage('gameMessage', 'Please enter a guess between 1 and 100', 'error');
+                return;
+            }
+
+            if (!currentConnectionId) {
+                showMessage('gameMessage', 'Please connect first', 'error');
+                return;
+            }
+
+            fetch(`${API_BASE}/guess?connectionId=${currentConnectionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ guess: parseInt(guess) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const result = data.data;
+                    if (result === 'match') {
+                        showMessage('gameMessage', `🎉 Correct! You guessed ${guess}!`, 'success');
+                    } else {
+                        if (typeof data.data === 'string' && data.data.startsWith('Guess limit reached')) {
+                            showMessage('gameMessage', data.data, 'error');
+                        } else {
+                            showMessage('gameMessage', `❌ Wrong guess: ${guess}, lost one point`, 'error');
+                        }
+                    }
+                    document.getElementById('guessNumber').value = '';
+                    loadScores(); // Refresh scores
+                } else {
+                    showMessage('gameMessage', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error making guess:', error);
+                showMessage('gameMessage', 'Failed to make guess', 'error');
+            });
+        }
+
+        function loadActivePlayers() {
+            fetch(`${API_BASE}/active-players`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayPlayers(data.data);
+                } else {
+                    showMessage('gameMessage', 'Failed to load players', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading players:', error);
+            });
+        }
+
+        function loadScores() {
+            fetch(`${API_BASE}/scores`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayScores(data.data);
+                } else {
+                    showMessage('gameMessage', 'Failed to load scores', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading scores:', error);
+            });
+        }
+
+        function loadRecentLogs() {
+            fetch(`${ADMIN_API_BASE}/logs/recent?hours=1`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayLogs(data.data);
+                } else {
+                    showMessage('gameMessage', 'Failed to load logs', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading logs:', error);
+            });
+        }
+
+        function displayPlayers(players) {
+            const container = document.getElementById('playersList');
+            if (players.length === 0) {
+                container.innerHTML = '<div class="player-item">No active players</div>';
+                return;
+            }
+
+            container.innerHTML = players.map(player => 
+                `<div class="player-item">
+                    👤 ${player.nickname} 
+                    ${player.number ? '🔢' : '❌'} 
+                    Score: ${player.score}
+                </div>`
+            ).join('');
+        }
+
+        function displayScores(players) {
+            const container = document.getElementById('scoresList');
+            if (players.length === 0) {
+                container.innerHTML = '<div class="player-item">No scores yet</div>';
+                return;
+            }
+
+            container.innerHTML = players.map((player, index) => 
+                `<div class="player-item">
+                    ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📊'} 
+                    ${player.nickname}: ${player.score} points
+                </div>`
+            ).join('');
+        }
+
+        function displayLogs(logs) {
+            const container = document.getElementById('gameLog');
+            if (logs.length === 0) {
+                container.innerHTML = '<div class="log-item">No recent events</div>';
+                return;
+            }
+
+            container.innerHTML = logs.slice(0, 20).map(log => {
+                const time = new Date(log.timestamp).toLocaleTimeString();
+                return `<div class="log-item">
+                    [${time}] ${log.event}: ${log.nickname || 'System'}
+                    ${log.data ? ` - ${JSON.stringify(log.data)}` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        function handleGameMessage(message) {
+            console.log('Game message:', message);
+            // Handle broadcast messages
+            switch (message.type) {
+                case 'player_joined':
+                    showMessage('gameMessage', `${message.player.nickname} joined the game`, 'info');
+                    loadActivePlayers();
+                    break;
+                case 'player_left':
+                    showMessage('gameMessage', `${message.player.nickname} left the game`, 'info');
+                    loadActivePlayers();
+                    break;
+                case 'successful_guess':
+                    showMessage('gameMessage', 
+                        `🎉 ${message.guesser.nickname} guessed ${message.number} from ${message.target.nickname}!`, 
+                        'success');
+                    loadScores();
+                    break;
+                case 'admin_broadcast':
+                    showMessage('gameMessage', `📢 Admin: ${message.message}`, 'info');
+                    break;
+            }
+        }
+
+        function handlePersonalMessage(message) {
+            console.log('Personal message:', message);
+            // Handle personal messages
+            switch (message.type) {
+                case 'pong':
+                    // Heartbeat response
+                    break;
+                case 'banned':
+                    showMessage('gameMessage', 'You have been banned from the game', 'error');
+                    disconnect();
+                    blockUIAfterBan();
+                    break;
+            }
+        }
+
+        // Block all UI interactions if banned
+        function blockUIAfterBan() {
+            // Disable all inputs and buttons
+            document.querySelectorAll('input, button').forEach(el => {
+                el.disabled = true;
+            });
+            // Show overlay
+            let overlay = document.createElement('div');
+            overlay.id = 'banOverlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = 0;
+            overlay.style.left = 0;
+            overlay.style.width = '100vw';
+            overlay.style.height = '100vh';
+            overlay.style.background = 'rgba(0,0,0,0.85)';
+            overlay.style.zIndex = 9999;
+            overlay.style.display = 'flex';
+            overlay.style.flexDirection = 'column';
+            overlay.style.justifyContent = 'center';
+            overlay.style.alignItems = 'center';
+            overlay.innerHTML = `<h2 style="color: #fff;">🚫 You have been banned from the game</h2><p style="color: #fff;">Please contact an administrator.</p>`;
+            document.body.appendChild(overlay);
+        }
+
+        function showMessage(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = 'status ' + type;
+        }
+
+        // Send periodic ping to keep connection alive
+        setInterval(function() {
+            if (stompClient !== null && connected) {
+                stompClient.send("/app/game/ping", {}, "{}");
+            }
+        }, 30000); // 30 seconds
+
+        // Load initial data
+        window.onload = function() {
+            loadActivePlayers();
+            loadScores();
+            loadRecentLogs();
+        };
+    </script>
+</body>
+</html>

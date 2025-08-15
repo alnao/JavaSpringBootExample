@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "guessgame.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "guessgame.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "guessgame.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "guessgame.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "guessgame.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.config.server.port }}
+              protocol: TCP
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "guessgame.fullname" . }}-secrets
+                  key: mongodb-uri
+            - name: SERVER_PORT
+              value: {{ .Values.config.server.port | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.config.logging.level | quote }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: "production"
+            - name: PLAYER_INACTIVITY_TIMEOUT
+              value: {{ .Values.config.game.playerInactivityTimeout | quote }}
+            - name: NUMBER_MIN
+              value: {{ .Values.config.game.numberMin | quote }}
+            - name: NUMBER_MAX
+              value: {{ .Values.config.game.numberMax | quote }}
+            - name: SCORE_GUESS_CORRECT
+              value: {{ .Values.config.game.scoring.guessCorrect | quote }}
+            - name: SCORE_TARGET_FOUND
+              value: {{ .Values.config.game.scoring.targetFound | quote }}
+            - name: SCORE_PENALTY
+              value: {{ .Values.config.game.scoring.penalty | quote }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess Game Admin Panel</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #232526 0%, #414345 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .section {
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+        }
+        .btn {
+            background: #ff9800;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #e65100;
+        }
+        .btn.danger {
+            background: #f44336;
+        }
+        .btn.danger:hover {
+            background: #b71c1c;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.8);
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.8);
+        }
+        .status.info {
+            background: rgba(33, 150, 243, 0.8);
+        }
+        .players-list, .logs-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .player-item, .log-item {
+            padding: 5px;
+            margin: 2px 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Guess Game - Admin Panel</h1>
+        <div class="status info" id="adminMessage">Admin functions ready</div>
+
+        <div class="section">
+            <h2>Active Players</h2>
+            <button class="btn" onclick="loadActivePlayers()">Refresh</button>
+            <div class="players-list" id="playersList"></div>
+        </div>
+
+        <div class="section">
+            <h2>Ban/Disconnect Player</h2>
+            <div class="input-group">
+                <label for="banConnectionId">Connection ID:</label>
+                <input type="text" id="banConnectionId" placeholder="Enter connectionId">
+            </div>
+            <button class="btn danger" onclick="banPlayer()">Ban Player</button>
+            <button class="btn" onclick="disconnectPlayer()">Disconnect Player</button>
+        </div>
+
+        <div class="section">
+            <h2>Cleanup Inactive Players</h2>
+            <div class="input-group">
+                <label for="inactivityMinutes">Inactivity Minutes:</label>
+                <input type="number" id="inactivityMinutes" value="30" min="1">
+            </div>
+            <button class="btn" onclick="cleanupInactivePlayers()">Cleanup</button>
+        </div>
+
+        <div class="section">
+            <h2>Recent Game Logs</h2>
+            <button class="btn" onclick="loadRecentLogs()">Refresh Logs</button>
+            <div class="logs-list" id="gameLog"></div>
+        </div>
+
+        <div class="section">
+            <h2>Broadcast Message</h2>
+            <div class="input-group">
+                <label for="broadcastMsg">Message to all players:</label>
+                <input type="text" id="broadcastMsg" placeholder="Enter message">
+            </div>
+            <button class="btn" onclick="broadcastMessage()">Send Broadcast</button>
+        </div>
+
+        <div class="section">
+            <h2>Banned Players</h2>
+            <button class="btn" onclick="loadBannedPlayers()">Refresh</button>
+            <div class="players-list" id="bannedPlayersList"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/game';
+        const ADMIN_API_BASE = '/api/admin';
+
+        function showAdminMessage(message, type = 'info') {
+            const el = document.getElementById('adminMessage');
+            el.textContent = message;
+            el.className = 'status ' + type;
+        }
+
+        function loadActivePlayers() {
+            fetch(`${API_BASE}/active-players`)
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('playersList');
+                if (data.success && data.data.length > 0) {
+                    container.innerHTML = data.data.map(player =>
+                        `<div class="player-item">
+                            👤 ${player.nickname} (${player.connectionId})
+                            ${player.number ? '🔢' : '❌'}
+                            Score: ${player.score}
+                            ${player.banned ? '<span style="color:#f44336;">[BANNED]</span>' : ''}
+                            <button class='btn danger' style='float:right;' onclick='banPlayerFromList("${player.connectionId}")'>Ban</button>
+                        </div>`
+                    ).join('');
+                } else {
+                    container.innerHTML = '<div class="player-item">No active players</div>';
+                }
+            })
+            .catch(error => {
+                showAdminMessage('Failed to load players', 'error');
+            });
+        }
+
+        function banPlayer() {
+            const connectionId = document.getElementById('banConnectionId').value.trim();
+            if (!connectionId) {
+                showAdminMessage('Please enter a connectionId', 'error');
+                return;
+            }
+            fetch(`${API_BASE}/ban?connectionId=${connectionId}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAdminMessage('Player banned successfully', 'success');
+                    loadActivePlayers();
+                    loadBannedPlayers();
+                } else {
+                    showAdminMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showAdminMessage('Failed to ban player', 'error');
+            });
+        }
+
+        function disconnectPlayer() {
+            const connectionId = document.getElementById('banConnectionId').value.trim();
+            if (!connectionId) {
+                showAdminMessage('Please enter a connectionId', 'error');
+                return;
+            }
+            fetch(`${API_BASE}/disconnect?connectionId=${connectionId}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAdminMessage('Player disconnected successfully', 'success');
+                    loadActivePlayers();
+                } else {
+                    showAdminMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showAdminMessage('Failed to disconnect player', 'error');
+            });
+        }
+
+        function cleanupInactivePlayers() {
+            const minutes = document.getElementById('inactivityMinutes').value;
+            fetch(`${API_BASE}/cleanup?inactivityMinutes=${minutes}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAdminMessage('Cleanup completed', 'success');
+                    loadActivePlayers();
+                } else {
+                    showAdminMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showAdminMessage('Failed to cleanup', 'error');
+            });
+        }
+
+        function loadRecentLogs() {
+            fetch(`${ADMIN_API_BASE}/logs/recent?hours=24`)
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('gameLog');
+                if (data.success && data.data.length > 0) {
+                    container.innerHTML = data.data.map(log => {
+                        const time = new Date(log.timestamp).toLocaleString();
+                        return `<div class="log-item">[${time}] ${log.event}: ${log.nickname || 'System'} ${log.data ? ' - ' + JSON.stringify(log.data) : ''}</div>`;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<div class="log-item">No recent events</div>';
+                }
+            })
+            .catch(error => {
+                showAdminMessage('Failed to load logs', 'error');
+            });
+        }
+
+        function banPlayerFromList(connectionId) {
+            if (!connectionId) return;
+            fetch(`${API_BASE}/ban?connectionId=${connectionId}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAdminMessage('Player banned successfully', 'success');
+                    loadActivePlayers();
+                    loadBannedPlayers();
+                } else {
+                    showAdminMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showAdminMessage('Failed to ban player', 'error');
+            });
+        }
+
+        function broadcastMessage() {
+            const msg = document.getElementById('broadcastMsg').value.trim();
+            if (!msg) {
+                showAdminMessage('Please enter a message', 'error');
+                return;
+            }
+            fetch(`${ADMIN_API_BASE}/broadcast`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAdminMessage('Broadcast sent', 'success');
+                    document.getElementById('broadcastMsg').value = '';
+                } else {
+                    showAdminMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showAdminMessage('Failed to send broadcast', 'error');
+            });
+        }
+
+        function loadBannedPlayers() {
+            fetch(`${API_BASE}/banned-players`)
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('bannedPlayersList');
+                if (data.success && data.data.length > 0) {
+                    container.innerHTML = data.data.map(player =>
+                        `<div class="player-item">
+                            👤 ${player.nickname} (${player.connectionId}) Score: ${player.score}
+                            <button class='btn' style='float:right; background:#4CAF50;' onclick='unbanPlayer("${player.nickname}")'>Unban</button>
+                        </div>`
+                    ).join('');
+                } else {
+                    container.innerHTML = '<div class="player-item">No banned players</div>';
+                }
+            })
+            .catch(error => {
+                showAdminMessage('Failed to load banned players', 'error');
+            });
+        }
+
+        function unbanPlayer(nickname) {
+            if (!nickname) {
+                showAdminMessage('Nickname required', 'error');
+                return;
+            }
+            fetch(`${ADMIN_API_BASE}/unban?nickname=${encodeURIComponent(nickname)}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAdminMessage('Player unbanned successfully', 'success');
+                    loadBannedPlayers();
+                    loadActivePlayers();
+                } else {
+                    showAdminMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showAdminMessage('Failed to unban player', 'error');
+            });
+        }
+
+        // Load initial data
+        window.onload = function() {
+            loadActivePlayers();
+            loadRecentLogs();
+            loadBannedPlayers();
+        };
+    </script>
+</body>
+</html>

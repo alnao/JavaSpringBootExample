@@ -1,0 +1,99 @@
+spring:
+  application:
+    name: guess-game
+  
+  # MongoDB Configuration
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://admin:password123@mongodb:27017/guessgame?authSource=admin}
+      database: ${MONGODB_DATABASE:guessgame}
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+  
+  # WebSocket Configuration
+  websocket:
+    allowed-origins: ${WEBSOCKET_ALLOWED_ORIGINS:*}
+  
+  # Jackson Configuration
+  jackson:
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+# Server Configuration
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: ${CONTEXT_PATH:/}
+
+# Logging Configuration
+logging:
+  level:
+    com.alnao.guessgame: ${LOG_LEVEL:INFO}
+    org.springframework.web.socket: DEBUG
+    org.springframework.messaging: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Application Specific Configuration
+game:
+  # Player inactivity timeout in minutes
+  player-inactivity-timeout: ${PLAYER_INACTIVITY_TIMEOUT:30}
+  
+  # Number range for guessing game
+  number-range:
+    min: ${NUMBER_MIN:1}
+    max: ${NUMBER_MAX:100}
+  
+  # Scoring system
+  scoring:
+    guess-correct: ${SCORE_GUESS_CORRECT:3}
+    target-found: ${SCORE_TARGET_FOUND:-1}
+    guess-wrong-penalty: ${SCORE_PENALTY:1}
+    max-guesses-per-day: ${MAX_GUESSES_PER_DAY:6}
+  
+  # Admin settings
+  admin:
+    enabled: ${ADMIN_ENABLED:true}
+    cleanup-interval: ${CLEANUP_INTERVAL:3600} # seconds
+
+# Health and monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+---
+spring:
+  config:
+    activate:
+      on-profile: development
+
+logging:
+  level:
+    com.alnao.guessgame: DEBUG
+    org.springframework.web.socket: DEBUG
+    org.springframework.messaging: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: production
+
+logging:
+  level:
+    com.alnao.guessgame: INFO
+    org.springframework.web.socket: WARN
+    org.springframework.messaging: WARN
+
+server:
+  port: 8080

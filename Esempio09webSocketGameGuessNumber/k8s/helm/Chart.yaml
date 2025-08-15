@@ -1,0 +1,23 @@
+apiVersion: v2
+name: guessgame
+description: A Helm chart for Guess Game application with MongoDB
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - guessgame
+  - websocket
+  - java
+  - spring-boot
+  - mongodb
+home: https://github.com/example/guessgame
+sources:
+  - https://github.com/example/guessgame
+maintainers:
+  - name: Developer
+    email: developer@example.com
+dependencies:
+  - name: mongodb
+    version: "^13.0.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: mongodb.enabled
