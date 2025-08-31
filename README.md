@@ -1,211 +1,267 @@
-# JavaSpringBootExample
-<a href="https://www.alnao.it/javaee/"> 
-        <img src="https://img.shields.io/badge/alnao-.it-blue?logo=amazoncloudwatch&logoColor=A6C9E2" height="25px">
-        <img src="https://img.shields.io/badge/Java-ED8B00?style=plastic&logo=openjdk&logoColor=white" height="25px"/>
-        <img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=plastic&logo=SpringBoot&logoColor=white" height="25px" />
-</a>
+# Sistema di Gestione Annotazioni
+
+Progetto sviluppato da &lt; AlNao /&gt; come esempio di progetto con Java Spring Boot.
+
+Un sistema di gestione annotazioni multi-modulo basato su Spring Boot che implementa l'architettura esagonale (Hexagonal Architecture) con supporto per deployment sia on-premise che cloud AWS.
+
+## 📝 TODO / Roadmap
+- [✅] Creazione progetto e primo test
+- [🚧] Bug fixing su metodo ricerca
+- [🚧] Documentazione con swagger
+- [🚧] Build e deploy su DockerHub
+- [🚧] Deploy su AWS su EC2 / Lightsail
+- [🚧] Deploy su AWS su Fargate/ECS
+- [🚧] Kubernetes Helm charts
+- [🚧] Deploy su AWS su EKS
+- [🚧] Autenticazione e autorizzazione (Spring Security) e token Jwt
+- [🚧] Gestione versioning annotazioni
+- [🚧] Export/Import annotazioni (JSON, CSV)
+- [🚧] Export/Import annotazioni (Kafka)
+- [🚧] Notifiche real-time (WebSocket)
+- [🚧] API rate limiting
+- [🚧] Backup automatico
+- [🚧] Elasticsearch per ricerca avanzata
+- [🚧] CI/CD pipeline
+- [🚧] Mobile app (React Native)
 
 
-# Progetti:
-- **Esempio01base**: esempio base con singola API, Docker-file per eseguire il servizio in immagine docker e su Kubernetes/Minikube
-- **Esempio02db**: esempio di CRUD con una tabella *articoli* su MySql, Docker-compose per eseguire il micro-servizio e il DMBS su docker
-- **Esempio03dbDockerAWS**: esempio di CRUD con tabella *persone* su MySql, con microservizio e microfrontend in javascript di esempio
-	- il backend e il frontend sono disponibili su **DockerHub** a `https://hub.docker.com/repositories/alnao`
-	- esecuzione con Minikube per eseguire tutto in locale con anche MySql dentro un immagine docker
-	- esecuzione su cluster **AWS-EKS** con creato tramite AWS-CLI
-	- esecuzione con CloudFormation su `https://github.com/alnao/AwsCloudFormationExamples/tree/master/Esempio27eks` (con un docker-compose dedicato)
-	- esecuzione su cluster **AWS-EKS** con Heml-Chart e ArgoCD
-- **Esempio04dbNoSql**: esempio di CRUD *users* su database DynamoDb e DocumentMongo
-	- possibilità di eseguire in locale il progetto con Docker-compose e script di avvio *makefile*, avvio anche di Prometheus/Grafana per il monitoraggio
-	- possibilità di eseguire su AWS il progetto usando i servizi ECR, DocumentDb, Dynamo e **ECS** con FARGATE con script AWS-CLI senza CloudFormation. *Non funziona la parte con Mongo su DocumentDB*
-- **Esempio05testJunit5Mokito**: esempio di CRUD *users* su database MySql 
-	- per ogni classe è presente un Test con JUnit5 e con Mokito dove necessario nei Service
-	- presente anche un `docker-compose` per eseguire **SonarQube** per la verifica del codice (coverage, smell, bug...)
-	- presente la documentazione creata con Swagger
-- **Esempio06cacheAndScheduling**: esempio di microservio con Cache e sistema di Scheduling
-	- progetto *in sviluppo*
-- **Esempio07basicAuth**: esempio di microservizio con servizio di Login di tipo *basic auth*, 
-	- esempio con più rotte con permessi diversi su utenti diversi
-	- esempio di Swagger configurato con la BasicAuth
-- **Esempio08loginJwt**: esempio di microservizio con servizio di Login e servizio di accesso a tabella in maniera sicura
-	- progetto *in sviluppo*
-- **Esempio09webSocketGameGuessNumber**: esempio di mini-gioco "indovina il numero" 
-	- esempio realizzato usando WebSocket e RestAPi, la base dati è Mongo e viene usato anche redis
-	- studiato per essere Cloud-agnostico e tutto è stato *dockerizzato*, eseguibile anche su Kubernetes con Chart
-	- quasi tutto il codice è stato generato con GitHub-Copilot e successivamente verificato ma presenta alcune inesattezze ed errori
-	- il gioco non prevede nessun sistema di autenticazione/autorizzazione
+## 🛠️ Struttura progetto:
+Il progetto segue i principi dell'*Hexagonal Architecture* (Ports and Adapters) e si basa su un'architettura a microservizi modulare:
+```
+📦 annotazioni-parent
+├── 📁 module-port          # Interfacce e domini (Hexagonal Core)
+├── 📁 module-api           # REST API Controllers
+├── 📁 module-web           # Risorse statiche e configurazioni web
+├── 📁 module-aws           # Implementazione AWS (MySQL + DynamoDB)
+├── 📁 module-onprem        # Implementazione On-Premise (PostgreSQL + MongoDB)
+└── 📁 module-app           # Applicazione principale Spring Boot
+```
+Caratteristiche:
+- **Multi-database**: Supporto per PostgreSQL, MySQL, MongoDB, DynamoDB
+- **Multi-ambiente**: Configurazioni separate per AWS e On-Premise
+- **Architettura esagonale**: Separazione netta tra business logic e infrastruttura
+- **REST API**: Endpoint completi per gestione annotazioni
+- **Profili Spring**: Attivazione automatica delle implementazioni corrette
+- **Transazionalità**: Gestione delle transazioni cross-database
+- **Configurazione esterna**: Supporto per variabili d'ambiente
+
+Prerequisiti:
+- On-Premise semplice: Java 17+, Maven 3.8+, PostgreSQL 13+, MongoDB 4.4+
+- On-Premise con docker: Docker & Docker-compose
+- Ambiente AWS: Java 17+, Maven 3.8+, AWS Account con accesso a RDS MySQL e DynamoDB
 
 
-## Progetti in revisione:
-- ExampleMicro06cache
-- ExampleMicro08gestJwt
-- ExampleMicro09feign
-- ExampleMicro10cloudConfig
-- ExampleMicro11asyncCommon
-- ExampleMicro11asyncConsumerMagazzino
-- ExampleMicro11asyncProducerOrdini
-- ExampleMicro12eurekaServer
-- ExampleMicro13actuator
-- ExampleMicro14ribbon
-- ExampleMicro14ribbonClient
-- ExampleMicro15zuul
-- ExampleMicro16hystrix
-- ExampleMicro17turbine
+## 🏃‍♂️ Esecuzione
+- Build del progetto
+  ```bash
+  # Build completo
+  mvn clean package
+  # Build senza test
+  mvn clean package -DskipTests
+  ```
+- Esecuzione On-Premise lanciando il jar direttamente
+    ```bash
+    # Profilo on-premise (default)
+    java -jar module-app/target/module-app-1.0.0.jar
+
+    # Oppure specificando il profilo
+    java -jar module-app/target/module-app-1.0.0.jar --spring.profiles.active=onprem
+    ```
+- Esecuzione On-Premise con il docker-compose:
+    ```bash
+    docker-compose build --no-cache app
+    docker-compose up
+    ```
+- Esecuzione AWS
+    ```bash
+    # Profilo AWS
+    java -jar module-app/target/module-app-1.0.0.jar --spring.profiles.active=aws
+    ```
+
+## 📡 API Endpoints
+- Base URL: `http://localhost:8080` (8081 nel caso di docker-compose)
+- Risorse base
+    | Metodo | Endpoint | Descrizione |
+    |--------|----------|-------------|
+    | POST | `/api/annotazioni` | Crea nuova annotazione |
+    | GET | `/api/annotazioni` | Lista tutte le annotazioni |
+    | GET | `/api/annotazioni/{id}` | Ottiene annotazione per ID |
+    | PUT | `/api/annotazioni/{id}` | Aggiorna annotazione |
+    | DELETE | `/api/annotazioni/{id}` | Elimina annotazione |
+    | GET | `/api/annotazioni/utente/{utente}` | Annotazioni per utente |
+    | GET | `/api/annotazioni/categoria/{categoria}` | Annotazioni per categoria |
+    | GET | `/api/annotazioni/pubbliche` | Solo annotazioni pubbliche |
+    | POST | `/api/annotazioni/search` | Ricerca per testo |
+    | GET | `/api/annotazioni/stats` | Statistiche |
+- Operazioni sui Metadati
+    | Metodo | Endpoint | Descrizione |
+    |--------|----------|-------------|
+    | PUT | `/api/annotazioni/{id}/visibilita` | Imposta visibilità pubblica |
+    | PUT | `/api/annotazioni/{id}/categoria` | Imposta categoria |
+    | PUT | `/api/annotazioni/{id}/tags` | Imposta tags |
+    | PUT | `/api/annotazioni/{id}/priorita` | Imposta priorità |
+- Creare un'annotazione:
+    ```bash
+    curl -X POST http://localhost:8080/api/annotazioni \
+    -H "Content-Type: application/json" \
+    -d '{
+        "valoreNota": "Questa è una nota importante",
+        "descrizione": "Descrizione della nota",
+        "utente": "mario.rossi"
+    }'
+    ```
+- Ricerca per testo**:
+    ```bash
+    curl -X POST http://localhost:8080/api/annotazioni/search -H "Content-Type: application/json" -d '{"testo": "bello"}'
+    ```
+
+## 📊 Monitoring con actuator
+L'applicazione espone endpoint Actuator per il monitoring:
+- Health: `http://localhost:8080/actuator/health`
+- Metrics: `http://localhost:8080/actuator/metrics`
+- Info: `http://localhost:8080/actuator/info`
+- Environment: `http://localhost:8080/actuator/env`
+
+Infatti è configurato nel `pom.xml` la dipendenza:
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
+Nel file di configurazione `application.yaml` è presente il blocco:
+```yaml
+management:
+    endpoints:
+        web:
+        exposure:
+            include: health,info,metrics,env
+    endpoint:
+        health:
+        show-details: always
+```
 
 
-# Comandi base
-Maven è uno strumento di automazione della build e gestione dei progetti per progetti Java. Serve a semplificare il processo di compilazione, gestione delle dipendenze, esecuzione dei test e packaging del software, garantendo coerenza e riproducibilità nelle build.
-- To compile
-	```
-	mvn -version
-	mvn clean install
-	```
-	oppure per pulire la cache di maven
-	```
-	mvn clean dependency:purge-local-repository install
-	```
-- To run in local
-	```
-	mvn spring-boot:run
-	```
-	or 
-	```
-	java -jar target/*.jar
-	```
+## 🚧 Coming Soon
+
+### Coming soon: Configurazione AWS
+1. **RDS MySQL**:
+```bash
+# Crea istanza RDS MySQL via AWS CLI o Console
+aws rds create-db-instance \
+  --db-instance-identifier annotazioni-db \
+  --db-instance-class db.t3.micro \
+  --engine mysql \
+  --master-username admin \
+  --master-user-password your-password \
+  --allocated-storage 20
+```
+2. **DynamoDB**:
+```bash
+# Crea tabella DynamoDB
+aws dynamodb create-table \
+  --table-name annotazioni \
+  --attribute-definitions AttributeName=id,AttributeType=S \
+  --key-schema AttributeName=id,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST
+```
+3. **Variabili d'ambiente**:
+```bash
+export AWS_REGION=us-east-1
+export AWS_ACCESS_KEY=your-access-key
+export AWS_SECRET_KEY=your-secret-key
+export AWS_RDS_URL=jdbc:mysql://your-rds-endpoint:3306/annotazioni
+export AWS_RDS_USERNAME=admin
+export AWS_RDS_PASSWORD=your-password
+export DYNAMODB_TABLE_NAME=annotazioni
+```
 
 
-## Docker (esempio01base)
-Un Dockerfile è un file di testo che contiene una serie di istruzioni per costruire un'immagine Docker, ovvero un pacchetto eseguibile che include tutto il necessario per eseguire un'applicazione. Permette di definire in modo riproducibile e automatizzato l'ambiente di runtime, le dipendenze e il codice della tua applicazione.
-- **Dockerfile** di esempiop per eseguire un microservizio sviluppato con Spring boot:
-	```
-	FROM openjdk:17.0.1-jdk-slim
-	COPY target/esempio01base-0.0.1-SNAPSHOT.jar /esempio01base.jar
-	CMD ["java", "-jar", "/esempio01base.jar"]
-	```
-- To create docker image
-	```
-	docker build -t esempio01base:1.0-SNAPSHOT .
-	```
-- To run image 
-	```
-	docker run -d -p 5555:5051 esempio01base:1.0-SNAPSHOT
-	```
-	url is on 5555 port (port mapping in run command) 
-	```
-	http://localhost:5555/api/response
-	```
-- To check docker-container
-	```
-	docker ps
-	docker logs <container_id>
-	docker port <container_id>
-	docker stop <container_id>
-	docker rm <container_id>
-	docker container prune 
-	docker image ls
-	docker image rm <image_id>
-	```
 
 
-## Swagger
-**Swagger** (ora parte della suite OpenAPI Specification) è un insieme di strumenti open-source che aiuta a progettare, costruire, documentare e consumare API RESTful. Dovrebbe essere usato nei nostri progetti perché genera automaticamente una documentazione interattiva e aggiornata delle API direttamente dal codice sorgente, facilitando la collaborazione tra sviluppatori frontend e backend e migliorando la testabilità delle API.
+
+### 🔒 Sicurezza
+1. **Database**: Utilizza sempre password forti e connessioni SSL
+2. **AWS**: Configura IAM roles con permessi minimi necessari
+3. **Application**: Configura HTTPS in production
+4. **Monitoring**: Limita l'accesso agli endpoint Actuator
+
+### Deployment On-Premise
+```bash
+# Build
+mvn clean package -DskipTests
+mvn clean compile -pl module-app -am
+
+# Deploy
+java -jar module-app/target/module-app-1.0.0.jar \
+  --spring.profiles.active=onprem \
+  --server.port=8080
+```
+
+### Deployment AWS EC2
+```bash
+# Configurazione istanza EC2
+sudo yum update -y
+sudo yum install -y java-17-amazon-corretto
+
+# Deploy applicazione
+java -jar module-app-1.0.0.jar \
+  --spring.profiles.active=aws \
+  --server.port=8080
+```
+
+### Deployment AWS ECS/Fargate
+```json
+{
+  "family": "annotazioni-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "annotazioni",
+      "image": "your-ecr-repo/annotazioni:latest",
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "SPRING_PROFILES_ACTIVE",
+          "value": "aws"
+        }
+      ]
+    }
+  ]
+}
+```
 
 
-- Aggiungere nel file `pom.xml` dei progetti
-	```
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
-			<version>2.5.0</version> <!-- Controlla la versione più recente su Maven Central -->
-		</dependency>
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.5.0</version> <!-- Controlla la versione più recente su Maven Central -->
-		</dependency>
-	```
-- Add into properties file
-	```
-		springdoc.api-docs.path=/api-docs
-	```
-- 
-	Check documentation in json format:
-	```
-	http://localhost:xxxx/api-docs
-	```
-	or in yaml format
-	```
-	http://localhost:xxxx/api-docs.yaml
-	```
-- Complete documentation web-site
-	```
-	http://localhost:xxxx/swagger-ui.html
-	```
-- Create class configuration for additional information, see `Esempio05testJunit5Mokito/src/main/java/it/alnao/esempio05/config/OpenApiConfig.java` 
-- Use annotations, for examples:
-	- Classe tag
-		```
-		@Tag(name = "Login", description = "API per l'autenticazione degli utenti") // Aggiunge un tag per raggruppare gli endpoint nella UI di Swagger
-		public class LoginController { ... }
-		```
-	- Method operation and parameters:
-		``` 
-		@Operation(summary = "Effettua il login di un utente",
-				description = "Autentica un utente fornendo nome utente e password.") // Descrizione dell'operazione
-		@ApiResponses(value = { // Possibili risposte dell'API
-				@ApiResponse(responseCode = "200", description = "Login riuscito"),
-				@ApiResponse(responseCode = "401", description = "Credenziali non valide")
-		})
-		@PostMapping
-		public ResponseEntity<String> login(
-				@Parameter(description = "Nome utente per il login", required = true) // Descrizione del parametro 'nome'
-				@RequestParam String nome,
-				@Parameter(description = "Password dell'utente", required = true) // Descrizione del parametro 'password'
-				@RequestParam String password) { ... }
-		```
-
-# Actuator
-Spring Boot **Actuator** fornisce endpoint pronti all'uso per monitorare e gestire la tua applicazione in produzione, offrendo informazioni sullo stato di salute, metriche, configurazione e altro. Lo si usa per ottenere visibilità interna sull'applicazione senza dover scrivere codice di monitoraggio ad hoc, facilitando il debugging e l'operatività.
-- Add in 'pom.xml'
-	```
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-	```
-- See url 
-	- `http://localhost:<port>/actuator`
-	- `http://localhost:<port>/actuator/health`
-- In `docker-compose` add *health check*:
-	```
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8045/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-	```
-- In *AWS ECS Task Definition* could add *healt check*:
-	```
-	"healthCheck": {
-		"command": [
-			"CMD-SHELL",
-			"curl http://localhost:8080/actuator/health || exit 1"
-		],
-		"interval": 30,
-		"timeout": 10,
-		"retries": 5
-	},	
-	```
+# &lt; AlNao /&gt;
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella misura massima possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
 
 
-# AlNao.it
-Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [alnao.it](https://www.alnao.it/).
+Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l’obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 
+
+
+Per ulteriori dettagli, approfondimenti o richieste di chiarimento, si invita a consultare il sito [AlNao.it](https://www.alnao.it/).
+
 
 ## License
+Made with ❤️ by <a href="https://www.alnao.it">AlNao</a>
+&bull; 
 Public projects 
-<a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
+<a href="https://www.gnu.org/licenses/gpl-3.0"  valign="middle"> <img src="https://img.shields.io/badge/License-GPL%20v3-blue?style=plastic" alt="GPL v3" valign="middle" /></a>
 *Free Software!*
 
+
+Il software è distribuito secondo i termini della GNU General Public License v3.0. L'uso, la modifica e la ridistribuzione sono consentiti, a condizione che ogni copia o lavoro derivato sia rilasciato con la stessa licenza. Il contenuto è fornito "così com'è", senza alcuna garanzia, esplicita o implicita.
+
+
+The software is distributed under the terms of the GNU General Public License v3.0. Use, modification, and redistribution are permitted, provided that any copy or derivative work is released under the same license. The content is provided "as is", without any warranty, express or implied.
 
 
 

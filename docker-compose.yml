@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # PostgreSQL per metadati
+  postgres:
+    image: postgres:15-alpine
+    container_name: annotazioni-postgres
+    environment:
+      POSTGRES_DB: annotazioni
+      POSTGRES_USER: annotazioni_user
+      POSTGRES_PASSWORD: annotazioni_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./script/init-database/init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - annotazioni-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U annotazioni_user -d annotazioni"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MongoDB per annotazioni
+  mongodb:
+    image: mongo:7.0
+    container_name: annotazioni-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: annotazioni
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./script/init-database/init-mongodb.js:/docker-entrypoint-initdb.d/init.js
+    networks:
+      - annotazioni-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Applicazione Spring Boot
+  app:
+    build:
+      context: ./module-app
+      dockerfile: Dockerfile
+    container_name: annotazioni-app
+    environment:
+      SPRING_PROFILES_ACTIVE: onprem
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/annotazioni
+      POSTGRES_USERNAME: annotazioni_user
+      POSTGRES_PASSWORD: annotazioni_pass
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/annotazioni?authSource=admin
+      SERVER_PORT: 8080
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - annotazioni-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Adminer per gestione PostgreSQL
+  adminer:
+    image: adminer:4.8.1
+    container_name: annotazioni-adminer
+    ports:
+      - "8083:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+    networks:
+      - annotazioni-network
+
+  # Mongo Express per gestione MongoDB
+  mongo-express:
+    image: mongo-express:1.0.0
+    container_name: annotazioni-mongo-express
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: admin123
+      ME_CONFIG_MONGODB_URL: mongodb://admin:admin123@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    ports:
+      - "8082:8081"
+    depends_on:
+      - mongodb
+    networks:
+      - annotazioni-network
+
+volumes:
+  postgres_data:
+    driver: local
+  mongodb_data:
+    driver: local
+
+networks:
+  annotazioni-network:
+    driver: bridge

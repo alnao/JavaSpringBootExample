@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Gestione Annotazioni</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #212529;
+            padding-top: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+        
+        .main-content.expanded {
+            margin-left: 0;
+        }
+        
+        .card-annotazione {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card-annotazione:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .badge-priority {
+            font-size: 0.75rem;
+        }
+        
+        .annotazione-content {
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="p-3">
+            <h4 class="text-white mb-4">
+                <i class="bi bi-journal-text"></i> Annotazioni
+            </h4>
+            
+            <ul class="nav nav-pills flex-column">
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white active" href="#" onclick="showSection('dashboard')">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white" href="#" onclick="showSection('annotazioni')">
+                        <i class="bi bi-list-ul"></i> Tutte le Annotazioni
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white" href="#" onclick="showSection('crea')">
+                        <i class="bi bi-plus-circle"></i> Crea Annotazione
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white" href="#" onclick="showSection('pubbliche')">
+                        <i class="bi bi-globe"></i> Annotazioni Pubbliche
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white" href="#" onclick="showSection('cerca')">
+                        <i class="bi bi-search"></i> Cerca
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+            <div class="container-fluid">
+                <button class="btn btn-outline-secondary me-3" onclick="toggleSidebar()">
+                    <i class="bi bi-list"></i>
+                </button>
+                <span class="navbar-brand mb-0 h1">Sistema Gestione Annotazioni</span>
+                
+                <div class="navbar-nav ms-auto">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> Utente
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Impostazioni</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content Sections -->
+        <div class="container-fluid p-4">
+            
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" class="content-section">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 id="total-annotations">0</h4>
+                                        <p class="mb-0">Totale Annotazioni</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-journal-text fs-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 id="public-annotations">0</h4>
+                                        <p class="mb-0">Annotazioni Pubbliche</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-globe fs-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 id="my-annotations">0</h4>
+                                        <p class="mb-0">Le Mie Annotazioni</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-person-check fs-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-warning text-dark">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 id="categories-count">0</h4>
+                                        <p class="mb-0">Categorie</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-tags fs-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Annotazioni Recenti</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="recent-annotations" class="table-responsive">
+                                    <!-- Le annotazioni recenti verranno caricate qui -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tutte le Annotazioni Section -->
+            <div id="annotazioni-section" class="content-section" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                        <h2><i class="bi bi-list-ul"></i> Tutte le Annotazioni</h2>
+                        <button class="btn btn-primary" onclick="showSection('crea')">
+                            <i class="bi bi-plus"></i> Nuova Annotazione
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="search-annotations" placeholder="Cerca annotazioni...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="filter-category">
+                            <option value="">Tutte le categorie</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="filter-priority">
+                            <option value="">Tutte le priorità</option>
+                            <option value="1">Bassa</option>
+                            <option value="2">Media</option>
+                            <option value="3">Alta</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="annotations-container" class="row">
+                    <!-- Le annotazioni verranno caricate qui -->
+                </div>
+            </div>
+
+            <!-- Crea Annotazione Section -->
+            <div id="crea-section" class="content-section" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2><i class="bi bi-plus-circle"></i> Crea Nuova Annotazione</h2>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-lg-8">
+                        <form id="create-annotation-form">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="annotation-title" class="form-label">Descrizione <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="annotation-title" required maxlength="500">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="annotation-content" class="form-label">Contenuto Annotazione <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" id="annotation-content" rows="8" required maxlength="10000"></textarea>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="annotation-category" class="form-label">Categoria</label>
+                                            <input type="text" class="form-control" id="annotation-category" maxlength="100">
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="annotation-priority" class="form-label">Priorità</label>
+                                            <select class="form-select" id="annotation-priority">
+                                                <option value="1">Bassa</option>
+                                                <option value="2" selected>Media</option>
+                                                <option value="3">Alta</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="annotation-tags" class="form-label">Tag (separati da virgola)</label>
+                                        <input type="text" class="form-control" id="annotation-tags" maxlength="500" placeholder="es: lavoro, importante, promemoria">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="annotation-user" class="form-label">Utente <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="annotation-user" required maxlength="100" value="utente-demo">
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="annotation-public">
+                                        <label class="form-check-label" for="annotation-public">
+                                            Annotazione pubblica
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="card-footer">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Salva Annotazione
+                                    </button>
+                                    <button type="button" class="btn btn-secondary ms-2" onclick="resetForm()">
+                                        <i class="bi bi-arrow-clockwise"></i> Reset
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Annotazioni Pubbliche Section -->
+            <div id="pubbliche-section" class="content-section" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2><i class="bi bi-globe"></i> Annotazioni Pubbliche</h2>
+                    </div>
+                </div>
+                
+                <div id="public-annotations-container" class="row">
+                    <!-- Le annotazioni pubbliche verranno caricate qui -->
+                </div>
+            </div>
+
+            <!-- Cerca Section -->
+            <div id="cerca-section" class="content-section" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2><i class="bi bi-search"></i> Cerca Annotazioni</h2>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="input-group">
+                            <input type="text" class="form-control form-control-lg" id="global-search" placeholder="Cerca nel contenuto e nella descrizione delle annotazioni...">
+                            <button class="btn btn-primary btn-lg" onclick="performGlobalSearch()">
+                                <i class="bi bi-search"></i> Cerca
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="search-results-container" class="row">
+                    <!-- I risultati della ricerca verranno mostrati qui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal per visualizzare/modificare annotazioni -->
+    <div class="modal fade" id="annotationModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Dettagli Annotazione</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Il contenuto dell'annotazione verrà caricato qui -->
+                </div>
+                <div class="modal-footer" id="modalFooter">
+                    <!-- I pulsanti verranno aggiunti dinamicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="js/app.js"></script>
+</body>
+</html>
