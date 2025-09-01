@@ -1,0 +1,12 @@
+package it.alnao.annotazioni.port.repository;
+
+import org.junit.jupiter.api.Test;
+
+class AnnotazioneMetadataRepositoryTest {
+    @Test
+    void testInterface() {
+        // Interface presence test
+        Class<?> clazz = AnnotazioneMetadataRepository.class;
+        assert clazz != null;
+    }
+}

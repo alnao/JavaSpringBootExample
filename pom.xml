@@ -37,40 +37,40 @@
     </properties>
 
     <modules>
-        <module>module-port</module>
-        <module>module-api</module>
-        <module>module-web</module>
-        <module>module-aws</module>
-        <module>module-onprem</module>
-        <module>module-app</module>
+        <module>adapter-port</module>
+        <module>adapter-api</module>
+        <module>adapter-web</module>
+        <module>adapter-aws</module>
+        <module>adapter-onprem</module>
+        <module>adapter-app</module>
     </modules>
 
     <dependencyManagement>
         <dependencies>
-            <!-- Internal modules -->
+            <!-- Internal adapters -->
             <dependency>
                 <groupId>it.alnao.annotazioni</groupId>
-                <artifactId>module-port</artifactId>
+                <artifactId>adapter-port</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>it.alnao.annotazioni</groupId>
-                <artifactId>module-api</artifactId>
+                <artifactId>adapter-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>it.alnao.annotazioni</groupId>
-                <artifactId>module-web</artifactId>
+                <artifactId>adapter-web</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>it.alnao.annotazioni</groupId>
-                <artifactId>module-aws</artifactId>
+                <artifactId>adapter-aws</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>it.alnao.annotazioni</groupId>
-                <artifactId>module-onprem</artifactId>
+                <artifactId>adapter-onprem</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

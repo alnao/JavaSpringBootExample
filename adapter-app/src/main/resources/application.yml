@@ -1,0 +1,129 @@
+# Configurazione applicazione Spring Boot
+spring:
+  application:
+    name: sistema-annotazioni
+  
+  profiles:
+    active: onprem
+
+  # Configurazione database (profilo-specifico)
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/annotazioni}
+    username: ${DATABASE_USERNAME:annotazioni_user}
+    password: ${DATABASE_PASSWORD:annotazioni_pass}
+    driver-class-name: org.postgresql.Driver
+  
+  # Configurazione JPA
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  
+  # Configurazione MongoDB
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/annotazioni}
+      auto-index-creation: true
+  
+  # Configurazione Web
+  web:
+    resources:
+      static-locations: classpath:/static/
+
+# Configurazione server
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+
+# Configurazione Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
+  endpoint:
+    health:
+      show-details: always
+
+# Configurazione logging
+logging:
+  level:
+    it.alnao.annotazioni: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Configurazione personalizzata
+annotazioni:
+  config:
+    max-annotation-size: 10000
+    max-description-size: 500
+    default-priority: 2
+    enable-public-annotations: true
+
+---
+# Profilo AWS
+spring:
+  config:
+    activate:
+      on-profile: aws
+  
+  datasource:
+    url: ${AWS_RDS_URL:jdbc:mysql://localhost:3306/annotazioni}
+    username: ${AWS_RDS_USERNAME:admin}
+    password: ${AWS_RDS_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+# Configurazione DynamoDB
+aws:
+  region: ${AWS_REGION:us-east-1}
+  access-key: ${AWS_ACCESS_KEY:}
+  secret-key: ${AWS_SECRET_KEY:}
+  dynamodb:
+    table-name: ${DYNAMODB_TABLE_NAME:annotazioni}
+    endpoint: ${DYNAMODB_ENDPOINT:}
+
+---
+# Profilo On-Premise
+spring:
+  config:
+    activate:
+      on-profile: onprem
+  
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/annotazioni}
+    username: ${POSTGRES_USERNAME:annotazioni_user}
+    password: ${POSTGRES_PASSWORD:annotazioni_pass}
+  
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/annotazioni_db}
+
+---
+# Profilo Development
+spring:
+  config:
+    activate:
+      on-profile: dev
+  
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  
+  logging:
+    level:
+      it.alnao.annotazioni: DEBUG
+      org.springframework.web: DEBUG

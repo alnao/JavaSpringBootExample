@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: annotazioni-app
+spec:
+  replicas: 2 # Scalabilità: 2 pod
+  selector:
+    matchLabels:
+      app: annotazioni-app
+  template:
+    metadata:
+      labels:
+        app: annotazioni-app
+    spec:
+      containers:
+        - name: annotazioni
+          image: alnao/annotazioni:latest
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/annotazioni
+            - name: SPRING_DATASOURCE_USERNAME
+              value: demo
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: demo
+            - name: SPRING_DATA_MONGODB_URI
+              value: mongodb://demo:demo@mongo:27017/annotazioni_db?authSource=admin
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: annotazioni-app
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080
+  selector:
+    app: annotazioni-app

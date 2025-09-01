@@ -46,7 +46,7 @@ services:
   # Applicazione Spring Boot
   app:
     build:
-      context: ./module-app
+      context: ./ #adapter-app
       dockerfile: Dockerfile
     container_name: annotazioni-app
     environment:
@@ -54,7 +54,7 @@ services:
       POSTGRES_URL: jdbc:postgresql://postgres:5432/annotazioni
       POSTGRES_USERNAME: annotazioni_user
       POSTGRES_PASSWORD: annotazioni_pass
-      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/annotazioni?authSource=admin
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/annotazioni_db?authSource=admin
       SERVER_PORT: 8080
     ports:
       - "8081:8080"
