@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  # MySQL per simulare RDS
+  mysql:
+    image: mysql:8.0
+    container_name: annotazioni-mysql
+    environment:
+      MYSQL_DATABASE: annotazioni
+      MYSQL_USER: annotazioni_user
+      MYSQL_PASSWORD: annotazioni_pass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3406:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../init-database/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql:ro
+    networks:
+      - aws-onprem-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # DynamoDB local
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: annotazioni-dynamodb
+    user: root
+#    working_dir: /home/albertonao/
+    ports:
+      - "8420:8000"
+    networks:
+      - aws-onprem-network
+    command: -jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data
+    volumes:
+      - ./dynamodb_data:/home/dynamodblocal/data
+
+  # Applicazione Spring Boot profilo AWS
+  app:
+    image: alnao/annotazioni:latest
+    container_name: annotazioni-app-aws
+    environment:
+      SPRING_PROFILES_ACTIVE: aws
+      AWS_RDS_URL: jdbc:mysql://mysql:3306/annotazioni
+      AWS_RDS_USERNAME: annotazioni_user
+      AWS_RDS_PASSWORD: annotazioni_pass
+      AWS_REGION: eu-central-1
+      AWS_ACCESS_KEY: dummy
+      AWS_SECRET_KEY: dummy
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+      DYNAMODB_TABLE_NAME: annotazioni
+      SERVER_PORT: 8085
+    ports:
+      - "8085:8085"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      dynamodb:
+        condition: service_started
+    networks:
+      - aws-onprem-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Adminer per MySQL
+  adminer:
+    image: adminer:4.8.1
+    container_name: annotazioni-adminer-aws
+    ports:
+      - "8086:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+    depends_on:
+      - mysql
+    networks:
+      - aws-onprem-network
+
+  # DynamoDB Admin UI
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin
+    container_name: annotazioni-dynamodb-admin
+    environment:
+      DYNAMO_ENDPOINT: http://dynamodb:8000
+      AWS_REGION: eu-central-1
+      AWS_ACCESS_KEY_ID: dummy
+      AWS_SECRET_ACCESS_KEY: dummy
+    ports:
+      - "8087:8001"
+    depends_on:
+      - dynamodb
+    networks:
+      - aws-onprem-network
+
+  # Servizio one-shot per inizializzazione tabella DynamoDB
+  init-dynamodb:
+    image: amazon/aws-cli
+    container_name: annotazioni-init-dynamodb
+    entrypoint: ["/bin/sh", "-c", "/init-database/init-dynamodb.sh"]
+    environment:
+      DYNAMO_ENDPOINT: http://dynamodb:8000
+      DYNAMODB_TABLE_NAME: annotazioni
+    volumes:
+      - ../init-database/init-dynamodb.sh:/init-database/init-dynamodb.sh:ro
+    depends_on:
+      - dynamodb
+    networks:
+      - aws-onprem-network
+    restart: "no"
+
+# Nginx reverse proxy per frontend statico e API
+ # nginx:
+ #   image: nginx:1.25
+ #   container_name: annotazioni-nginx
+ #   ports:
+ #     - "8080:80"
+ #   volumes:
+ #     - ../..//adapter-web/src/main/resources/static:/usr/share/nginx/html:ro
+ #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+ #   depends_on:
+ #     - app
+ #   networks:
+ #     - aws-onprem-network
+
+volumes:
+  mysql_data:
+    driver: local
+  # dynamodb_data volume non più necessario, ora si usa una directory locale
+
+networks:
+  aws-onprem-network:
+    driver: bridge

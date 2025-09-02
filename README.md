@@ -16,13 +16,14 @@ Un sistema di gestione annotazioni multi-modulo basato su Spring Boot che implem
 - [🐳 Deploy e utilizzo con DockerHub](#-deploy-e-utilizzo-con-dockerhub)
 - [🐳 Deploy completo con Docker Compose](#-deploy-completo-con-docker-compose)
 - [☸️ Deploy su Minikube (Kubernetes locale)](#️-deploy-su-minikube-kubernetes-locale)
+- [🐳 Deploy AWS-onprem (MySQL e DynamoDB Local)](#-Deploy-AWS-onprem-MySQL-e-DynamoDB-Local)
+- [🚀 Deploy su AWS EC2](#-Deploy-su-AWS-EC2)
 - [📝 Roadmap / TODO](#-todo--roadmap)
 - [🚧 Coming Soon](#-coming-soon)
   - [🔒 Sicurezza](#-sicurezza)
   - [Deployment On-Premise](#deployment-on-premise)
   - [Deployment AWS EC2](#deployment-aws-ec2)
   - [Deployment AWS ECS/Fargate](#deployment-aws-ecsfargate)
-
 
 
 ## 🛠️ Struttura progetto:
@@ -243,6 +244,10 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
     docker build -t alnao/annotazioni:latest .
     docker push alnao/annotazioni:latest
     ```
+    oppure lanciare lo script 
+    ```bash
+    ./script/push-image-docker-hub.sh
+    ```
 - **Pull dell'immagine**:
     ```bash
     docker pull alnao/annotazioni:latest
@@ -399,20 +404,98 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
     - Viene usata l'immagine `alnao/annotazioni:latest` su dockerHub e non una immagine creata in sistema locale.
 
 
+## 🐳 Deploy AWS-onprem (MySQL e DynamoDB Local)
+
+Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, DynamoDB Admin UI, Spring Boot profilo AWS):
+- Comando per la creazione dello stack docker
+  ```bash
+  docker-compose -f script/aws-onprem/docker-compose.yml up
+  ```
+  - lo stack crea anche tabelle su Dynamo e tabella MySql
+  - presenta anche uno script `start-all.sh` ma non è necessario usarlo
+- Servizi disponibili:
+  - **Frontend**:        [http://localhost:8085](http://localhost:8085)
+  - **Backend API**:     [http://localhost:8085/api/annotazioni](http://localhost:8085/api/annotazioni)
+  - **Adminer (MySQL)**: [http://localhost:8086](http://localhost:8086)
+    - Server: `mysql`
+    - User: `annotazioni_user`
+    - Password: `annotazioni_pass`
+    - Database: `annotazioni`
+  - **DynamoDB Admin**:  [http://localhost:8087](http://localhost:8087)
+
+- Per prova è stato scritto e poi commentato anche un Nginx/Proxy
+  - Il frontend statico è servito da Nginx su `localhost:8080`.
+  - Le chiamate API `/api/annotazioni` sono automaticamente proxyate verso il backend Spring Boot su `localhost:8085`.
+  - Non è necessario modificare `app.js` o la logica frontend: tutte le chiamate API funzionano come in produzione.
+  - Se modifichi i file statici, riavvia solo il servizio Nginx:
+    ```bash
+    docker-compose restart nginx
+    ```
+    - Se la porta 8080 è occupata, puoi cambiare la porta esposta nel servizio Nginx nel `docker-compose.yml`.
+- Per vedere i log di un servizio:
+  ```bash
+  docker-compose logs -f <nome-servizio>
+  ```
+- Per fermare tutto e rimuovere i componenti:
+  ```bash
+  docker-compose -f script/aws-onprem/docker-compose.yml down
+  ```
+  - presente anche uno script `stop-all.sh`
+
+
+## 🚀 Deploy su AWS EC2
+Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con provisioning completamente automatizzato di tutte le risorse cloud necessarie (Aurora MySQL, DynamoDB, EC2, Security Group, IAM Role, KeyPair, ecc.) tramite script Bash e AWS CLI.
+- Prerequisiti:
+  - AWS CLI installata e configurata (`aws configure`)
+  - Credenziali AWS con permessi minimi per EC2, RDS, DynamoDB, IAM, VPC, KeyPair
+  - Chiave SSH per accesso sicuro all'istanza EC2 (verrà generata se non presente)
+  - Lo script usa la VPC di default di un account e crea il security group necessario
+- Provisioning e deploy automatico:
+  - **Avvia provisioning e deploy**:
+    ```bash
+    ./script/aws-ec2/start-all.sh
+    ```
+    Lo script esegue in sequenza:
+    - Creazione VPC, Security Group, KeyPair, IAM Role
+    - Provisioning Aurora MySQL (RDS) e DynamoDB
+    - Upload e lancio script di inizializzazione SQL su Aurora (init-mysql.sql)
+    - Creazione e configurazione istanza EC2 (Amazon Linux 2)
+    - Deploy automatico del jar Spring Boot e avvio con profilo `aws`
+    - Configurazione variabili d'ambiente e sicurezza SSH
+  - **Accesso all'applicazione**:
+    - L'output finale dello script mostra l'IP pubblico EC2 e la porta applicativa (default 8080)
+    - Accedi da browser: `http://<EC2_PUBLIC_IP>:8080`
+    - Accesso SSH:
+      ```bash
+      ssh -i annotazioni-key.pem ec2-user@<EC2_PUBLIC_IP>
+      ```
+  - **Teardown e cleanup**:
+    Per rimuovere tutte le risorse create (EC2, RDS, DynamoDB, Security Group, KeyPair, ecc):
+    ```bash
+    ./script/aws-ec2/stop-all.sh
+    ```
+- Note
+  - Lo script supporta anche il caricamento dello script SQL da S3 (opzionale, vedi variabile `INIT_SQL_S3_PATH`)
+  - Il provisioning è idempotente: puoi rilanciare lo script senza duplicare risorse
+  - Tutte le risorse sono taggate per facile identificazione e cleanup
+  - Potrebbe avere qualche problema in fase di avvio perchè il database non viene *agganciato* dal microservizio, non so il perchè, ho *ignorato* il problema visto che conviene usare ECS e EKS.
+
+
 ## 📝 TODO / Roadmap
 - ✅ Creazione progetto e primo test con pagina web di esempio
 - ✅ Introduzione modifica nota e documento con vecchie versioni delle note
 - ✅ Configurazione di OpenApi-Swagger e Quality-SonarQube
-- ✅ Build e deploy su DockerHub, configurazione di docker-compose
-- ✅ Run on Minikube
-- 🚧 Test con Mysql e DynamoDB 
-- 🚧 Deploy su AWS su EC2 / Lightsail
+- ✅ Build e deploy su DockerHub, configurazione di docker-compose con MongoDb e Postgresql
+- ✅ Esecuzione su Minikube con yaml dedicati
+- ✅ Esecuzione con docker-compose della versione AWS su sistema locale con Mysql e DynamoDB 
+- ✅ Deploy su AWS su EC2 con script scritto in AWS-CLI per il provisioning delle risorse necessarie
+- 🚧 Storico annotazioni su Dynamo
 - 🚧 Deploy su AWS su Fargate/ECS
 - 🚧 Deploy su AWS su EKS
 - 🚧 Sistema di caching e ottimizzazione
 - 🚧 Sistem di Deploy con Kubernetes Helm charts
-- 🚧 Autenticazione e autorizzazione (Spring Security) e token Jwt
 - 🚧 Gestione multiutente e versioning annotazioni
+- 🚧 Autenticazione e autorizzazione (Spring Security) e token Jwt
 - 🚧 Export/Import annotazioni (JSON, CSV)
 - 🚧 Export/Import annotazioni (Kafka)
 - 🚧 Notifiche real-time (WebSocket)

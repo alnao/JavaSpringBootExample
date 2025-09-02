@@ -24,15 +24,15 @@ CREATE INDEX idx_annotazione_metadata_utente_creazione ON annotazione_metadata(u
 CREATE INDEX idx_annotazione_metadata_data_inserimento ON annotazione_metadata(data_inserimento);
 
 -- Dati di esempio
-INSERT IGNORE INTO annotazione_metadata (
-    id, versione_nota, utente_creazione, data_inserimento, data_ultima_modifica,
-    utente_ultima_modifica, descrizione, categoria, tags, pubblica, priorita
-) VALUES 
-(
-    '3a2b7c91-9e5f-4f0e-8b69-d0e989f0b2f6', 'v1.0', 'admin', NOW(), NOW(),
-    'admin', 'Annotazione AWS di esempio per test', 'Cloud', 'aws,esempio,test', true, 3
-),
-(
-    '6d1c2a40-1f90-4b8b-9f5e-4e014a6da2bb', 'v1.1', 'user1', NOW(), NOW(),
-    'user1', 'Seconda annotazione AWS', 'Sviluppo', 'aws,sviluppo', false, 2
-);
+--INSERT IGNORE INTO annotazione_metadata (
+--    id, versione_nota, utente_creazione, data_inserimento, data_ultima_modifica,
+--    utente_ultima_modifica, descrizione, categoria, tags, pubblica, priorita
+--) VALUES 
+--(
+--    '3a2b7c91-9e5f-4f0e-8b69-d0e989f0b2f6', 'v1.0', 'admin', NOW(), NOW(),
+--    'admin', 'Annotazione AWS di esempio per test', 'Cloud', 'aws,esempio,test', true, 3
+--),
+--(
+--    '6d1c2a40-1f90-4b8b-9f5e-4e014a6da2bb', 'v1.1', 'user1', NOW(), NOW(),
+--    'user1', 'Seconda annotazione AWS', 'Sviluppo', 'aws,sviluppo', false, 2
+--);

@@ -1,7 +1,10 @@
 package it.alnao.annotazioni.aws.entity;
 
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import java.time.LocalDateTime;
 
+@DynamoDbBean
 public class AnnotazioneStoricoDynamoEntity {
     private String id;
     private String idOriginale;
@@ -15,7 +18,7 @@ public class AnnotazioneStoricoDynamoEntity {
     private Integer priorita;
     private LocalDateTime dataModifica;
 
-    // Getters and Setters
+    @DynamoDbPartitionKey
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getIdOriginale() { return idOriginale; }
