@@ -8,23 +8,18 @@ Un sistema di gestione annotazioni multi-modulo basato su Spring Boot che implem
 ## 📚 Indice rapido
 
 - [🛠️ Struttura progetto](#️-struttura-progetto)
-- [🏃‍♂️ Esecuzione](#-esecuzione)
+- [⚙️ Esecuzione](#-esecuzione)
 - [📡 API Endpoints](#-api-endpoints)
 - [📊 Monitoring con actuator](#-monitoring-con-actuator)
 - [📖 Documentazione API con Swagger / OpenAPI](#-documentazione-api-con-swagger--openapi)
 - [📈 Analisi qualità e coverage con SonarQube](#-analisi-qualità-e-coverage-con-sonarqube)
 - [🐳 Deploy e utilizzo con DockerHub](#-deploy-e-utilizzo-con-dockerhub)
 - [🐳 Deploy completo con Docker Compose](#-deploy-completo-con-docker-compose)
-- [☸️ Deploy su Minikube (Kubernetes locale)](#️-deploy-su-minikube-kubernetes-locale)
-- [🐳 Deploy AWS-onprem (MySQL e DynamoDB Local)](#-Deploy-AWS-onprem-MySQL-e-DynamoDB-Local)
+- [☸️ Deploy su Minikube e Kubernetes locale)](#️-deploy-su-minikube-kubernetes-locale)
+- [🐳 Deploy AWS-onprem](#-Deploy-AWS-onprem-MySQL-e-DynamoDB-Local)
 - [🚀 Deploy su AWS EC2](#-Deploy-su-AWS-EC2)
+- [🐳 Deploy su AWS ECS Fargate](#-deploy-su-aws-ecs-fargate)
 - [📝 Roadmap / TODO](#-todo--roadmap)
-- [🚧 Coming Soon](#-coming-soon)
-  - [🔒 Sicurezza](#-sicurezza)
-  - [Deployment On-Premise](#deployment-on-premise)
-  - [Deployment AWS EC2](#deployment-aws-ec2)
-  - [Deployment AWS ECS/Fargate](#deployment-aws-ecsfargate)
-
 
 ## 🛠️ Struttura progetto:
 Il progetto segue i principi dell'*Hexagonal Architecture* (Ports and Adapters) e si basa su un'architettura a microservizi modulare:
@@ -52,7 +47,7 @@ Prerequisiti:
 - Ambiente AWS: Java 17+, Maven 3.8+, AWS Account con accesso a RDS MySQL e DynamoDB
 
 
-## 🏃‍♂️ Esecuzione
+## ⚙️ Esecuzione
 - Build del progetto in ambiente di sviluppo
   ```bash
   # Build completo
@@ -451,7 +446,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
   - Chiave SSH per accesso sicuro all'istanza EC2 (verrà generata se non presente)
   - Lo script usa la VPC di default di un account e crea il security group necessario
 - Provisioning e deploy automatico:
-  - **Avvia provisioning e deploy**:
+  - Avvio di tutte le risorse e avvio del microservizio con docker nella EC2::
     ```bash
     ./script/aws-ec2/start-all.sh
     ```
@@ -462,148 +457,174 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
     - Creazione e configurazione istanza EC2 (Amazon Linux 2)
     - Deploy automatico del jar Spring Boot e avvio con profilo `aws`
     - Configurazione variabili d'ambiente e sicurezza SSH
-  - **Accesso all'applicazione**:
+  - Accesso all'applicazione:
     - L'output finale dello script mostra l'IP pubblico EC2 e la porta applicativa (default 8080)
     - Accedi da browser: `http://<EC2_PUBLIC_IP>:8080`
     - Accesso SSH:
       ```bash
       ssh -i annotazioni-key.pem ec2-user@<EC2_PUBLIC_IP>
       ```
-  - **Teardown e cleanup**:
-    Per rimuovere tutte le risorse create (EC2, RDS, DynamoDB, Security Group, KeyPair, ecc):
+  - Pulizia/cleanup:
+    Rimozione di tutte le risorse create (EC2, RDS, DynamoDB, Security Group, KeyPair, ecc):
     ```bash
     ./script/aws-ec2/stop-all.sh
     ```
+    - Attenzione: questo script elimina tutti i dati nei database, se necessario effettuare un backup prima di eseguire lo script, l'operazione di cancellazione è irreversibile.
 - Note
-  - Lo script supporta anche il caricamento dello script SQL da S3 (opzionale, vedi variabile `INIT_SQL_S3_PATH`)
   - Il provisioning è idempotente: puoi rilanciare lo script senza duplicare risorse
   - Tutte le risorse sono taggate per facile identificazione e cleanup
   - Potrebbe avere qualche problema in fase di avvio perchè il database non viene *agganciato* dal microservizio, non so il perchè, ho *ignorato* il problema visto che conviene usare ECS e EKS.
+    - sembra che non arrivi il corretto `AURORA_ENDPOINT` nella configurazione del microservizio nel `user_data`.
+  - L'infrastruttura AWS prevede dei costi, si riassume un breve preventivo:
+    - Aurora: circa da 2,4 USD/giorno a 72 USD/mese
+    - DynamoDB: circa da 0,01 USD/giorno a 1,25 USD/mese
+    - EC2 t2.medium: EC2: da 1,2 USD/giorno a circa 37 USD/mese
+- Tabella dei costi stimati per risorse sempre accese (24/7), regione Francoforte (eu-central-1), prezzi AWS settembre 2025:
+  | Servizio         | Carico Basso (giorno) | Carico Basso (mese) | Carico Medio/Alto (giorno) | Carico Medio/Alto (mese) |
+  |------------------|----------------------|---------------------|----------------------------|--------------------------|
+  | Aurora MySQL     | ~2,4 USD             | ~72 USD             | ~2,4 USD                   | ~72 USD                  |
+  | DynamoDB         | ~0,01 USD            | ~0,30 USD           | ~0,04 USD                  | ~1,25 USD                |
+  | EC2 t3.medium    | ~1,2 USD             | ~37 USD             | ~1,2 USD                   | ~37 USD                  |
+  | ECR/Storage      | trascurabile         | trascurabile        | trascurabile               | trascurabile             |
+  | **Totale**       | **~3,6 USD**         | **~110 USD**        | **~3,7 USD**               | **~115 USD**             |
+
+
+## 🐳 Deploy su AWS ECS Fargate
+Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con Fargate, utilizzando container serverless completamente gestiti da AWS. Il provisioning automatizzato include tutte le risorse cloud necessarie (Aurora MySQL, DynamoDB, ECR, ECS Cluster, Task Definition, Service, IAM Roles, Security Groups, ecc.) tramite script Bash e AWS CLI.
+
+- Prerequisiti:
+  - AWS CLI installata e configurata (`aws configure`)
+  - Docker installato per build e push delle immagini
+  - Credenziali AWS con permessi per ECS, ECR, RDS, DynamoDB, IAM, VPC, CloudWatch
+  - Lo script usa la VPC di default e crea automaticamente tutti i Security Groups necessari
+
+- Provisioning e deploy automatico:
+  - Avvio di tutte le risorse e deploy del microservizio su ECS Fargate:
+    ```bash
+    ./script/aws-ecs/start-all.sh
+    ```
+    Lo script esegue in sequenza:
+    1. **Build e Push ECR**: Compilazione Maven, build Docker, creazione repository ECR e push immagine
+    2. **IAM Roles**: Creazione Task Role (accesso Aurora/DynamoDB) e Execution Role (logging CloudWatch)
+    3. **Networking**: Creazione Security Groups con regole per HTTP (8080), Aurora (3306), HTTPS/SSH
+    4. **Aurora MySQL**: Provisioning cluster RDS con inizializzazione database e tabelle
+    5. **DynamoDB**: Creazione tabelle `annotazioni` e `annotazioni_storico` con attributi ottimizzati
+    6. **ECS Deployment**: Creazione cluster, task definition, service con Fargate e auto-scaling
+    7. **CloudWatch Logs**: Configurazione logging applicativo con retention automatica
+    8. **Endpoint Discovery**: Rilevamento automatico IP pubblico del task per accesso HTTP
+
+  - Accesso all'applicazione:
+    - L'output finale dello script mostra l'IP pubblico del task ECS e la porta applicativa (8080)
+    - Accedi da browser: `http://<TASK_PUBLIC_IP>:8080`
+    - Endpoint API: `http://<TASK_PUBLIC_IP>:8080/api/annotazioni`
+    - Swagger UI: `http://<TASK_PUBLIC_IP>:8080/swagger-ui.html`
+    - Health Check: `http://<TASK_PUBLIC_IP>:8080/actuator/health`
+
+  - Monitoring e logs:
+    ```bash
+    # Verifica stato servizio ECS
+    aws ecs describe-services --cluster annotazioni-cluster --services annotazioni-service
+    
+    # Visualizza logs applicazione
+    aws logs tail /ecs/annotazioni --follow
+    
+    # Lista task attivi
+    aws ecs list-tasks --cluster annotazioni-cluster
+    ```
+
+  - Pulizia/cleanup:
+    Rimozione completa di tutte le risorse create (ECS, ECR, RDS, DynamoDB, Security Groups, IAM Roles, CloudWatch Logs, ecc):
+    ```bash
+    ./script/aws-ecs/stop-all.sh
+    ```
+    - **Attenzione**: questo script elimina tutti i dati nei database in modo irreversibile
+    - Effettuare backup se necessario prima dell'esecuzione
+
+
+- Note tecniche:
+  - Il provisioning è idempotente: esecuzione multipla sicura senza duplicazioni
+  - Tutte le risorse sono taggate per identificazione e gestione costi
+  - Service ECS configurato con health check automatici e restart su failure
+  - Task definition ottimizzata per Fargate con 1 vCPU e 2GB RAM
+  - Networking configurato per accesso pubblico sicuro con Security Groups specifici
+  - Aurora endpoint automaticamente rilevato e configurato nel container
+
+- Tabella dei costi stimati per risorse sempre accese (24/7), regione Francoforte (eu-central-1), prezzi AWS settembre 2025:
+  
+  | Servizio              | Carico Basso (giorno) | Carico Basso (mese) | Carico Medio (giorno) | Carico Medio (mese) |
+  |-----------------------|----------------------|---------------------|----------------------|--------------------|
+  | ECS Fargate (1 vCPU, 2GB RAM) | ~0,8 USD (1 task 24/7) | ~24 USD (1 task 24/7) | ~1,6 USD (2 task avg) | ~48 USD (2 task avg) |
+  | Aurora MySQL (db.r6g.large) | ~2,4 USD (1 instance) | ~72 USD (1 instance) | ~2,4 USD (1 instance) | ~72 USD (1 instance) |
+  | DynamoDB (On-Demand) | ~0,01 USD (<1K RCU/WCU) | ~0,30 USD (<1K RCU/WCU) | ~0,05 USD (~5K RCU/WCU) | ~1,50 USD (~5K RCU/WCU) |
+  | ECR Repository (Storage immagini) | ~0,05 USD (~5GB storage) | ~1,50 USD (~5GB storage) | ~0,05 USD (~5GB storage) | ~1,50 USD (~5GB storage) |
+  | CloudWatch Logs (Log retention) | ~0,02 USD (~1GB logs) | ~0,60 USD (~1GB logs) | ~0,10 USD (~5GB logs) | ~3,00 USD (~5GB logs) |
+  | VPC (Subnet/Route Tables/IGW) | ~0,01 USD (risorse base) | ~0,30 USD (risorse base) | ~0,01 USD (risorse base) | ~0,30 USD (risorse base) |
+  | Traffico di Rete (Data Transfer) | ~0,05 USD (~5GB out) | ~1,50 USD (~5GB out) | ~0,20 USD (~20GB out) | ~6,00 USD (~20GB out) |
+  | **TOTALE BASE** | **~3,4 USD** | **~102 USD** | **~4,4 USD** | **~135 USD** |
+  | Application Load Balancer (opzionale) | ~0,75 USD (se abilitato) | ~22,50 USD (se abilitato) | ~0,75 USD (se abilitato) | ~22,50 USD (se abilitato) |
+  | **TOTALE + ALB** | **~4,1 USD** | **~124 USD** | **~5,1 USD** | **~157 USD** |
+  | NAT Gateway (per private subnet) | ~1,50 USD (se configurato) | ~45 USD (se configurato) | ~1,50 USD (se configurato) | ~45 USD (se configurato) |
+  | **TOTALE + ALB + NAT** | **~5,6 USD** | **~169 USD** | **~6,6 USD** | **~202 USD** |
 
 
 ## 📝 TODO / Roadmap
-- ✅ Creazione progetto e primo test con pagina web di esempio
-- ✅ Introduzione modifica nota e documento con vecchie versioni delle note
-- ✅ Configurazione di OpenApi-Swagger e Quality-SonarQube
-- ✅ Build e deploy su DockerHub, configurazione di docker-compose con MongoDb e Postgresql
-- ✅ Esecuzione su Minikube con yaml dedicati
-- ✅ Esecuzione con docker-compose della versione AWS su sistema locale con Mysql e DynamoDB 
-- ✅ Deploy su AWS su EC2 con script scritto in AWS-CLI per il provisioning delle risorse necessarie
-- 🚧 Storico annotazioni su Dynamo
-- 🚧 Deploy su AWS su Fargate/ECS
-- 🚧 Deploy su AWS su EKS
-- 🚧 Sistema di caching e ottimizzazione
-- 🚧 Sistem di Deploy con Kubernetes Helm charts
-- 🚧 Gestione multiutente e versioning annotazioni
-- 🚧 Autenticazione e autorizzazione (Spring Security) e token Jwt
-- 🚧 Export/Import annotazioni (JSON, CSV)
-- 🚧 Export/Import annotazioni (Kafka)
-- 🚧 Notifiche real-time (WebSocket)
-- 🚧 API rate limiting
-- 🚧 Backup automatico
-- 🚧 Elasticsearch per ricerca avanzata
-- 🚧 CI/CD pipeline
-- 🚧 Mobile app (React Native)
-- 🚧 Feature: Mobile app (React Native)
-
-
-## 🚧 Coming Soon
-
-### Coming soon: Configurazione AWS
-1. **RDS MySQL**:
-```bash
-# Crea istanza RDS MySQL via AWS CLI o Console
-aws rds create-db-instance \
-  --db-instance-identifier annotazioni-db \
-  --db-instance-class db.t3.micro \
-  --engine mysql \
-  --master-username admin \
-  --master-user-password your-password \
-  --allocated-storage 20
-```
-2. **DynamoDB**:
-```bash
-# Crea tabella DynamoDB
-aws dynamodb create-table \
-  --table-name annotazioni \
-  --attribute-definitions AttributeName=id,AttributeType=S \
-  --key-schema AttributeName=id,KeyType=HASH \
-  --billing-mode PAY_PER_REQUEST
-```
-3. **Variabili d'ambiente**:
-```bash
-export AWS_REGION=us-east-1
-export AWS_ACCESS_KEY=your-access-key
-export AWS_SECRET_KEY=your-secret-key
-export AWS_RDS_URL=jdbc:mysql://your-rds-endpoint:3306/annotazioni
-export AWS_RDS_USERNAME=admin
-export AWS_RDS_PASSWORD=your-password
-export DYNAMODB_TABLE_NAME=annotazioni
-```
-
-
-
-
-
-### 🔒 Sicurezza
-1. **Database**: Utilizza sempre password forti e connessioni SSL
-2. **AWS**: Configura IAM roles con permessi minimi necessari
-3. **Application**: Configura HTTPS in production
-4. **Monitoring**: Limita l'accesso agli endpoint Actuator
-
-### Deployment On-Premise
-```bash
-# Build
-mvn clean package -DskipTests
-mvn clean compile -pl adapter-app -am
-
-# Deploy
-java -jar adapter-app/target/adapter-app-1.0.0.jar \
-  --spring.profiles.active=onprem \
-  --server.port=8080
-```
-
-### Deployment AWS EC2
-```bash
-# Configurazione istanza EC2
-sudo yum update -y
-sudo yum install -y java-17-amazon-corretto
-
-# Deploy applicazione
-java -jar adapter-app-1.0.0.jar \
-  --spring.profiles.active=aws \
-  --server.port=8080
-```
-
-### Deployment AWS ECS/Fargate
-```json
-{
-  "family": "annotazioni-task",
-  "networkMode": "awsvpc",
-  "requiresCompatibilities": ["FARGATE"],
-  "cpu": "256",
-  "memory": "512",
-  "containerDefinitions": [
-    {
-      "name": "annotazioni",
-      "image": "your-ecr-repo/annotazioni:latest",
-      "portMappings": [
-        {
-          "containerPort": 8080,
-          "protocol": "tcp"
-        }
-      ],
-      "environment": [
-        {
-          "name": "SPRING_PROFILES_ACTIVE",
-          "value": "aws"
-        }
-      ]
-    }
-  ]
-}
-```
-
+- ✅ ⚙️ Creazione progetto con maven, creazione dei moduli adapter, adapter web con pagina web di esempio, test generale di esecuzione
+  - ✅ 🛠️ Funzione di modifica nota con registro con precedenti versioni delle note
+  - ✅ 📖 Configurazione di OpenApi-Swagger e Quality-SonarQube, test coverage e compilazione dei moduli
+- ✅ 🐳 Build e deploy su DockerHub della versione *OnPrem*
+  - ✅ 🐳 configurazione di docker-compose con MongoDb e Postgresql
+  - ✅ ☸️ Esecuzione su Kubernetes/Minikube locale con yaml dedicati
+- ✅ 🐳 Esecuzione con docker-compose della versione AWS su sistema locale con Mysql e DynamoDB 
+  - ✅ 🐳 Deploy su AWS usando EC2 per eseguire il container docker, script scritto in AWS-CLI per il provisioning delle risorse necessarie (Aurora-RDS-Mysql e DynamoDB ) e la creazione della EC2 con lancio del docker con `user_data`
+  - ✅ 🐳 Deploy su AWS usando ECS, Fargate e repository ECR (senza DockerHub), script scritto in AWS-CLI per il provisioning delle risorse necessarie (Aurora-RDS-Mysql e DynamoDB ) e lancio del task su ECS. Non previsto sistema di scaling up e/o bilanciatore ALB.
+  - 🚧 🐳 Deploy su AWS su EKS
+  - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts
+  - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
+- 🚧 ⚡ Redis Caching Layer: Cache multi-livello (L1: in-memory, L2: Redis) con invalidation strategies e cache warming
+- 🚧 📊 Read Replicas: Separazione read/write con eventual consistency e load balancing intelligente
+- 🚧 Gestione multiutente e versioning annotazioni: introduzione sistema di login con creazione `adapter-auth`
+- 🚧 Autenticazione e autorizzazione (Spring Security) e token Jwt: introduzione sistema di verifica degli utenti e validazione richieste
+- 🚧 🔐 OAuth2/OIDC Provider: Integrazione con provider esterni (Google, Microsoft, GitHub) + SSO enterprise
+- 🚧 👥 Sostema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento
+- 🚧 Export/Import annotazioni (JSON, CSV): creazione `adapter-etl` per l'import e l'export di tutte le versione
+- 🚧 Export/Import annotazioni (Kafka): creazione service che permetta di inviare notifiche via coda (kafka o sqs)
+- 🚧 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere
+  - 👥 Social Reminders: Notifiche quando qualcuno interagisce con tue annotazioni condivise
+- 🚧 💾 Backup & Disaster Recovery: Cross-region backup, point-in-time recovery, RTO/RPO compliance
+- 🚧 🔒 API Rate Limiting: Rate limiting intelligente con burst allowance, IP whitelisting, geographic restrictions
+- 🚧 🔍 Elasticsearch Integration: Ricerca full-text avanzata con highlighting, auto-complete, ricerca semantica
+- 🚧 🏗️ GitOps Workflow: ArgoCD/Flux per deployment automatici, configuration drift detection
+- 🚧 🧪 Testing Pyramid: Unit + Integration + E2E + Performance + Security testing automatizzati
+- 🚧 📦 Container Security: Vulnerability scanning (Trivy/Snyk), distroless images, rootless containers
+- 🚧 🎯 Feature Flags: LaunchDarkly/ConfigCat integration per feature toggling, A/B testing, gradual
+- 🚧 💬 Comment Threads: Sistema di commenti su singole annotazioni con threading e notifications
+- 🚧 📎 File Attachments: Supporto allegati (immagini, PDF, documenti) con preview e versioning
+- 🚧 📝 Templates & Forms: Template predefiniti per annotazioni (meeting notes, bug reports, ideas) con campi strutturati
+- 🚧 🔄 Annotation Workflows: Stati delle annotazioni (draft→review→approved→published) con approval process e notifiche
+- 🚧 ✅ Annotation-to-Task Conversion: Trasforma automaticamente annotazioni in todo items con parsing intelligente di date, persone, azioni
+- 🚧 📅 Smart Date Recognition: NLP per riconoscere date naturali ("domani", "la prossima settimana", "tra 3 giorni") e convertirle in deadline
+- 🚧 🔄 Recurring Tasks: Todo ricorrenti (giornalieri, settimanali, mensili) generati automaticamente da template di annotazioni
+- 🚧 ⏰ Time Boxing: Stima automatica del tempo necessario per task basata su annotazioni simili completate
+- 🚧 📈 Progress Tracking: Visualizzazione progresso con barre, percentuali, streak counters
+- 🚧 🔗 Task Dependencies: Link tra todo items per gestire sequenze e blocchi
+- 🚧 ⏰ Context-Aware Reminders: Promemoria basati su location, tempo, altre attività ("Ricorda quando arrivi in ufficio")
+- 🚧 Weekly Digest: Riassunto settimanale con achievement, todo completati, annotazioni più accedute
+- 🚧 🎤 Voice Notes: Registrazione audio con trascrizione automatica e timestamp
+- fantasie dell'IA
+  - 🚧 📋 Recommendation Engine: Sistema di raccomandazioni basato su ML per suggerire annotazioni correlate, utenti simili, contenuti rilevanti
+  - 🚧 🤖 AI-Powered Insights: Integrazione OpenAI/Bedrock per suggerimenti automatici di categorizzazione, sentiment analysis delle note, auto-completamento intelligente
+  - 🚧 📱 Mobile-First PWA: Progressive Web App con offline-sync, push notifications, gesture navigation
+  - 🚧 🎨 Rich Text Editor: Editor WYSIWYG con markdown, syntax highlighting, embed multimedia, link preview
+  - 🚧 ☁️ Serverless Functions: AWS Lambda/Azure Functions per task asincroni (email, reporting, cleanup)
+  - 🚧 🔧 Admin Panel: Interfaccia amministrativa per configurazione sistema, user management, monitoring
+  - 🚧 📚 Developer Portal: API documentation interattiva, SDK multi-linguaggio, code examples
+  - 🚧 📖 Migration Tools: Import/export da altri sistemi, data transformation, migration assistants
+  - 🚧 🎤 Voice-to-Text Advanced: Transcription multilingua con speaker identification e emotion detection
+  - 🚧 🤖 Conversational Annotation: Chatbot intelligente per creare annotazioni tramite dialogo naturale
+  - 🚧 🌱 Carbon Footprint Tracking: Monitoring dell'impatto ambientale dell'infrastruttura
+  - 🚧 ♻️ Green Computing Optimization: Automatic migration a data centers con energia rinnovabile
+  - 🚧 📊 Sustainability Metrics: KPI per misurare efficienza energetica e carbon impact
+  - 🚧 🌿 Eco-Friendly Features: Dark mode per battery saving, compression algorithms, lazy loading
 
 # &lt; AlNao /&gt;
 Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella misura massima possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
