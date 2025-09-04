@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasks - Sistema Gestione Personale</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #212529;
+            padding-top: 20px;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+        
+        .main-content.expanded {
+            margin-left: 0;
+        }
+        
+        .task-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-left: 4px solid #dee2e6;
+        }
+        
+        .task-card.completed {
+            border-left-color: #28a745;
+            opacity: 0.8;
+        }
+        
+        .task-card.in-progress {
+            border-left-color: #ffc107;
+        }
+        
+        .task-card.pending {
+            border-left-color: #dc3545;
+        }
+        
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .priority-high {
+            border-left-color: #dc3545 !important;
+        }
+        
+        .priority-medium {
+            border-left-color: #ffc107 !important;
+        }
+        
+        .priority-low {
+            border-left-color: #28a745 !important;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="p-3">
+            <h4 class="text-white mb-4">
+                <i class="bi bi-journal-text"></i> Gestione Personale
+            </h4>
+            
+            <ul class="nav nav-pills flex-column">
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white" href="index.html">
+                        <i class="bi bi-house"></i> Home
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white" href="annotazioni.html">
+                        <i class="bi bi-journal-text"></i> Annotazioni
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white active" href="tasks.html">
+                        <i class="bi bi-check2-square"></i> Tasks
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white" href="utente.html">
+                        <i class="bi bi-person"></i> Profilo Utente
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white" href="#" onclick="logout()">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+            <div class="container-fluid">
+                <button class="btn btn-outline-secondary me-3" onclick="toggleSidebar()">
+                    <i class="bi bi-list"></i>
+                </button>
+                <span class="navbar-brand mb-0 h1">Gestione Tasks</span>
+                
+                <div class="navbar-nav ms-auto">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> <span id="user-name">Utente</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="utente.html"><i class="bi bi-person"></i> Profilo</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Impostazioni</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="container-fluid p-4">
+            
+            <!-- Dashboard Tasks -->
+            <div id="dashboard-section" class="content-section">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2><i class="bi bi-check2-square"></i> Dashboard Tasks</h2>
+                        <p class="text-muted">Gestisci i tuoi task e monitora il progresso delle tue attività</p>
+                    </div>
+                </div>
+                
+                <!-- Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 id="total-tasks">0</h4>
+                                        <p class="mb-0">Tasks Totali</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-list-task fs-1 opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="card bg-warning text-dark">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 id="pending-tasks">0</h4>
+                                        <p class="mb-0">In Attesa</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-clock fs-1 opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 id="in-progress-tasks">0</h4>
+                                        <p class="mb-0">In Corso</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-arrow-repeat fs-1 opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 id="completed-tasks">0</h4>
+                                        <p class="mb-0">Completati</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-check-circle fs-1 opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="d-flex gap-3 justify-content-center">
+                            <button class="btn btn-primary btn-lg" onclick="showSection('crea')">
+                                <i class="bi bi-plus-circle"></i> Nuovo Task
+                            </button>
+                            <button class="btn btn-outline-primary btn-lg" onclick="showSection('tasks')">
+                                <i class="bi bi-list-ul"></i> Vedi Tutti
+                            </button>
+                            <button class="btn btn-outline-success btn-lg" onclick="showSection('completati')">
+                                <i class="bi bi-check-circle"></i> Completati
+                            </button>
+                            <button class="btn btn-outline-warning btn-lg" onclick="showSection('scadenza')">
+                                <i class="bi bi-clock"></i> In Scadenza
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks in Scadenza -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-exclamation-triangle text-warning"></i> Tasks in Scadenza</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="urgent-tasks">
+                                    <div class="text-center py-4">
+                                        <i class="bi bi-check-circle text-success display-1"></i>
+                                        <h4 class="text-success mt-3">Ottimo lavoro!</h4>
+                                        <p class="text-muted">Non hai tasks in scadenza immediata</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Crea Task Section -->
+            <div id="crea-section" class="content-section" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                        <h2><i class="bi bi-plus-circle"></i> Crea Nuovo Task</h2>
+                        <button class="btn btn-outline-secondary" onclick="showSection('dashboard')">
+                            <i class="bi bi-arrow-left"></i> Torna alla Dashboard
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <form id="create-task-form">
+                                    <div class="mb-3">
+                                        <label for="task-title" class="form-label">Titolo Task <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="task-title" required maxlength="200">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="task-description" class="form-label">Descrizione</label>
+                                        <textarea class="form-control" id="task-description" rows="4" maxlength="1000"></textarea>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="task-priority" class="form-label">Priorità</label>
+                                            <select class="form-select" id="task-priority">
+                                                <option value="low">Bassa</option>
+                                                <option value="medium" selected>Media</option>
+                                                <option value="high">Alta</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="task-category" class="form-label">Categoria</label>
+                                            <input type="text" class="form-control" id="task-category" maxlength="50" placeholder="es: Lavoro, Personale">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="task-due-date" class="form-label">Data Scadenza</label>
+                                            <input type="datetime-local" class="form-control" id="task-due-date">
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="task-estimated-hours" class="form-label">Ore Stimate</label>
+                                            <input type="number" class="form-control" id="task-estimated-hours" min="0" step="0.5" placeholder="es: 2.5">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="task-tags" class="form-label">Tag (separati da virgola)</label>
+                                        <input type="text" class="form-control" id="task-tags" maxlength="200" placeholder="es: urgente, riunione, cliente">
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="task-notifications">
+                                        <label class="form-check-label" for="task-notifications">
+                                            Attiva notifiche per questo task
+                                        </label>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <div class="card-footer">
+                                <button type="button" class="btn btn-primary" onclick="createTask()">
+                                    <i class="bi bi-save"></i> Crea Task
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" onclick="resetTaskForm()">
+                                    <i class="bi bi-arrow-clockwise"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Suggerimenti</h6>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2"><i class="bi bi-lightbulb text-warning"></i> Scrivi titoli chiari e specifici</li>
+                                    <li class="mb-2"><i class="bi bi-clock text-info"></i> Imposta sempre una scadenza realistica</li>
+                                    <li class="mb-2"><i class="bi bi-tags text-secondary"></i> Usa i tag per organizzare meglio</li>
+                                    <li class="mb-0"><i class="bi bi-star text-primary"></i> Assegna la priorità corretta</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tutti i Tasks Section -->
+            <div id="tasks-section" class="content-section" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                        <h2><i class="bi bi-list-ul"></i> Tutti i Tasks</h2>
+                        <div>
+                            <button class="btn btn-outline-secondary me-2" onclick="showSection('dashboard')">
+                                <i class="bi bi-arrow-left"></i> Dashboard
+                            </button>
+                            <button class="btn btn-primary" onclick="showSection('crea')">
+                                <i class="bi bi-plus"></i> Nuovo Task
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filtri -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="search-tasks" placeholder="Cerca tasks...">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="filter-status">
+                            <option value="">Tutti gli stati</option>
+                            <option value="pending">In Attesa</option>
+                            <option value="in-progress">In Corso</option>
+                            <option value="completed">Completati</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="filter-priority">
+                            <option value="">Tutte le priorità</option>
+                            <option value="high">Alta</option>
+                            <option value="medium">Media</option>
+                            <option value="low">Bassa</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="filter-category">
+                            <option value="">Tutte le categorie</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="sort-tasks">
+                            <option value="dueDate">Per Scadenza</option>
+                            <option value="priority">Per Priorità</option>
+                            <option value="created">Per Data Creazione</option>
+                            <option value="title">Per Titolo</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="tasks-container" class="row">
+                    <!-- I tasks verranno caricati qui -->
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <i class="bi bi-hourglass-split display-1 text-muted"></i>
+                            <h3 class="text-muted mt-3">Caricamento tasks...</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks Completati Section -->
+            <div id="completati-section" class="content-section" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                        <h2><i class="bi bi-check-circle"></i> Tasks Completati</h2>
+                        <button class="btn btn-outline-secondary" onclick="showSection('dashboard')">
+                            <i class="bi bi-arrow-left"></i> Dashboard
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="completed-tasks-container" class="row">
+                    <!-- I tasks completati verranno caricati qui -->
+                </div>
+            </div>
+
+            <!-- Tasks in Scadenza Section -->
+            <div id="scadenza-section" class="content-section" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                        <h2><i class="bi bi-clock"></i> Tasks in Scadenza</h2>
+                        <button class="btn btn-outline-secondary" onclick="showSection('dashboard')">
+                            <i class="bi bi-arrow-left"></i> Dashboard
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="due-tasks-container" class="row">
+                    <!-- I tasks in scadenza verranno caricati qui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="js/auth.js"></script>
+    <script src="js/tasks.js"></script>
+</body>
+</html>

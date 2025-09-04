@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profilo Utente - Spring Boot Example</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --sidebar-collapsed-width: 70px;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #6c5ce7 0%, #a29bfe 100%);
+            color: white;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar.collapsed .sidebar-header .header-text {
+            display: none;
+        }
+        
+        .sidebar.collapsed .sidebar-header {
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .nav-item {
+            margin: 0.25rem 0;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            margin: 0 1rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar.collapsed .nav-link {
+            margin: 0 0.5rem;
+            justify-content: center;
+            padding: 0.75rem;
+        }
+        
+        .sidebar.collapsed .nav-link .nav-text {
+            display: none;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background-color: rgba(255,255,255,0.2);
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .sidebar.collapsed .nav-link:hover {
+            transform: none;
+        }
+        
+        .nav-link i {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+        
+        .sidebar.collapsed .nav-link i {
+            margin-right: 0;
+        }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            transition: all 0.3s ease;
+            min-height: 100vh;
+        }
+        
+        .main-content.expanded {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+        
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .content-section {
+            display: none;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .profile-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .settings-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease;
+        }
+        
+        .settings-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .activity-item {
+            border-left: 3px solid #6c5ce7;
+            background-color: #f8f9ff;
+            transition: all 0.3s ease;
+        }
+        
+        .activity-item:hover {
+            background-color: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #6c5ce7, #a29bfe);
+            border: none;
+            border-radius: 10px;
+            padding: 0.7rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4);
+        }
+        
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #6c5ce7;
+            box-shadow: 0 0 0 0.2rem rgba(108, 92, 231, 0.25);
+        }
+        
+        .toggle-sidebar {
+            background: linear-gradient(45deg, #6c5ce7, #a29bfe);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            padding: 0.5rem 1rem;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            transition: transform 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: var(--sidebar-collapsed-width);
+            }
+            
+            .main-content {
+                margin-left: var(--sidebar-collapsed-width);
+            }
+            
+            .profile-avatar {
+                width: 80px;
+                height: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="header-text">
+                <h4 class="mb-1">Spring Boot</h4>
+                <small class="opacity-75">Dashboard</small>
+            </div>
+        </div>
+        
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="home.html">
+                    <i class="bi bi-house"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="annotazioni.html">
+                    <i class="bi bi-bookmark"></i>
+                    <span class="nav-text">Annotazioni</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="tasks.html">
+                    <i class="bi bi-list-check"></i>
+                    <span class="nav-text">Tasks</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="utente.html">
+                    <i class="bi bi-person"></i>
+                    <span class="nav-text">Profilo</span>
+                </a>
+            </li>
+            <li class="nav-item mt-auto">
+                <a class="nav-link" href="#" onclick="logout()">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="nav-text">Logout</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Top Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container-fluid">
+                <button class="btn toggle-sidebar" onclick="toggleSidebar()">
+                    <i class="bi bi-list"></i>
+                </button>
+                
+                <div class="d-flex align-items-center ms-auto">
+                    <span class="text-muted me-3">Benvenuto,</span>
+                    <strong id="user-name">Utente</strong>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <!-- Profile Section -->
+            <div id="profile-section" class="content-section active">
+                <div class="row">
+                    <!-- Profile Overview -->
+                    <div class="col-lg-4 mb-4">
+                        <div class="card profile-card">
+                            <div class="card-body text-center p-4">
+                                <div class="mb-4">
+                                    <img src="https://via.placeholder.com/120x120/6c5ce7/ffffff?text=U" 
+                                         alt="Avatar" class="profile-avatar" id="profile-avatar">
+                                    <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
+                                    <button class="btn btn-light btn-sm mt-3" onclick="document.getElementById('avatar-upload').click()">
+                                        <i class="bi bi-camera"></i> Cambia Avatar
+                                    </button>
+                                </div>
+                                
+                                <h4 class="mb-2" id="profile-name">Nome Utente</h4>
+                                <p class="mb-3" id="profile-email">email@example.com</p>
+                                <p class="small opacity-75 mb-4" id="profile-role">Ruolo: Utente</p>
+                                
+                                <div class="row text-center">
+                                    <div class="col">
+                                        <div class="h5 mb-0" id="profile-annotations">12</div>
+                                        <small>Annotazioni</small>
+                                    </div>
+                                    <div class="col">
+                                        <div class="h5 mb-0" id="profile-tasks">8</div>
+                                        <small>Tasks</small>
+                                    </div>
+                                    <div class="col">
+                                        <div class="h5 mb-0" id="profile-days">45</div>
+                                        <small>Giorni attivi</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Stats -->
+                        <div class="row mt-4">
+                            <div class="col-6 mb-3">
+                                <div class="card stats-card">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-check-circle display-4 mb-2"></i>
+                                        <h6 class="mb-0">Tasks Completati</h6>
+                                        <h4 id="completed-tasks-count">5</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="card stats-card">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-lightning display-4 mb-2"></i>
+                                        <h6 class="mb-0">Streak</h6>
+                                        <h4 id="activity-streak">7</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile Settings -->
+                    <div class="col-lg-8">
+                        <div class="row">
+                            <!-- Personal Information -->
+                            <div class="col-12 mb-4">
+                                <div class="card settings-card">
+                                    <div class="card-header bg-transparent">
+                                        <h5 class="mb-0">
+                                            <i class="bi bi-person-gear me-2"></i>
+                                            Informazioni Personali
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="profile-form">
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="firstName" class="form-label">Nome</label>
+                                                    <input type="text" class="form-control" id="firstName" placeholder="Inserisci il nome">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="lastName" class="form-label">Cognome</label>
+                                                    <input type="text" class="form-control" id="lastName" placeholder="Inserisci il cognome">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="email" class="form-label">Email</label>
+                                                    <input type="email" class="form-control" id="email" placeholder="email@example.com">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="phone" class="form-label">Telefono</label>
+                                                    <input type="tel" class="form-control" id="phone" placeholder="+39 123 456 7890">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="bio" class="form-label">Bio</label>
+                                                <textarea class="form-control" id="bio" rows="3" placeholder="Raccontaci qualcosa di te..."></textarea>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="location" class="form-label">Località</label>
+                                                    <input type="text" class="form-control" id="location" placeholder="Città, Paese">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="timezone" class="form-label">Fuso Orario</label>
+                                                    <select class="form-select" id="timezone">
+                                                        <option value="Europe/Rome">Europa/Roma (GMT+1)</option>
+                                                        <option value="Europe/London">Europa/Londra (GMT+0)</option>
+                                                        <option value="America/New_York">America/New York (GMT-5)</option>
+                                                        <option value="Asia/Tokyo">Asia/Tokyo (GMT+9)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-save"></i> Salva Modifiche
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Account Settings -->
+                            <div class="col-md-6 mb-4">
+                                <div class="card settings-card">
+                                    <div class="card-header bg-transparent">
+                                        <h5 class="mb-0">
+                                            <i class="bi bi-shield-lock me-2"></i>
+                                            Sicurezza Account
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="security-form">
+                                            <div class="mb-3">
+                                                <label for="currentPassword" class="form-label">Password Attuale</label>
+                                                <input type="password" class="form-control" id="currentPassword">
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="newPassword" class="form-label">Nuova Password</label>
+                                                <input type="password" class="form-control" id="newPassword">
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="confirmPassword" class="form-label">Conferma Password</label>
+                                                <input type="password" class="form-control" id="confirmPassword">
+                                            </div>
+                                            
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-shield-check"></i> Aggiorna Password
+                                            </button>
+                                        </form>
+                                        
+                                        <hr>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div>
+                                                <h6 class="mb-1">Autenticazione a due fattori</h6>
+                                                <small class="text-muted">Aggiungi un livello extra di sicurezza</small>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="twoFactorAuth">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Preferences -->
+                            <div class="col-md-6 mb-4">
+                                <div class="card settings-card">
+                                    <div class="card-header bg-transparent">
+                                        <h5 class="mb-0">
+                                            <i class="bi bi-gear me-2"></i>
+                                            Preferenze
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="language" class="form-label">Lingua</label>
+                                            <select class="form-select" id="language">
+                                                <option value="it">Italiano</option>
+                                                <option value="en">English</option>
+                                                <option value="es">Español</option>
+                                                <option value="fr">Français</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="theme" class="form-label">Tema</label>
+                                            <select class="form-select" id="theme">
+                                                <option value="light">Chiaro</option>
+                                                <option value="dark">Scuro</option>
+                                                <option value="auto">Automatico</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                                <label class="form-check-label" for="emailNotifications">
+                                                    Notifiche Email
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="taskReminders" checked>
+                                                <label class="form-check-label" for="taskReminders">
+                                                    Promemoria Tasks
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <button class="btn btn-primary" onclick="savePreferences()">
+                                            <i class="bi bi-save"></i> Salva Preferenze
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card settings-card">
+                            <div class="card-header bg-transparent">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-activity me-2"></i>
+                                    Attività Recente
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="recent-activity">
+                                    <!-- Le attività verranno caricate dinamicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Danger Zone -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card border-danger">
+                            <div class="card-header bg-danger text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    Zona Pericolosa
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <h6>Esporta Dati</h6>
+                                        <p class="text-muted small">Scarica tutti i tuoi dati in formato JSON</p>
+                                        <button class="btn btn-outline-primary btn-sm" onclick="exportUserData()">
+                                            <i class="bi bi-download"></i> Esporta
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h6>Elimina Account</h6>
+                                        <p class="text-muted small">Eliminazione permanente dell'account e di tutti i dati</p>
+                                        <button class="btn btn-outline-danger btn-sm" onclick="deleteAccount()">
+                                            <i class="bi bi-trash"></i> Elimina Account
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Auth utilities -->
+    <script src="js/auth.js"></script>
+    <!-- User profile JS -->
+    <script src="js/utente.js"></script>
+</body>
+</html>

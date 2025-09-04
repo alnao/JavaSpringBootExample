@@ -69,15 +69,26 @@ Prerequisiti:
     ```bash
     docker-compose build --no-cache app
     docker-compose up
+    # oppure
+    docker-compose up -d --build
+    ```
+    E poi l'applicazione web di esempio sarà disponiible nella pagina
+    ```
+    http://localhost:8081/
     ```
     Per rimuovere tutto 
     ```bash
     docker-compose down --remove-orphans
+    docker network prune -f
     ```
-- Esecuzione profilo AWS *coming soon*
+- Comandi utili
     ```bash
-    # Profilo AWS
-    java -jar adapter-app/target/adapter-app-1.0.0.jar --spring.profiles.active=aws
+    # Accesso ai log della applicazione
+    docker logs gestionepersonale-app --tail 500
+    # Esecuzione di query nel database postgres
+    docker exec -it gestionepersonale-postgres psql -U gestionepersonale_user -d gestionepersonale -c "\d users;"
+    docker exec -it gestionepersonale-postgres psql -U gestionepersonale_user -d gestionepersonale -c "SELECT username, email, account_type FROM users;"
+    docker exec -it gestionepersonale-postgres psql -U gestionepersonale_user -d gestionepersonale -c "SELECT username, password FROM users WHERE username='alnao';"
     ```
 
 ## 📡 API Endpoints

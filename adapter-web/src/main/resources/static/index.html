@@ -3,76 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Gestione Annotazioni</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
-    
-    <!-- Custom CSS -->
-    <style>
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            width: 250px;
-            background-color: #212529;
-            padding-top: 20px;
-            transition: transform 0.3s ease;
+    <title>Sistema Gestione Personale</title>
+    <script>
+        // Verifica autenticazione e reindirizza di conseguenza
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            // Utente autenticato, vai alla home
+            window.location.href = 'home.html';
+        } else {
+            // Utente non autenticato, vai al login
+            window.location.href = 'login.html';
         }
-        
-        .sidebar.collapsed {
-            transform: translateX(-100%);
-        }
-        
-        .main-content {
-            margin-left: 250px;
-            transition: margin-left 0.3s ease;
-            min-height: 100vh;
-        }
-        
-        .main-content.expanded {
-            margin-left: 0;
-        }
-        
-        .card-annotazione {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        
-        .card-annotazione:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        .badge-priority {
-            font-size: 0.75rem;
-        }
-        
-        .annotazione-content {
-            max-height: 100px;
-            overflow-y: auto;
-        }
-        
-        .navbar-brand {
-            font-weight: bold;
-        }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            
-            .main-content {
-                margin-left: 0;
-            }
-            
-            .sidebar.show {
-                transform: translateX(0);
-            }
-        }
-    </style>
+    </script>
 </head>
+<body>
+    <div style="text-align: center; padding: 50px;">
+        <h2>Reindirizzamento in corso...</h2>
+        <p>Se non vieni reindirizzato automaticamente:</p>
+        <a href="login.html">Clicca qui per il login</a>
+    </div>
+</body>
+</html>
 <body>
     <!-- Sidebar -->
     <nav class="sidebar" id="sidebar">

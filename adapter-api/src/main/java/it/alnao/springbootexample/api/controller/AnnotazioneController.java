@@ -12,6 +12,8 @@ import it.alnao.springbootexample.api.mapper.AnnotazioneMapper;
 import it.alnao.springbootexample.port.domain.AnnotazioneCompleta;
 import it.alnao.springbootexample.port.service.AnnotazioneService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +32,8 @@ import java.util.UUID;
 @Tag(name = "Annotazioni", description = "API per la gestione delle annotazioni")
 public class AnnotazioneController {
     
+    private static final Logger logger = LoggerFactory.getLogger(AnnotazioneController.class);
+    
     @Autowired
     private AnnotazioneService annotazioneService;
     
@@ -41,6 +45,9 @@ public class AnnotazioneController {
     @PostMapping
     public ResponseEntity<AnnotazioneResponse> creaAnnotazione(
             @Valid @RequestBody CreaAnnotazioneRequest request) {
+        
+        logger.info("POST /api/annotazioni - Creazione annotazione per utente: {}, valore: {}", 
+                    request.getUtente(), request.getValoreNota());
         
         AnnotazioneCompleta annotazioneCompleta = annotazioneService.creaAnnotazione(
                 request.getValoreNota(),
@@ -65,6 +72,7 @@ public class AnnotazioneController {
         // Ricarica l'annotazione aggiornata
         annotazioneCompleta = annotazioneService.trovaPerID(annotazioneCompleta.getId()).orElse(annotazioneCompleta);
         
+        logger.info("POST /api/annotazioni - Annotazione creata con successo, ID: {}", annotazioneCompleta.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(AnnotazioneMapper.toResponse(annotazioneCompleta));
     }
@@ -72,6 +80,7 @@ public class AnnotazioneController {
     @Operation(summary = "Ottieni tutte le annotazioni")
     @GetMapping
     public ResponseEntity<List<AnnotazioneResponse>> ottieniTutteLeAnnotazioni() {
+        logger.info("GET /api/annotazioni - Richiesta tutte le annotazioni");
         List<AnnotazioneCompleta> annotazioni = annotazioneService.trovaTutte();
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
@@ -82,6 +91,7 @@ public class AnnotazioneController {
             @Parameter(description = "ID dell'annotazione")
             @PathVariable UUID id) {
         
+        logger.info("GET /api/annotazioni/{} - Richiesta annotazione per ID", id);
         return annotazioneService.trovaPerID(id)
                 .map(annotazione -> ResponseEntity.ok(AnnotazioneMapper.toResponse(annotazione)))
                 .orElse(ResponseEntity.notFound().build());
@@ -94,6 +104,7 @@ public class AnnotazioneController {
             @PathVariable UUID id,
             @Valid @RequestBody AggiornaAnnotazioneRequest request) {
         
+        logger.info("PUT /api/annotazioni/{} - Aggiornamento annotazione per utente: {}", id, request.getUtente());
         request.setId(id);
         
         AnnotazioneCompleta annotazioneAggiornata = annotazioneService.aggiornaAnnotazione(
@@ -120,6 +131,7 @@ public class AnnotazioneController {
         // Ricarica l'annotazione aggiornata
         annotazioneAggiornata = annotazioneService.trovaPerID(id).orElse(annotazioneAggiornata);
         
+        logger.info("PUT /api/annotazioni/{} - Annotazione aggiornata con successo", id);
         return ResponseEntity.ok(AnnotazioneMapper.toResponse(annotazioneAggiornata));
     }
     
@@ -129,11 +141,14 @@ public class AnnotazioneController {
             @Parameter(description = "ID dell'annotazione")
             @PathVariable UUID id) {
         
+        logger.info("DELETE /api/annotazioni/{} - Eliminazione annotazione", id);
         if (!annotazioneService.esisteAnnotazione(id)) {
+            logger.warn("DELETE /api/annotazioni/{} - Annotazione non trovata", id);
             return ResponseEntity.notFound().build();
         }
         
         annotazioneService.eliminaAnnotazione(id);
+        logger.info("DELETE /api/annotazioni/{} - Annotazione eliminata con successo", id);
         return ResponseEntity.noContent().build();
     }
     
@@ -143,6 +158,7 @@ public class AnnotazioneController {
             @Parameter(description = "Testo da cercare")
             @RequestParam String testo) {
         
+        logger.info("GET /api/annotazioni/cerca?testo={} - Ricerca annotazioni per testo", testo);
         List<AnnotazioneCompleta> annotazioni = annotazioneService.cercaPerTesto(testo);
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
@@ -153,6 +169,7 @@ public class AnnotazioneController {
             @Parameter(description = "Nome utente")
             @PathVariable String utente) {
         
+        logger.info("GET /api/annotazioni/utente/{} - Richiesta annotazioni per utente", utente);
         List<AnnotazioneCompleta> annotazioni = annotazioneService.trovaPerUtente(utente);
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
@@ -163,6 +180,7 @@ public class AnnotazioneController {
             @Parameter(description = "Nome categoria")
             @PathVariable String categoria) {
         
+        logger.info("GET /api/annotazioni/categoria/{} - Richiesta annotazioni per categoria", categoria);
         List<AnnotazioneCompleta> annotazioni = annotazioneService.trovaPerCategoria(categoria);
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
@@ -170,6 +188,7 @@ public class AnnotazioneController {
     @Operation(summary = "Ottieni annotazioni pubbliche")
     @GetMapping("/pubbliche")
     public ResponseEntity<List<AnnotazioneResponse>> ottieniAnnotazioniPubbliche() {
+        logger.info("GET /api/annotazioni/pubbliche - Richiesta annotazioni pubbliche");
         List<AnnotazioneCompleta> annotazioni = annotazioneService.trovaPubbliche();
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
@@ -177,6 +196,7 @@ public class AnnotazioneController {
     @Operation(summary = "Ottieni statistiche delle annotazioni")
     @GetMapping("/statistiche")
     public ResponseEntity<StatisticheResponse> ottieniStatistiche() {
+        logger.info("GET /api/annotazioni/statistiche - Richiesta statistiche annotazioni");
         long totaleAnnotazioni = annotazioneService.contaAnnotazioni();
         
         StatisticheResponse statistiche = new StatisticheResponse();

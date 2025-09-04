@@ -1,3 +1,9 @@
+# Configurazione server
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+
 # Configurazione applicazione Spring Boot
 spring:
   application:
@@ -35,11 +41,34 @@ spring:
     resources:
       static-locations: classpath:/static/
 
-# Configurazione server
-server:
-  port: ${SERVER_PORT:8080}
-  servlet:
-    context-path: /
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:your-google-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:your-google-client-secret}
+            scope: openid,profile,email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+          github:
+            client-id: ${GITHUB_CLIENT_ID:your-github-client-id}
+            client-secret: ${GITHUB_CLIENT_SECRET:your-github-client-secret}
+            scope: read:user,user:email
+          microsoft:
+            client-id: ${MICROSOFT_CLIENT_ID:your-microsoft-client-id}
+            client-secret: ${MICROSOFT_CLIENT_SECRET:your-microsoft-client-secret}
+            scope: openid,profile,email
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          microsoft:
+            authorization-uri: https://login.microsoftonline.com/common/oauth2/v2.0/authorize
+            token-uri: https://login.microsoftonline.com/common/oauth2/v2.0/token
+            user-info-uri: https://graph.microsoft.com/v1.0/me
+            user-name-attribute: id
+
+
 
 # Configurazione Actuator
 management:
@@ -72,6 +101,20 @@ gestione-personale:
     annotazioni-storico-table-name: ${ANNOTAZIONI_STORICO_TABLE:annotazioni_storico}
   sql: #see CustomPhysicalNamingStrategy
     annotazioni-metadata-table-name: ${ANNOTAZIONI_METADATA_TABLE:annotazioni_metadata}
+  # Configurazioni JWT aggiuntive 
+  jwt:
+    secret: ${JWT_SECRET:myVeryLongSecretKeyForHS512ThatMustBeAtLeast512BitsLongToWorkProperly1234567890abcdefghijklmnopqrstuvwxyz}
+    expiration: ${JWT_EXPIRATION:86400} # 24 ore in secondi
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800} # 7 giorni in secondi
+    # Configurazioni CORS
+  cors:
+    allowed-origins: 
+      - http://localhost:3000
+      - http://localhost:8080
+      - http://localhost:8081
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
 
 ---
 # Profilo AWS
@@ -80,21 +123,34 @@ spring:
     activate:
       on-profile: aws
   
+  # Manteniamo datasource già presente - non sovrascriviamo
   datasource:
     url: ${AWS_RDS_URL:jdbc:mysql://localhost:3306/gestione_personale}
     username: ${AWS_RDS_USERNAME:admin}
     password: ${AWS_RDS_PASSWORD:password}
     driver-class-name: com.mysql.cj.jdbc.Driver
   
+  # AWS Cloud Configuration (da application-aws.yml)
+  #cloud:
+  #  aws:
+  #    region:
+  #      static: ${AWS_REGION:us-central-1}
+  #    credentials:
+  #      instance-profile: true
+  
   jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
         physical_naming_strategy: it.alnao.springbootexample.port.config.CustomPhysicalNamingStrategy
-
-# Configurazione DynamoDB
+  
+# Configurazione DynamoDB (manteniamo quella già presente)
 aws:
-  region: ${AWS_REGION:us-east-1}
+  region: ${AWS_REGION:us-central-1}
   access-key: ${AWS_ACCESS_KEY:}
   secret-key: ${AWS_SECRET_KEY:}
   dynamodb:
@@ -108,14 +164,34 @@ spring:
     activate:
       on-profile: onprem
   
+  # Manteniamo datasource già presente - non sovrascriviamo
   datasource:
     url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/gestione_personale}
     username: ${POSTGRES_USERNAME:gestione_personale_user}
     password: ${POSTGRES_PASSWORD:gestione_personale_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
   
+  # JPA Configuration (da application-onprem.yml)
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        '[format_sql]': true
+        jdbc:
+          '[time_zone]': UTC
+  
+  # Manteniamo MongoDB già presente
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/gestione_personale_db}
+
 
 ---
 # Profilo Development
