@@ -6,18 +6,18 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>it.alnao.annotazioni</groupId>
-        <artifactId>annotazioni-parent</artifactId>
+        <groupId>it.alnao.springbootexample</groupId>
+        <artifactId>springbootexample-parent</artifactId>
         <version>1.0.0</version>
     </parent>
 
     <artifactId>adapter-onprem</artifactId>
-    <name>Annotazioni - OnPremise adapter</name>
+    <name>Gestione Personale - OnPremise adapter</name>
     <description>Implementazioni On-Premise per MongoDB e PostgreSQL</description>
 
     <dependencies>
         <dependency>
-            <groupId>it.alnao.annotazioni</groupId>
+            <groupId>it.alnao.springbootexample</groupId>
             <artifactId>adapter-port</artifactId>
         </dependency>
         

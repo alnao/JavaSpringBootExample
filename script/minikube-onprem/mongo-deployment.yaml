@@ -17,7 +17,7 @@ spec:
           image: mongo:4.4
           env:
             - name: MONGO_INITDB_DATABASE
-              value: annotazioni_db
+              value: gestionepersonale_db
             - name: MONGO_INITDB_ROOT_USERNAME
               value: demo
             - name: MONGO_INITDB_ROOT_PASSWORD

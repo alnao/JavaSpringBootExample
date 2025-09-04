@@ -1,16 +1,16 @@
 # Configurazione applicazione Spring Boot
 spring:
   application:
-    name: sistema-annotazioni
+    name: sistema-gestione-personale
   
   profiles:
     active: onprem
 
   # Configurazione database (profilo-specifico)
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/annotazioni}
-    username: ${DATABASE_USERNAME:annotazioni_user}
-    password: ${DATABASE_PASSWORD:annotazioni_pass}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/gestione_personale}
+    username: ${DATABASE_USERNAME:gestione_personale_user}
+    password: ${DATABASE_PASSWORD:gestione_personale_pass}
     driver-class-name: org.postgresql.Driver
   
   # Configurazione JPA
@@ -22,11 +22,12 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        physical_naming_strategy: it.alnao.springbootexample.port.config.CustomPhysicalNamingStrategy
   
   # Configurazione MongoDB
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/annotazioni}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/gestione_personale}
       auto-index-creation: true
   
   # Configurazione Web
@@ -53,19 +54,24 @@ management:
 # Configurazione logging
 logging:
   level:
-    it.alnao.annotazioni: INFO
+    it.alnao.springbootexample: INFO
     org.springframework: WARN
     org.hibernate: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 
 # Configurazione personalizzata
-annotazioni:
+gestione-personale:
   config:
     max-annotation-size: 10000
     max-description-size: 500
     default-priority: 2
     enable-public-annotations: true
+  nosql:
+    annotazioni-table-name: ${ANNOTAZIONI_TABLE:annotazioni}
+    annotazioni-storico-table-name: ${ANNOTAZIONI_STORICO_TABLE:annotazioni_storico}
+  sql: #see CustomPhysicalNamingStrategy
+    annotazioni-metadata-table-name: ${ANNOTAZIONI_METADATA_TABLE:annotazioni_metadata}
 
 ---
 # Profilo AWS
@@ -75,7 +81,7 @@ spring:
       on-profile: aws
   
   datasource:
-    url: ${AWS_RDS_URL:jdbc:mysql://localhost:3306/annotazioni}
+    url: ${AWS_RDS_URL:jdbc:mysql://localhost:3306/gestione_personale}
     username: ${AWS_RDS_USERNAME:admin}
     password: ${AWS_RDS_PASSWORD:password}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -84,6 +90,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+        physical_naming_strategy: it.alnao.springbootexample.port.config.CustomPhysicalNamingStrategy
 
 # Configurazione DynamoDB
 aws:
@@ -91,7 +98,7 @@ aws:
   access-key: ${AWS_ACCESS_KEY:}
   secret-key: ${AWS_SECRET_KEY:}
   dynamodb:
-    table-name: ${DYNAMODB_TABLE_NAME:annotazioni}
+    annotazioni-table-name: ${DYNAMODB_ANNOTAZIONI_TABLE_NAME:annotazioni}
     endpoint: ${DYNAMODB_ENDPOINT:}
 
 ---
@@ -102,13 +109,13 @@ spring:
       on-profile: onprem
   
   datasource:
-    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/annotazioni}
-    username: ${POSTGRES_USERNAME:annotazioni_user}
-    password: ${POSTGRES_PASSWORD:annotazioni_pass}
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/gestione_personale}
+    username: ${POSTGRES_USERNAME:gestione_personale_user}
+    password: ${POSTGRES_PASSWORD:gestione_personale_pass}
   
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/annotazioni_db}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/gestione_personale_db}
 
 ---
 # Profilo Development
@@ -125,5 +132,5 @@ spring:
   
   logging:
     level:
-      it.alnao.annotazioni: DEBUG
+      it.alnao.springbootexample: DEBUG
       org.springframework.web: DEBUG

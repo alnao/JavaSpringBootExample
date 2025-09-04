@@ -1,0 +1,65 @@
+# Configurazione Test - Database in-memory
+spring:
+  application:
+    name: sistema-gestione-personale-test
+
+  # Database H2 in-memory per test
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  
+  # Configurazione JPA per test
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        physical_naming_strategy: it.alnao.springbootexample.port.config.CustomPhysicalNamingStrategy
+  
+  # MongoDB embedded disabilitato per test
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/test_db
+      auto-index-creation: false
+  
+  # Configurazione Web
+  web:
+    resources:
+      static-locations: classpath:/static/
+
+# Configurazione server per test
+server:
+  port: 0  # Porta random per evitare conflitti
+
+# Configurazione Actuator disabilitata per test
+management:
+  endpoints:
+    enabled-by-default: false
+
+# Configurazione logging per test
+logging:
+  level:
+    it.alnao.springbootexample: DEBUG
+    org.springframework: WARN
+    org.hibernate: INFO
+  pattern:
+    console: "%d{HH:mm:ss} - %msg%n"
+
+# Configurazione personalizzata per test
+gestione-personale:
+  config:
+    max-annotation-size: 1000
+    max-description-size: 500
+    default-priority: 1
+    enable-public-annotations: true
+  nosql:
+    annotazioni-table-name: test_annotazioni
+    storico-table-name: test_annotazioni_storico
+  sql:
+    annotazioni-table-name: test_annotazioni
+    annotazioni-metadata-table-name: test_annotazioni_metadata

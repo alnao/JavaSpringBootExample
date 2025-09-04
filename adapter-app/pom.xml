@@ -6,37 +6,37 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>it.alnao.annotazioni</groupId>
-        <artifactId>annotazioni-parent</artifactId>
+        <groupId>it.alnao.springbootexample</groupId>
+        <artifactId>springbootexample-parent</artifactId>
         <version>1.0.0</version>
     </parent>
 
     <artifactId>adapter-app</artifactId>
-    <name>Annotazioni - Application adapter</name>
+    <name>Gestione Personale - Application adapter</name>
     <description>Applicazione principale Spring Boot</description>
 
     <dependencies>
         <!-- Moduli interni -->
         <dependency>
-            <groupId>it.alnao.annotazioni</groupId>
+            <groupId>it.alnao.springbootexample</groupId>
             <artifactId>adapter-port</artifactId>
         </dependency>
         <dependency>
-            <groupId>it.alnao.annotazioni</groupId>
+            <groupId>it.alnao.springbootexample</groupId>
             <artifactId>adapter-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>it.alnao.annotazioni</groupId>
+            <groupId>it.alnao.springbootexample</groupId>
             <artifactId>adapter-web</artifactId>
         </dependency>
         <!-- Moduli condizionali basati sui profili -->
         <dependency>
-            <groupId>it.alnao.annotazioni</groupId>
+            <groupId>it.alnao.springbootexample</groupId>
             <artifactId>adapter-aws</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>it.alnao.annotazioni</groupId>
+            <groupId>it.alnao.springbootexample</groupId>
             <artifactId>adapter-onprem</artifactId>
             <optional>true</optional>
         </dependency>
@@ -52,6 +52,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Database in-memory per test -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -59,7 +65,7 @@
             <id>aws</id>
             <dependencies>
                 <dependency>
-                    <groupId>it.alnao.annotazioni</groupId>
+                    <groupId>it.alnao.springbootexample</groupId>
                     <artifactId>adapter-aws</artifactId>
                     <optional>false</optional>
                 </dependency>
@@ -73,7 +79,7 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>it.alnao.annotazioni</groupId>
+                    <groupId>it.alnao.springbootexample</groupId>
                     <artifactId>adapter-onprem</artifactId>
                     <optional>false</optional>
                 </dependency>

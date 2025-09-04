@@ -1,8 +1,10 @@
-# Sistema di Gestione Annotazioni
+# Sistema di Gestione personale
 
 Progetto sviluppato da &lt; AlNao /&gt; come esempio di progetto con Java Spring Boot.
 
-Un sistema di gestione annotazioni multi-modulo basato su Spring Boot che implementa l'architettura esagonale (Hexagonal Architecture) con supporto per deployment sia on-premise che cloud AWS.
+Un sistema di gestione personale multi-modulo basato su Spring Boot che implementa l'architettura esagonale (Hexagonal Architecture) con supporto per deployment sia on-premise che cloud AWS.
+Prevede
+- Una lista di annotazioni
 
 
 ## 📚 Indice rapido
@@ -24,7 +26,7 @@ Un sistema di gestione annotazioni multi-modulo basato su Spring Boot che implem
 ## 🛠️ Struttura progetto:
 Il progetto segue i principi dell'*Hexagonal Architecture* (Ports and Adapters) e si basa su un'architettura a microservizi modulare:
 ```
-📦 annotazioni-parent
+📦 progetto
 ├── 📁 adapter-port          # Interfacce e domini (Hexagonal Core)
 ├── 📁 adapter-api           # REST API Controllers
 ├── 📁 adapter-web           # Risorse statiche e configurazioni web
@@ -36,7 +38,7 @@ Caratteristiche:
 - **Multi-database**: Supporto per PostgreSQL, MySQL, MongoDB, DynamoDB
 - **Multi-ambiente**: Configurazioni separate per AWS e On-Premise
 - **Architettura esagonale**: Separazione netta tra business logic e infrastruttura
-- **REST API**: Endpoint completi per gestione annotazioni
+- **REST API**: Endpoint completi per gestione dei dati
 - **Profili Spring**: Attivazione automatica delle implementazioni corrette
 - **Transazionalità**: Gestione delle transazioni cross-database
 - **Configurazione esterna**: Supporto per variabili d'ambiente
@@ -67,6 +69,10 @@ Prerequisiti:
     ```bash
     docker-compose build --no-cache app
     docker-compose up
+    ```
+    Per rimuovere tutto 
+    ```bash
+    docker-compose down --remove-orphans
     ```
 - Esecuzione profilo AWS *coming soon*
     ```bash
@@ -161,10 +167,10 @@ L'applicazione espone la documentazione interattiva delle API REST tramite Swagg
     @Configuration
     public class SwaggerConfig {
         @Bean
-        public OpenAPI annotazioniOpenAPI() {
+        public OpenAPI getsionepersonaleOpenAPI() {
             return new OpenAPI()
-                    .info(new Info().title("Sistema di Gestione Annotazioni API")
-                            .description("API per la gestione delle annotazioni, versioning e storico note.")
+                    .info(new Info().title("Sistema di Gestione personale API")
+                            .description("API per la gestione delle personale, versioning e storico note.")
                             .version("v1.0.0")
                             .license(new License().name("GPL v3").url("https://www.gnu.org/licenses/gpl-3.0")))
                     .externalDocs(new ExternalDocumentation()
@@ -173,7 +179,7 @@ L'applicazione espone la documentazione interattiva delle API REST tramite Swagg
         }
     }
     ```
-  - con la possibilità di aggiungere annotazioni OpenAPI ai controller/metodi per arricchire la documentazione.
+  - con la possibilità di aggiungere dati nelle annotation OpenAPI ai controller/metodi per arricchire la documentazione.
 - *Note di sicurezza*: in ambiente di produzione si consiglia di limitare l'accesso a Swagger UI (che dovrebbe essere attivo solo su ambienti di test/sviluppo).
 
 
@@ -209,7 +215,7 @@ L'applicazione supporta l'analisi statica del codice, la code coverage e la qual
 - **Esecuzione analisi Maven con coverage**:
     ```bash
     mvn clean verify sonar:sonar \
-      -Dsonar.login=<il-tuo-token> \
+      -Dsonar.login=sqa_96b98122159fb242ae6b85a0f0ba42d82c41e06d \
       -Dsonar.host.url=http://localhost:9000 \
       -Ponprem
     ```
@@ -232,12 +238,12 @@ L'applicazione supporta l'analisi statica del codice, la code coverage e la qual
 
 
 ## 🐳 Deploy e utilizzo con DockerHub
-L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.docker.com/r/alnao/annotazioni) e può essere scaricata ed eseguita direttamente, senza necessità di build locale.
+L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.docker.com/r/alnao/gestionepersonale) e può essere scaricata ed eseguita direttamente, senza necessità di build locale.
 - **Compilazione e push dell'immagine**
     ```bash
     docker login
-    docker build -t alnao/annotazioni:latest .
-    docker push alnao/annotazioni:latest
+    docker build -t alnao/gestionepersonale:latest .
+    docker push alnao/gestionepersonale:latest
     ```
     oppure lanciare lo script 
     ```bash
@@ -245,12 +251,12 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
     ```
 - **Pull dell'immagine**:
     ```bash
-    docker pull alnao/annotazioni:latest
+    docker pull alnao/gestionepersonale:latest
     ```
     L'immagine viene aggiornata con le ultime versioni *stabili*.
 - **Esecuzione rapida**:
     ```bash
-    docker run --rm -p 8080:8080 alnao/annotazioni:latest
+    docker run --rm -p 8080:8080 alnao/gestionepersonale:latest
     ```
     L'applicazione sarà disponibile su [http://localhost:8080](http://localhost:8080) ma nel sistema devono esserci già installati e ben configuati MongoDb e Postgresql.
 - **Esecuzione completa**: 🔌 Rete Docker condivisa (alternativa più robusta)
@@ -397,7 +403,11 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
 - **Note**:
     - I dati di MongoDB e PostgreSQL sono persistenti grazie ai PVC di Kubernetes, a meno di usare lo script di `stop-all.sh` che rimuove anche i volumi persistenti.
     - Viene usata l'immagine `alnao/annotazioni:latest` su dockerHub e non una immagine creata in sistema locale.
-
+    - Per rimuovere tutto lo script da lanciare è
+      ```bash
+      ./script/minikube-onprem/stop-all.sh
+      minikube delete
+      ```
 
 ## 🐳 Deploy AWS-onprem (MySQL e DynamoDB Local)
 
@@ -417,16 +427,6 @@ Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, 
     - Password: `annotazioni_pass`
     - Database: `annotazioni`
   - **DynamoDB Admin**:  [http://localhost:8087](http://localhost:8087)
-
-- Per prova è stato scritto e poi commentato anche un Nginx/Proxy
-  - Il frontend statico è servito da Nginx su `localhost:8080`.
-  - Le chiamate API `/api/annotazioni` sono automaticamente proxyate verso il backend Spring Boot su `localhost:8085`.
-  - Non è necessario modificare `app.js` o la logica frontend: tutte le chiamate API funzionano come in produzione.
-  - Se modifichi i file statici, riavvia solo il servizio Nginx:
-    ```bash
-    docker-compose restart nginx
-    ```
-    - Se la porta 8080 è occupata, puoi cambiare la porta esposta nel servizio Nginx nel `docker-compose.yml`.
 - Per vedere i log di un servizio:
   ```bash
   docker-compose logs -f <nome-servizio>
@@ -503,6 +503,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     ```bash
     ./script/aws-ecs/start-all.sh
     ```
+    Lo script ci può mettere diversi minuto per la creazione del database aurora e del task ECS!
     Lo script esegue in sequenza:
     1. **Build e Push ECR**: Compilazione Maven, build Docker, creazione repository ECR e push immagine
     2. **IAM Roles**: Creazione Task Role (accesso Aurora/DynamoDB) e Execution Role (logging CloudWatch)
@@ -512,22 +513,22 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     6. **ECS Deployment**: Creazione cluster, task definition, service con Fargate e auto-scaling
     7. **CloudWatch Logs**: Configurazione logging applicativo con retention automatica
     8. **Endpoint Discovery**: Rilevamento automatico IP pubblico del task per accesso HTTP
-
+      - a volte capita che il task non faccia in tempo a partire e il ritorna l'ip corretto, in questi casi è possibile lanciare lo script
+        ```bash
+        ./script/aws-ecs/check-fargete.sh
+        ```
   - Accesso all'applicazione:
     - L'output finale dello script mostra l'IP pubblico del task ECS e la porta applicativa (8080)
     - Accedi da browser: `http://<TASK_PUBLIC_IP>:8080`
     - Endpoint API: `http://<TASK_PUBLIC_IP>:8080/api/annotazioni`
     - Swagger UI: `http://<TASK_PUBLIC_IP>:8080/swagger-ui.html`
     - Health Check: `http://<TASK_PUBLIC_IP>:8080/actuator/health`
-
   - Monitoring e logs:
     ```bash
     # Verifica stato servizio ECS
     aws ecs describe-services --cluster annotazioni-cluster --services annotazioni-service
-    
     # Visualizza logs applicazione
     aws logs tail /ecs/annotazioni --follow
-    
     # Lista task attivi
     aws ecs list-tasks --cluster annotazioni-cluster
     ```
@@ -569,8 +570,10 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
 
 ## 📝 TODO / Roadmap
 - ✅ ⚙️ Creazione progetto con maven, creazione dei moduli adapter, adapter web con pagina web di esempio, test generale di esecuzione
-  - ✅ 🛠️ Funzione di modifica nota con registro con precedenti versioni delle note
+  - ✅ 📝 Funzione di modifica nota con registro con precedenti versioni delle note
   - ✅ 📖 Configurazione di OpenApi-Swagger e Quality-SonarQube, test coverage e compilazione dei moduli
+  - 🚧 🛠️ Modifica nome dell'applicazione in *gestione personale*
+  - 🚧 🛠️ Creazione struttura task e aggancio con le annotazioni
 - ✅ 🐳 Build e deploy su DockerHub della versione *OnPrem*
   - ✅ 🐳 configurazione di docker-compose con MongoDb e Postgresql
   - ✅ ☸️ Esecuzione su Kubernetes/Minikube locale con yaml dedicati

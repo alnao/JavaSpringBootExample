@@ -2,7 +2,7 @@
 FROM openjdk:17-jdk-slim AS builder
 
 LABEL maintainer="alnao.it"
-LABEL description="Sistema Gestione Annotazioni - Build Stage"
+LABEL description="Sistema Gestione personale - Build Stage"
 
 # Installa Maven
 RUN apt-get update && \
@@ -36,7 +36,7 @@ RUN mvn clean package -DskipTests -B
 FROM openjdk:17-jdk-slim AS runtime
 
 LABEL maintainer="alnao.it"
-LABEL description="Sistema Gestione Annotazioni - Runtime"
+LABEL description="Sistema Gestione personale - Runtime"
 
 # Installa curl per health check
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*

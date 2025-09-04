@@ -1,5 +1,5 @@
 -- Schema per PostgreSQL (OnPrem)
-CREATE TABLE IF NOT EXISTS annotazione_metadata (
+CREATE TABLE IF NOT EXISTS annotazioni_metadata (
     id VARCHAR(255) PRIMARY KEY,
     versione_nota VARCHAR(50),
     utente_creazione VARCHAR(100),
@@ -14,14 +14,14 @@ CREATE TABLE IF NOT EXISTS annotazione_metadata (
 );
 
 -- Indici per migliorare le performance
-CREATE INDEX IF NOT EXISTS idx_annotazione_metadata_categoria ON annotazione_metadata(categoria);
-CREATE INDEX IF NOT EXISTS idx_annotazione_metadata_pubblica ON annotazione_metadata(pubblica);
-CREATE INDEX IF NOT EXISTS idx_annotazione_metadata_priorita ON annotazione_metadata(priorita);
-CREATE INDEX IF NOT EXISTS idx_annotazione_metadata_utente_creazione ON annotazione_metadata(utente_creazione);
-CREATE INDEX IF NOT EXISTS idx_annotazione_metadata_data_inserimento ON annotazione_metadata(data_inserimento);
+CREATE INDEX IF NOT EXISTS idx_annotazioni_metadata_categoria ON annotazioni_metadata(categoria);
+CREATE INDEX IF NOT EXISTS idx_annotazioni_metadata_pubblica ON annotazioni_metadata(pubblica);
+CREATE INDEX IF NOT EXISTS idx_annotazioni_metadata_priorita ON annotazioni_metadata(priorita);
+CREATE INDEX IF NOT EXISTS idx_annotazioni_metadata_utente_creazione ON annotazioni_metadata(utente_creazione);
+CREATE INDEX IF NOT EXISTS idx_annotazioni_metadata_data_inserimento ON annotazioni_metadata(data_inserimento);
 
 -- Dati di esempio
-INSERT INTO annotazione_metadata (
+INSERT INTO annotazioni_metadata (
     id, versione_nota, utente_creazione, data_inserimento, data_ultima_modifica,
     utente_ultima_modifica, descrizione, categoria, tags, pubblica, priorita
 ) VALUES 

@@ -6,14 +6,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>it.alnao.annotazioni</groupId>
-        <artifactId>annotazioni-parent</artifactId>
+        <groupId>it.alnao.springbootexample</groupId>
+        <artifactId>springbootexample-parent</artifactId>
         <version>1.0.0</version>
     </parent>
 
     <artifactId>adapter-web</artifactId>
-    <name>Annotazioni - Web adapter</name>
-    <description>Interfaccia web con Bootstrap per il sistema annotazioni</description>
+    <name>Gestione Personale - Web adapter</name>
+    <description>Interfaccia web con Bootstrap per il sistema gestione personale</description>
 
     <dependencies>
         <dependency>

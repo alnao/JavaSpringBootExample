@@ -4,39 +4,39 @@ services:
   # PostgreSQL per metadati
   postgres:
     image: postgres:15-alpine
-    container_name: annotazioni-postgres
+    container_name: gestionepersonale-postgres
     environment:
-      POSTGRES_DB: annotazioni
-      POSTGRES_USER: annotazioni_user
-      POSTGRES_PASSWORD: annotazioni_pass
+      POSTGRES_DB: gestionepersonale
+      POSTGRES_USER: gestionepersonale_user
+      POSTGRES_PASSWORD: gestionepersonale_pass
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./script/init-database/init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - annotazioni-network
+      - gestionepersonale-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U annotazioni_user -d annotazioni"]
+      test: ["CMD-SHELL", "pg_isready -U gestionepersonale_user -d gestionepersonale"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # MongoDB per annotazioni
+  # MongoDB per gestionepersonale
   mongodb:
     image: mongo:7.0
-    container_name: annotazioni-mongodb
+    container_name: gestionepersonale-mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin123
-      MONGO_INITDB_DATABASE: annotazioni
+      MONGO_INITDB_DATABASE: gestionepersonale
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
       - ./script/init-database/init-mongodb.js:/docker-entrypoint-initdb.d/init.js
     networks:
-      - annotazioni-network
+      - gestionepersonale-network
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 30s
@@ -48,13 +48,13 @@ services:
     build:
       context: ./ #adapter-app
       dockerfile: Dockerfile
-    container_name: annotazioni-app
+    container_name: gestionepersonale-app
     environment:
       SPRING_PROFILES_ACTIVE: onprem
-      POSTGRES_URL: jdbc:postgresql://postgres:5432/annotazioni
-      POSTGRES_USERNAME: annotazioni_user
-      POSTGRES_PASSWORD: annotazioni_pass
-      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/annotazioni_db?authSource=admin
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/gestionepersonale
+      POSTGRES_USERNAME: gestionepersonale_user
+      POSTGRES_PASSWORD: gestionepersonale_pass
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/gestionepersonale_db?authSource=admin
       SERVER_PORT: 8080
     ports:
       - "8081:8080"
@@ -64,7 +64,7 @@ services:
       mongodb:
         condition: service_healthy
     networks:
-      - annotazioni-network
+      - gestionepersonale-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -75,7 +75,7 @@ services:
   # Adminer per gestione PostgreSQL
   adminer:
     image: adminer:4.8.1
-    container_name: annotazioni-adminer
+    container_name: gestionepersonale-adminer
     ports:
       - "8083:8080"
     environment:
@@ -83,12 +83,12 @@ services:
     depends_on:
       - postgres
     networks:
-      - annotazioni-network
+      - gestionepersonale-network
 
   # Mongo Express per gestione MongoDB
   mongo-express:
     image: mongo-express:1.0.0
-    container_name: annotazioni-mongo-express
+    container_name: gestionepersonale-mongo-express
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: admin
       ME_CONFIG_MONGODB_ADMINPASSWORD: admin123
@@ -100,14 +100,16 @@ services:
     depends_on:
       - mongodb
     networks:
-      - annotazioni-network
+      - gestionepersonale-network
 
 volumes:
   postgres_data:
+    name: gestionepersonale-postgres-data
     driver: local
   mongodb_data:
+    name: gestionepersonale-mongodb-data
     driver: local
 
 networks:
-  annotazioni-network:
+  gestionepersonale-network:
     driver: bridge

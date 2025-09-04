@@ -5,7 +5,8 @@ set -e
 
 # Endpoint DynamoDB Local
 DYNAMO_ENDPOINT=${DYNAMO_ENDPOINT:-http://dynamodb:8000}
-TABLE_NAME=${DYNAMODB_TABLE_NAME:-annotazioni}
+DYNAMODB_ANNOTAZIONI_TABLE_NAME=${DYNAMODB_ANNOTAZIONI_TABLE_NAME:-annotazioni}
+DYNAMODB_STORICO_ANNOTAZIONI_TABLE_NAME=${DYNAMODB_STORICO_ANNOTAZIONI_TABLE_NAME:-annotazioni_storico}
 REGION=${AWS_REGION:-eu-central-1}
 AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-dummy}
 AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-dummy}
@@ -19,15 +20,26 @@ until curl -s "$DYNAMO_ENDPOINT" > /dev/null; do
   sleep 2
 done
 
-echo "Creo tabella $TABLE_NAME su $DYNAMO_ENDPOINT nella regione $REGION..."
+echo "Creo tabella $DYNAMODB_ANNOTAZIONI_TABLE_NAME su $DYNAMO_ENDPOINT nella regione $REGION..."
 
 aws dynamodb create-table \
-  --table-name "$TABLE_NAME" \
+  --table-name "$DYNAMODB_ANNOTAZIONI_TABLE_NAME" \
   --attribute-definitions AttributeName=id,AttributeType=S \
   --key-schema AttributeName=id,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST \
   --endpoint-url "$DYNAMO_ENDPOINT" \
   --region "$REGION" || echo "Tabella già esistente o errore ignorato."
+
+echo "Creo tabella $DYNAMODB_STORICO_ANNOTAZIONI_TABLE_NAME su $DYNAMO_ENDPOINT nella regione $REGION..."
+
+aws dynamodb create-table \
+  --table-name "$DYNAMODB_STORICO_ANNOTAZIONI_TABLE_NAME" \
+  --attribute-definitions AttributeName=id,AttributeType=S \
+  --key-schema AttributeName=id,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --endpoint-url "$DYNAMO_ENDPOINT" \
+  --region "$REGION" || echo "Tabella già esistente o errore ignorato."
+
 
 echo "Tabella DynamoDB pronta."
 

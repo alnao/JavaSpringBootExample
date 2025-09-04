@@ -17,7 +17,7 @@ spec:
           image: postgres:13
           env:
             - name: POSTGRES_DB
-              value: annotazioni
+              value: gestionepersonale
             - name: POSTGRES_USER
               value: demo
             - name: POSTGRES_PASSWORD

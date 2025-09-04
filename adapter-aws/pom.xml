@@ -6,18 +6,18 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>it.alnao.annotazioni</groupId>
-        <artifactId>annotazioni-parent</artifactId>
+        <groupId>it.alnao.springbootexample</groupId>
+        <artifactId>springbootexample-parent</artifactId>
         <version>1.0.0</version>
     </parent>
 
     <artifactId>adapter-aws</artifactId>
-    <name>Annotazioni - AWS adapter</name>
+    <name>Gestione Personale - AWS adapter</name>
     <description>Implementazioni AWS per DynamoDB e MySQL</description>
 
     <dependencies>
         <dependency>
-            <groupId>it.alnao.annotazioni</groupId>
+            <groupId>it.alnao.springbootexample</groupId>
             <artifactId>adapter-port</artifactId>
         </dependency>
         

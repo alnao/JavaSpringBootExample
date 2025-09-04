@@ -1,18 +1,18 @@
 #!/bin/bash
-# Rimozione completa stack Annotazioni AWS (Aurora MySQL, DynamoDB, EC2, Security Group)
+# Rimozione completa stack Gestionepersonale AWS (Aurora MySQL, DynamoDB, EC2, Security Group)
 set -e
 
 # Disabilita paginazione aws cli
 export AWS_PAGER=""
 
 REGION="eu-central-1"
-DB_CLUSTER_ID="annotazioni-cluster"
-DB_INSTANCE_ID="annotazioni-instance"
-SG_NAME="annotazioni-sg"
-KEY_NAME="${KEY_NAME:-annotazioni-key}"
+DB_CLUSTER_ID="gestionepersonale-cluster"
+DB_INSTANCE_ID="gestionepersonale-instance"
+SG_NAME="gestionepersonale-sg"
+KEY_NAME="${KEY_NAME:-gestionepersonale-key}"
 
-# 1. Termina e rimuovi tutte le EC2 con tag annotazioni-app
-INSTANCE_IDS=$(aws ec2 describe-instances --region $REGION --filters Name=tag:annotazioni-app,Values=true Name=instance-state-name,Values=running,stopped --query 'Reservations[].Instances[].InstanceId' --output text)
+# 1. Termina e rimuovi tutte le EC2 con tag gestionepersonale-app
+INSTANCE_IDS=$(aws ec2 describe-instances --region $REGION --filters Name=tag:gestionepersonale-app,Values=true Name=instance-state-name,Values=running,stopped --query 'Reservations[].Instances[].InstanceId' --output text)
 if [ -n "$INSTANCE_IDS" ]; then
   aws ec2 terminate-instances --instance-ids $INSTANCE_IDS --region $REGION
   aws ec2 wait instance-terminated --instance-ids $INSTANCE_IDS --region $REGION
@@ -39,8 +39,8 @@ aws ec2 delete-key-pair --key-name $KEY_NAME --region $REGION || true
 rm -f $KEY_NAME.pem
 
 # 6. Rimuovi IAM Role e Instance Profile
-ROLE_NAME="annotazioni-ec2-role"
-INSTANCE_PROFILE_NAME="annotazioni-ec2-profile"
+ROLE_NAME="gestionepersonale-ec2-role"
+INSTANCE_PROFILE_NAME="gestionepersonale-ec2-profile"
 POLICY_ARN="arn:aws:iam::aws:policy/AmazonRDSFullAccess"
 POLICY_ARN2="arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
 POLICY_ARN3="arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
@@ -56,4 +56,4 @@ if aws iam get-role --role-name $ROLE_NAME --region $REGION &>/dev/null; then
   aws iam delete-role --role-name $ROLE_NAME --region $REGION || true
 fi
 
-echo "Stack AWS Annotazioni rimosso. Tutte le EC2 con tag annotazioni-app terminate."
+echo "Stack AWS gestionepersonale rimosso. Tutte le EC2 con tag gestionepersonale-app terminate."
