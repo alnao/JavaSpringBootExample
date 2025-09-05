@@ -2,6 +2,9 @@
 # Script: run-ecs-mysql-insert.sh
 # Avvia un ECS Task temporaneo nella VPC per eseguire una query di inserimento su Aurora MySQL
 # Richiede: AWS CLI configurata, permessi su ECS, ECR, RDS, IAM, VPC
+# Richiede che il cluster ECS, il ruolo di esecuzione e il gruppo di log esistano già tramite script start-all.sh
+# Necessita il file init-mysql.sql con le query SQL da eseguire
+# https://raw.githubusercontent.com/alnao/JavaSpringBootExample/master/script/init-database/init-mysql.sql
 
 set -euo pipefail
 export AWS_PAGER=""
@@ -27,7 +30,7 @@ AURORA_ENDPOINT=$(aws rds describe-db-clusters --db-cluster-identifier gestionep
 
 # === Definisci comando MySQL da eseguire ===
 # MYSQL_COMMAND="mysql -h $AURORA_ENDPOINT -u$AURORA_MASTER_USER -p$AURORA_MASTER_PASS $AURORA_DB_NAME -e \\\"INSERT INTO users (id, username, password, enabled) VALUES ('2b3c4d5e-6f7g-8h9i-0j1k-2l3m4n5o6p7q', 'admin', '\$2b\$12\$TUQyZEAT4R.5nsyGJYm6Z.HQMiD.Z8dRs8nc6k1fHZf31sKt4lUOa', true) ON DUPLICATE KEY UPDATE username='admin';\\\" "
-MYSQL_COMMAND="curl -o /tmp/init-mysql.sql https://raw.githubusercontent.com/alnao/JavaSpringBootExample/master/script/init-database/init-mysql.sql && mysql -h $AURORA_ENDPOINT -u$AURORA_MASTER_USER -p$AURORA_MASTER_PASS < /tmp/init-mysql.sql"
+MYSQL_COMMAND="curl -o /tmp/init-mysql.sql https://raw.githubusercontent.com/alnao/JavaSpringBootExample/master/script/init-database/init-mysql.sql && cat /tmp/init-mysql.sql && mysql -h $AURORA_ENDPOINT -u$AURORA_MASTER_USER -p$AURORA_MASTER_PASS < /tmp/init-mysql.sql "
 
 # === Definisci container image (usa una pubblica con mysql client) ===
 MYSQL_IMAGE="mysql:8.0"

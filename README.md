@@ -34,19 +34,19 @@ Il progetto segue i principi dell'*Hexagonal Architecture* (Ports and Adapters) 
 ├── 📁 adapter-onprem        # Implementazione On-Premise (PostgreSQL + MongoDB)
 └── 📁 adapter-app           # Applicazione principale Spring Boot
 ```
+
 Caratteristiche:
-- **Multi-database**: Supporto per PostgreSQL, MySQL, MongoDB, DynamoDB
-- **Multi-ambiente**: Configurazioni separate per AWS e On-Premise
-- **Architettura esagonale**: Separazione netta tra business logic e infrastruttura
-- **REST API**: Endpoint completi per gestione dei dati
-- **Profili Spring**: Attivazione automatica delle implementazioni corrette
-- **Transazionalità**: Gestione delle transazioni cross-database
-- **Configurazione esterna**: Supporto per variabili d'ambiente
+- **Multi-ambiente**: Configurazioni dedicate per ambienti On-Premise e AWS Cloud, con profili Spring attivabili dinamicamente. Supporto per PostgreSQL, MySQL, MongoDB, DynamoDB
+- **Deploy flessibile**: Supporto per Docker, Docker Compose, Minikube/Kubernetes, AWS EC2, AWS ECS Fargate.
+- **Architettura esagonale**: Separazione netta tra business logic, API, e infrastruttura, con moduli dedicati per ogni adapter.
+- **REST API**: Endpoint completi per gestione dei dati. Tutti gli endpoint seguono le convenzioni REST, con metodi HTTP chiari (GET, POST, PUT, DELETE) e risposte in formato JSON. Tutte le operazioni sensibili sono protette da autenticazione JWT e, dove richiesto, da autorizzazione basata su ruolo.
+- **🔒 Autenticazione avanzata**: Gestione utenti, provider OAuth2 (Google, GitHub, Microsoft), refresh token e JWT con configurazione esterna. *OAuth2 (Google, GitHub, Microsoft) coming soon!*
+
 
 Prerequisiti:
 - On-Premise semplice: Java 17+, Maven 3.8+, PostgreSQL 13+, MongoDB 4.4+
 - On-Premise con docker: Docker & Docker-compose
-- Ambiente AWS: Java 17+, Maven 3.8+, AWS Account con accesso a RDS MySQL e DynamoDB
+- Ambiente AWS: Java 17+, Maven 3.8+, AWS Account con accesso a RDS MySQL e DynamoDB. *Occhio ai costi perchè alcuni dei servizi usati prevede dei costi di esecuzione PayAsYouGo*
 
 
 ## ⚙️ Esecuzione
@@ -94,8 +94,17 @@ Prerequisiti:
     ```
 
 ## 📡 API Endpoints
-- Eseguendo il sistema in locale la base degli URL è `http://localhost:8080` (8081 nel caso di docker-compose)
-- Le risorse base sono:
+- Eseguendo il sistema in locale la base degli URL è `http://localhost:8080` (8081/8085 nel caso di esecuzione tramite docker-compose su Minikube o AWS)
+- API di autenticazione gestite da AuthController:
+    | Metodo | Endpoint | Descrizione |
+    |--------|----------|-------------|
+    | POST | `/api/auth/login` | Login locale con username e password |
+    | POST | `/api/auth/register` | Registrazione nuovo utente locale |
+    | GET  | `/api/auth/me` | Profilo utente autenticato |
+    | GET  | `/api/auth/providers` | Lista provider OAuth2 disponibili |
+    | POST | `/api/auth/refresh` | Rinnovo del token JWT |
+    | POST | `/api/auth/logout` | Logout e invalidazione token |
+- Le risorse per le Annotazioni sono:
     | Metodo | Endpoint | Descrizione |
     |--------|----------|-------------|
     | POST | `/api/annotazioni` | Crea nuova annotazione |
@@ -108,32 +117,30 @@ Prerequisiti:
     | GET | `/api/annotazioni/pubbliche` | Solo annotazioni pubbliche |
     | POST | `/api/annotazioni/search` | Ricerca per testo |
     | GET | `/api/annotazioni/stats` | Statistiche |
-- Operazioni sui Metadati:
-    | Metodo | Endpoint | Descrizione |
-    |--------|----------|-------------|
     | PUT | `/api/annotazioni/{id}/visibilita` | Imposta visibilità pubblica |
     | PUT | `/api/annotazioni/{id}/categoria` | Imposta categoria |
     | PUT | `/api/annotazioni/{id}/tags` | Imposta tags |
     | PUT | `/api/annotazioni/{id}/priorita` | Imposta priorità |
-- Creazione di un'annotazione:
-    ```bash
-    curl -X POST http://localhost:8080/api/annotazioni \
-    -H "Content-Type: application/json" \
-    -d '{
-        "valoreNota": "Questa è una nota importante",
-        "descrizione": "Descrizione della nota",
-        "utente": "utente-demo"
-    }'
-    ```
-- Ricerca per testo e altri metodi di ricerca:
-    ```bash
-    curl -X GET http://localhost:8081/api/annotazioni/cerca?testo=importante 
-    curl -X GET http://localhost:8081/api/annotazioni/utente/utente-demo
-    curl -X GET http://localhost:8081/api/annotazioni/categoria/importante 
-    curl -X GET http://localhost:8081/api/annotazioni/pubbliche
-    curl -X GET http://localhost:8081/api/annotazioni/statistiche
-    
-    ```
+  - Creazione di un'annotazione:
+      ```bash
+      curl -X POST http://localhost:8080/api/annotazioni \
+      -H "Content-Type: application/json" \
+      -d '{
+          "valoreNota": "Questa è una nota importante",
+          "descrizione": "Descrizione della nota",
+          "utente": "utente-demo"
+      }'
+      ```
+  - Ricerca per testo e altri metodi di ricerca:
+      ```bash
+      curl -X GET http://localhost:8081/api/annotazioni/cerca?testo=importante 
+      curl -X GET http://localhost:8081/api/annotazioni/utente/utente-demo
+      curl -X GET http://localhost:8081/api/annotazioni/categoria/importante 
+      curl -X GET http://localhost:8081/api/annotazioni/pubbliche
+      curl -X GET http://localhost:8081/api/annotazioni/statistiche
+      
+      ```
+
 
 
 ## 📊 Monitoring con actuator
@@ -538,6 +545,11 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
         ```bash
         ./script/aws-ecs/check-fargete.sh
         ```
+  - Dopo il deploy il database RDS è *vuoto*, per creare le tabelle e gli utenti base è disponibile lo script
+      ```
+      ./script/aws-ecs/run-ecs-mysql-insert.sh
+      ```
+      questo script esegue un task ECS per eseguire lo script init-mysql.sql che deve trovarsi nel path https://raw.githubusercontent.com/alnao/JavaSpringBootExample/master/script/init-database/init-mysql.sql
   - Accesso all'applicazione:
     - L'output finale dello script mostra l'IP pubblico del task ECS e la porta applicativa (8080)
     - Accedi da browser: `http://<TASK_PUBLIC_IP>:8080`
@@ -559,8 +571,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     ```bash
     ./script/aws-ecs/stop-all.sh
     ```
-    - **Attenzione**: questo script elimina tutti i dati nei database in modo irreversibile
-    - Effettuare backup se necessario prima dell'esecuzione
+    - **Attenzione**: questo script elimina tutti i dati nei database in modo irreversibile. Effettuare backup se necessario prima dell'esecuzione
 
 - Note tecniche:
   - Il provisioning è idempotente: esecuzione multipla sicura senza duplicazioni

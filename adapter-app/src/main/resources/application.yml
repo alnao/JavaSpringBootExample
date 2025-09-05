@@ -149,10 +149,11 @@ spring:
       - it.alnao.springbootexample.aws.entity
       - it.alnao.springbootexample.aws.entity.auth
     hibernate:
-      ddl-auto: ${DDL_AUTO:update} #ex validate
+      ddl-auto: ${DDL_AUTO:validate} #ex validate
       # ddl-auto: update: Hibernate aggiorna automaticamente lo schema del database all'avvio dell'applicazione, creando/modificando tabelle e colonne per adattarsi alle entity Java. Utile in sviluppo, ma rischioso in produzione perché può alterare dati o struttura.
       # ddl-auto: validate: Hibernate verifica che lo schema del database corrisponda alle entity Java, ma non modifica nulla. Se ci sono differenze, l'applicazione non parte. È più sicuro per ambienti di produzione, come AWS, perché evita cambi non controllati al database.
       # oppure cambiare temporaneamente ddl-auto: create per forzare la creazione.
+      # nel caso AWS la DDL del mysql viene chiamata da script esterno init-mysql.sql eseguito da script/aws-ecs/run-ecs-mysql-insert.sh
     show-sql: false
     properties:
       hibernate:

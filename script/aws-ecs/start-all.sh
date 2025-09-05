@@ -260,7 +260,6 @@ cat > ./script/aws-ecs/task-def.json <<EOF
         { "containerPort": 8080, "protocol": "tcp" }
       ],
       "environment": [
-        { "name": "DDL_AUTO", "value": "create" },
         { "name": "AWS_ACCESS_KEY_ID", "value": "" },
         { "name": "AWS_SECRET_ACCESS_KEY", "value": "" },
         { "name": "SPRING_PROFILES_ACTIVE", "value": "aws" },

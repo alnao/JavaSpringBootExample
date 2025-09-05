@@ -6,6 +6,8 @@
 # Potrebbe avere qualche problema in fase di avvio perchè il database non viene agganciato dal microservizio, 
 # sembra che non arrivi il corretto AURORA_ENDPOINT nella configurazione del microservizio nel user_data.
 
+# versione non molto aggiornata, chissà se funziona ancora...
+
 set -e
 
 # Disabilita paginazione aws cli
