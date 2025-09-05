@@ -1,6 +1,5 @@
 // Configurazione utente
 const USER_API_BASE_URL = '/api/user';
-let currentUser = null;
 let userPreferences = {};
 
 // Inizializzazione della pagina utente

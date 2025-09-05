@@ -1,6 +1,6 @@
 // Configurazione base
 const API_BASE_URL = '/api/annotazioni';
-let currentUser = 'utente-demo';
+let currentUser = null;
 let allAnnotations = [];
 let currentEditingId = null;
 

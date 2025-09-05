@@ -3,7 +3,7 @@ package it.alnao.springbootexample.aws.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
+@Entity // nota: hibernate crea la tabella se non esiste , ma packages-to-scan deve includere questo package
 @Table(name = "nome_tabella_annotazione_metadata") //see CustomPhysicalNamingStrategy
 public class AnnotazioneMetadataMysqlEntity {
 

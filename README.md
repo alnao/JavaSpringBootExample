@@ -67,10 +67,8 @@ Prerequisiti:
     ```
 - Esecuzione On-Premise con il docker-compose:
     ```bash
-    docker-compose build --no-cache app
-    docker-compose up
-    # oppure
     docker-compose up -d --build
+    # oppure
     ```
     E poi l'applicazione web di esempio sarà disponiible nella pagina
     ```
@@ -80,6 +78,8 @@ Prerequisiti:
     ```bash
     docker-compose down --remove-orphans
     docker network prune -f
+    docker volume rm $(docker volume ls -q)
+    docker rmi $(docker images -q)
     ```
 - Comandi utili
     ```bash
@@ -89,6 +89,8 @@ Prerequisiti:
     docker exec -it gestionepersonale-postgres psql -U gestionepersonale_user -d gestionepersonale -c "\d users;"
     docker exec -it gestionepersonale-postgres psql -U gestionepersonale_user -d gestionepersonale -c "SELECT username, email, account_type FROM users;"
     docker exec -it gestionepersonale-postgres psql -U gestionepersonale_user -d gestionepersonale -c "SELECT username, password FROM users WHERE username='alnao';"
+
+    node -c adapter-web/src/main/resources/static/js/annotazioni.js
     ```
 
 ## 📡 API Endpoints
@@ -376,6 +378,8 @@ Per semplificare l’avvio di tutti i servizi necessari (applicazione, PostgreSQ
 - **Fermare e rimuovere tutto**:
     ```bash
     docker-compose down
+    docker volume rm $(docker volume ls -q)
+    docker rmi $(docker images -q)
     ```
 - **Note**:
     - L’applicazione diventa disponibile su [http://localhost:8080](http://localhost:8080)
@@ -423,12 +427,16 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
 ## 🐳 Deploy AWS-onprem (MySQL e DynamoDB Local)
 
 Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, DynamoDB Admin UI, Spring Boot profilo AWS):
-- Comando per la creazione dello stack docker
+- Prima di eseguire il comando di compose bisogna verficare che la versione dell'immagine su DockerHub sia aggiornata!
+    ```bash
+    ./script/push-image-docker-hub.sh
+    ```
+- Comando per la creazione dello stack nel docker locale
   ```bash
-  docker-compose -f script/aws-onprem/docker-compose.yml up
+  docker-compose -f script/aws-onprem/docker-compose.yml up -d
   ```
-  - lo stack crea anche tabelle su Dynamo e tabella MySql
-  - presenta anche uno script `start-all.sh` ma non è necessario usarlo
+  - lo stack crea anche tabelle su Dynamo e database/tabelle su MySql locale
+  - presenta anche uno script `./script/aws-onprem/start-all.sh`
 - Servizi disponibili:
   - **Frontend**:        [http://localhost:8085](http://localhost:8085)
   - **Backend API**:     [http://localhost:8085/api/annotazioni](http://localhost:8085/api/annotazioni)
@@ -445,8 +453,10 @@ Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, 
 - Per fermare tutto e rimuovere i componenti:
   ```bash
   docker-compose -f script/aws-onprem/docker-compose.yml down
+  docker volume rm $(docker volume ls -q)
+  docker rmi $(docker images -q)
   ```
-  - presente anche uno script `stop-all.sh`
+  - presente anche uno script `./script/aws-onprem/stop-all.sh`
 
 
 ## 🚀 Deploy su AWS EC2
@@ -552,7 +562,6 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     - **Attenzione**: questo script elimina tutti i dati nei database in modo irreversibile
     - Effettuare backup se necessario prima dell'esecuzione
 
-
 - Note tecniche:
   - Il provisioning è idempotente: esecuzione multipla sicura senza duplicazioni
   - Tutte le risorse sono taggate per identificazione e gestione costi
@@ -581,29 +590,32 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
 
 ## 📝 TODO / Roadmap
 - ✅ ⚙️ Creazione progetto con maven, creazione dei moduli adapter, adapter web con pagina web di esempio, test generale di esecuzione
-  - ✅ 📝 Funzione di modifica nota con registro con precedenti versioni delle note
+  - ✅ 📝 Funzione di modifica annotazioni con registro con precedenti versioni delle note
   - ✅ 📖 Configurazione di OpenApi-Swagger e Quality-SonarQube, test coverage e compilazione dei moduli
-  - 🚧 🛠️ Modifica nome dell'applicazione in *gestione personale*
-  - 🚧 🛠️ Creazione struttura task e aggancio con le annotazioni
+  - ✅ 🛠️ Modifica nome dell'applicazione in *gestione personale* e test applicazione web di esempio
+  - 🚧 📝 Creazione struttura task con flusso di lavoro e aggancio con le annotazioni
 - ✅ 🐳 Build e deploy su DockerHub della versione *OnPrem*
   - ✅ 🐳 configurazione di docker-compose con MongoDb e Postgresql
   - ✅ ☸️ Esecuzione su Kubernetes/Minikube locale con yaml dedicati
-- ✅ 🐳 Esecuzione con docker-compose della versione AWS su sistema locale con Mysql e DynamoDB 
+- ✅ ☁️ Esecuzione con docker-compose della versione AWS su sistema locale con Mysql e DynamoDB 
   - ✅ 🐳 Deploy su AWS usando EC2 per eseguire il container docker, script scritto in AWS-CLI per il provisioning delle risorse necessarie (Aurora-RDS-Mysql e DynamoDB ) e la creazione della EC2 con lancio del docker con `user_data`
   - ✅ 🐳 Deploy su AWS usando ECS, Fargate e repository ECR (senza DockerHub), script scritto in AWS-CLI per il provisioning delle risorse necessarie (Aurora-RDS-Mysql e DynamoDB ) e lancio del task su ECS. Non previsto sistema di scaling up e/o bilanciatore ALB.
   - 🚧 🐳 Deploy su AWS su EKS
   - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts
   - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
+- ✅ 🔒 Autenticazione e autorizzazione (Spring Security) e token Jwt
+  - ✅ 👥 introduzione sistema di verifica degli utenti e validazione richieste con tabella utenti
+  - ✅ 📝 Gestione multiutente e modifica annotazioni con utente diverso dal creatore, test nell'applicazione web
+  - 🚧 🛠️ Valutazione di creazione `adapter-security` o posizionamento pacakge specifico attualmente nel port
+  - 🚧 🔐 OAuth2/OIDC Provider: Integrazione con provider esterni (Google, Microsoft, GitHub) + SSO enterprise
+  - 🚧 👥 Sostema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento
+- 🚧 ⚙️ Evoluzione adapter con integrazione con altri sistemi
+  - 🚧 🔄 Export/Import annotazioni (JSON, CSV): creazione `adapter-etl` per l'import e l'export di tutte le versione
+  - 🚧 📚 Export/Import annotazioni (Kafka): creazione service che permetta di inviare notifiche via coda (kafka o sqs)
+  - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere
 - 🚧 ⚡ Redis Caching Layer: Cache multi-livello (L1: in-memory, L2: Redis) con invalidation strategies e cache warming
-- 🚧 📊 Read Replicas: Separazione read/write con eventual consistency e load balancing intelligente
-- 🚧 Gestione multiutente e versioning annotazioni: introduzione sistema di login con creazione `adapter-auth`
-- 🚧 Autenticazione e autorizzazione (Spring Security) e token Jwt: introduzione sistema di verifica degli utenti e validazione richieste
-- 🚧 🔐 OAuth2/OIDC Provider: Integrazione con provider esterni (Google, Microsoft, GitHub) + SSO enterprise
-- 🚧 👥 Sostema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento
-- 🚧 Export/Import annotazioni (JSON, CSV): creazione `adapter-etl` per l'import e l'export di tutte le versione
-- 🚧 Export/Import annotazioni (Kafka): creazione service che permetta di inviare notifiche via coda (kafka o sqs)
-- 🚧 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere
-  - 👥 Social Reminders: Notifiche quando qualcuno interagisce con tue annotazioni condivise
+  - 🚧 📊 Read Replicas: Separazione read/write con eventual consistency e load balancing intelligente
+  - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
 - 🚧 💾 Backup & Disaster Recovery: Cross-region backup, point-in-time recovery, RTO/RPO compliance
 - 🚧 🔒 API Rate Limiting: Rate limiting intelligente con burst allowance, IP whitelisting, geographic restrictions
 - 🚧 🔍 Elasticsearch Integration: Ricerca full-text avanzata con highlighting, auto-complete, ricerca semantica

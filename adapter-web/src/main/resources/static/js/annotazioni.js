@@ -1,52 +1,70 @@
 // Configurazione annotazioni
 const ANNOTATIONS_API_BASE_URL = '/api/annotazioni';
-let currentUser = 'utente-demo';
 let allAnnotations = [];
 let currentEditingId = null;
 
-// Inizializzazione della pagina annotazioni
+// Inizializzazione quando la pagina è caricata
 document.addEventListener('DOMContentLoaded', function() {
-    // Verifica autenticazione
-    checkAuthentication();
+    // Verifica autenticazione semplice
+    if (!window.authUtils || !window.authUtils.isAuthenticated()) {
+        console.log('Utente non autenticato, redirect al login');
+        window.location.href = 'login.html';
+        return;
+    }
     
-    // Carica i dati dell'utente
+    console.log('Utente autenticato, inizializzazione pagina annotazioni');
+    
+    // Carica i dati utente
     loadUserData();
     
-    // Setup event listeners
+    // Carica le statistiche iniziali
+    loadStats();
+    
+    // Carica le categorie disponibili
+    loadCategories();
+    
+    // Mostra la dashboard di default
+    showSection('dashboard');
+    
+    // Configura gli event listeners
     setupAnnotationsEventListeners();
     
-    // Gestisci hash URL per navigazione diretta o mostra dashboard di default
-    if (!handleUrlHash()) {
-        showSection('dashboard');
-    }
+    // Inizializza il form con l'utente corrente
+    initializeAnnotationForm();
 });
 
-// Verifica autenticazione
-function checkAuthentication() {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-        window.location.href = 'login.html';
-        return false;
+// Inizializza il form delle annotazioni con i valori di default
+function initializeAnnotationForm() {
+    const userField = document.getElementById('annotation-user');
+    if (userField && currentUser) {
+        userField.value = currentUser;
     }
-    return true;
 }
 
 // Carica dati utente
 function loadUserData() {
-    const user = localStorage.getItem('currentUser');
+    const user = window.authUtils ? window.authUtils.getCurrentUser() : null;
     if (user) {
-        try {
-            const userData = JSON.parse(user);
-            currentUser = userData.username || userData.email;
-            
-            const userName = userData.firstName ? 
-                `${userData.firstName} ${userData.lastName || ''}`.trim() : 
-                userData.username || userData.email;
-            
-            document.getElementById('user-name').textContent = userName;
-        } catch (error) {
-            console.error('Errore nel parsing dei dati utente:', error);
+        currentUser = user.username || user.email;
+        
+        const userName = user.firstName ? 
+            `${user.firstName} ${user.lastName || ''}`.trim() : 
+            user.username || user.email;
+        
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement) {
+            userNameElement.textContent = userName;
         }
+    }
+}
+
+// Carica le statistiche iniziali
+async function loadStats() {
+    try {
+        // Carica le statistiche dalla dashboard
+        await loadAnnotationsDashboard();
+    } catch (error) {
+        console.error('Errore nel caricamento delle statistiche:', error);
     }
 }
 
@@ -260,7 +278,12 @@ function loadRecentAnnotations(annotations) {
                     <span class="badge bg-info">${version}</span>
                 </td>
                 <td>
-                    <i class="bi bi-person"></i> ${escapeHtml(annotation.utenteCreazione)}
+                    <div class="d-flex flex-column">
+                        <small><i class="bi bi-person-plus"></i> Creata da: ${escapeHtml(annotation.utenteCreazione)}</small>
+                        ${annotation.utenteUltimaModifica && annotation.utenteUltimaModifica !== annotation.utenteCreazione ? 
+                            `<small class="text-muted"><i class="bi bi-pencil"></i> Modificata da: ${escapeHtml(annotation.utenteUltimaModifica)}</small>` : 
+                            ''}
+                    </div>
                 </td>
                 <td>
                     <small>${formatDate(annotation.dataUltimaModifica)}</small>
@@ -336,7 +359,11 @@ function displayAnnotations(annotations, container = document.getElementById('an
                             ${annotation.tags ? annotation.tags.split(',').map(tag => `<span class="badge bg-outline-secondary me-1">${escapeHtml(tag.trim())}</span>`).join('') : ''}
                         </div>
                         <small class="text-muted">
-                            <i class="bi bi-person"></i> ${escapeHtml(annotation.utenteCreazione)}
+                            <i class="bi bi-person"></i> 
+                            ${annotation.utenteUltimaModifica && annotation.utenteUltimaModifica !== annotation.utenteCreazione 
+                                ? `Creata da ${escapeHtml(annotation.utenteCreazione)}<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Modificata da ${escapeHtml(annotation.utenteUltimaModifica)}`
+                                : `${escapeHtml(annotation.utenteCreazione)}`
+                            }
                             <br>
                             <i class="bi bi-clock"></i> ${formatDate(annotation.dataUltimaModifica)}
                         </small>
@@ -411,7 +438,7 @@ async function loadPublicAnnotations() {
     }
 }
 
-// Gestione creazione annotazione
+// Gestione creazione e modifica annotazione
 async function handleCreateAnnotation(event) {
     event.preventDefault();
     
@@ -445,24 +472,44 @@ async function handleCreateAnnotation(event) {
         priorita: parseInt(document.getElementById('annotation-priority').value)
     };
     
+    // Se siamo in modalità modifica, aggiungi l'ID
+    if (currentEditingId) {
+        formData.id = currentEditingId;
+    }
+
     try {
-        const response = await fetchAnnotationsAPI('', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        });
+        let response;
         
-        showAlert('Annotazione creata con successo!', 'success');
+        if (currentEditingId) {
+            // Modalità modifica
+            response = await fetchAnnotationsAPI(`/${currentEditingId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+            showAlert('Annotazione aggiornata con successo!', 'success');
+        } else {
+            // Modalità creazione
+            response = await fetchAnnotationsAPI('', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+            showAlert('Annotazione creata con successo!', 'success');
+        }
+        
         resetForm();
         
         // Vai alle annotazioni per vedere il risultato
         showSection('annotazioni');
         
     } catch (error) {
-        console.error('Errore nella creazione dell\'annotazione:', error);
-        showAlert('Errore nella creazione dell\'annotazione', 'danger');
+        console.error('Errore nell\'operazione:', error);
+        showAlert('Errore nell\'operazione', 'danger');
     }
 }
 
@@ -471,7 +518,8 @@ function resetForm() {
     const createForm = document.getElementById('create-annotation-form');
     if (createForm) {
         createForm.reset();
-        document.getElementById('annotation-user').value = currentUser;
+        // Assicurati che l'utente sia sempre popolato con l'utente corrente
+        document.getElementById('annotation-user').value = currentUser || '';
         document.getElementById('annotation-priority').value = '2';
     }
     currentEditingId = null;
@@ -557,31 +605,193 @@ function showAlert(message, type = 'info') {
     }, 5000);
 }
 
-// Funzioni placeholder per completare l'implementazione
-function performGlobalSearch() {
-    // TODO: Implementare ricerca globale
-    showAlert('Funzione ricerca globale in sviluppo', 'info');
+// Funzioni per gestione annotazioni
+function viewAnnotation(id) {
+    // Mostra i dettagli dell'annotazione in un modal
+    showAnnotationDetails(id);
 }
 
-function viewAnnotation(id) {
-    // TODO: Implementare visualizzazione dettagli
-    showAlert('Funzione visualizzazione in sviluppo', 'info');
+async function showAnnotationDetails(id) {
+    try {
+        const annotation = await fetchAnnotationsAPI(`/${id}`);
+        
+        const modalHtml = `
+            <div class="modal fade" id="viewAnnotationModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="bi bi-journal-text"></i> ${escapeHtml(annotation.descrizione)}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Contenuto:</label>
+                                <div class="border p-3 bg-light rounded">
+                                    ${escapeHtml(annotation.valoreNota)}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Categoria:</strong> ${annotation.categoria ? escapeHtml(annotation.categoria) : 'Nessuna'}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Priorità:</strong> ${getPriorityText(annotation.priorita)}
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <strong>Creato da:</strong> ${escapeHtml(annotation.utenteCreazione)}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Pubblica:</strong> ${annotation.pubblica ? 'Sì' : 'No'}
+                                </div>
+                            </div>
+                            ${annotation.utenteUltimaModifica && annotation.utenteUltimaModifica !== annotation.utenteCreazione ? 
+                                `<div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <strong>Ultima modifica da:</strong> ${escapeHtml(annotation.utenteUltimaModifica)}
+                                    </div>
+                                </div>` : ''
+                            }
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <strong>Creata:</strong> ${formatDate(annotation.dataCreazione)}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Modificata:</strong> ${formatDate(annotation.dataUltimaModifica)}
+                                </div>
+                            </div>
+                            ${annotation.tags ? `<div class="mt-2"><strong>Tags:</strong> ${annotation.tags}</div>` : ''}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                            <button type="button" class="btn btn-primary" onclick="editAnnotation('${annotation.id}')">
+                                <i class="bi bi-pencil"></i> Modifica
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Rimuovi modal esistente
+        const existingModal = document.getElementById('viewAnnotationModal');
+        if (existingModal) existingModal.remove();
+        
+        // Aggiungi nuovo modal
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Mostra modal
+        const modal = new bootstrap.Modal(document.getElementById('viewAnnotationModal'));
+        modal.show();
+        
+    } catch (error) {
+        console.error('Errore nel caricamento dei dettagli annotazione:', error);
+        showAlert('Errore nel caricamento dei dettagli', 'danger');
+    }
 }
 
 function editAnnotation(id) {
-    // TODO: Implementare modifica
-    showAlert('Funzione modifica in sviluppo', 'info');
+    // Chiudi il modal se aperto
+    const modal = bootstrap.Modal.getInstance(document.getElementById('viewAnnotationModal'));
+    if (modal) modal.hide();
+    
+    // Carica l'annotazione nel form di modifica
+    loadAnnotationForEdit(id);
+    showSection('crea');
 }
 
-function confirmDeleteAnnotation(id) {
-    // TODO: Implementare eliminazione
-    showAlert('Funzione eliminazione in sviluppo', 'info');
+async function loadAnnotationForEdit(id) {
+    try {
+        const annotation = await fetchAnnotationsAPI(`/${id}`);
+        
+        // Imposta modalità modifica
+        currentEditingId = id;
+        
+        // Popola il form
+        document.getElementById('annotation-title').value = annotation.descrizione || '';
+        document.getElementById('annotation-content').value = annotation.valoreNota || '';
+        document.getElementById('annotation-category').value = annotation.categoria || '';
+        document.getElementById('annotation-tags').value = annotation.tags || '';
+        // IMPORTANTE: Usa l'utente corrente per la modifica, non l'utente originale
+        document.getElementById('annotation-user').value = currentUser || '';
+        document.getElementById('annotation-public').checked = annotation.pubblica || false;
+        document.getElementById('annotation-priority').value = annotation.priorita || 2;
+        
+        // Cambia il titolo della sezione
+        const sectionTitle = document.querySelector('#crea-section h2');
+        if (sectionTitle) {
+            sectionTitle.innerHTML = '<i class="bi bi-pencil"></i> Modifica Annotazione';
+        }
+        
+        // Cambia il testo del bottone
+        const submitBtn = document.querySelector('#create-annotation-form button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="bi bi-save"></i> Aggiorna Annotazione';
+        }
+        
+    } catch (error) {
+        console.error('Errore nel caricamento annotazione per modifica:', error);
+        showAlert('Errore nel caricamento annotazione', 'danger');
+    }
+}
+
+async function confirmDeleteAnnotation(id) {
+    if (confirm('Sei sicuro di voler eliminare questa annotazione? L\'operazione non può essere annullata.')) {
+        try {
+            await fetchAnnotationsAPI(`/${id}`, {
+                method: 'DELETE'
+            });
+            
+            showAlert('Annotazione eliminata con successo!', 'success');
+            
+            // Ricarica la sezione corrente
+            const currentSection = document.querySelector('.content-section[style*="block"]');
+            if (currentSection) {
+                const sectionId = currentSection.id.replace('-section', '');
+                showSection(sectionId);
+            }
+            
+        } catch (error) {
+            console.error('Errore nell\'eliminazione annotazione:', error);
+            showAlert('Errore nell\'eliminazione annotazione', 'danger');
+        }
+    }
 }
 
 function handleEditAnnotation(event) {
-    // TODO: Implementare gestione modifica
+    // Questa funzione gestisce il submit del form quando siamo in modalità modifica
+    // La logica è già gestita in handleCreateAnnotation che controlla currentEditingId
     event.preventDefault();
-    showAlert('Funzione modifica in sviluppo', 'info');
+    handleCreateAnnotation(event);
+}
+
+// Funzione per resettare il form e tornare in modalità creazione
+function resetForm() {
+    currentEditingId = null;
+    
+    // Reset campi del form
+    document.getElementById('annotation-content').value = '';
+    document.getElementById('annotation-title').value = '';
+    document.getElementById('annotation-user').value = currentUser || ''; // Mantieni l'utente loggato
+    document.getElementById('annotation-category').value = '';
+    document.getElementById('annotation-tags').value = '';
+    document.getElementById('annotation-public').checked = false;
+    document.getElementById('annotation-priority').value = '1';
+    
+    // Aggiorna l'interfaccia per la modalità creazione
+    const formTitle = document.querySelector('#create .card-header h3');
+    if (formTitle) {
+        formTitle.textContent = 'Crea Nuova Annotazione';
+    }
+    
+    const submitButton = document.querySelector('#create button[type="submit"]');
+    if (submitButton) {
+        submitButton.innerHTML = '<i class="fas fa-plus me-2"></i>Crea Annotazione';
+        submitButton.className = 'btn btn-primary';
+    }
 }
 
 function handleAddCategory(event) {
@@ -590,9 +800,87 @@ function handleAddCategory(event) {
     showAlert('Funzione gestione categorie in sviluppo', 'info');
 }
 
+async function performGlobalSearch(event) {
+    event.preventDefault();
+    
+    const searchTerm = document.getElementById('global-search').value.trim();
+    
+    if (!searchTerm) {
+        showAlert('Inserisci un termine di ricerca', 'warning');
+        return;
+    }
+    
+    try {
+        // Chiama l'endpoint di ricerca API
+        const annotations = await fetchAnnotationsAPI(`/cerca?q=${encodeURIComponent(searchTerm)}`);
+        
+        // Mostra la sezione annotazioni con i risultati della ricerca
+        showSection('annotazioni');
+        
+        // Aggiorna il titolo per indicare che stiamo mostrando risultati di ricerca
+        const sectionTitle = document.querySelector('#annotazioni .card-header h3');
+        if (sectionTitle) {
+            sectionTitle.innerHTML = `<i class="fas fa-search me-2"></i>Risultati ricerca: "${searchTerm}"`;
+        }
+        
+        // Aggiungi un pulsante per tornare a tutte le annotazioni
+        const cardHeader = document.querySelector('#annotazioni .card-header');
+        if (cardHeader && !cardHeader.querySelector('.btn-outline-secondary')) {
+            const clearSearchBtn = document.createElement('button');
+            clearSearchBtn.className = 'btn btn-outline-secondary btn-sm ms-auto';
+            clearSearchBtn.innerHTML = '<i class="fas fa-times me-1"></i>Mostra tutte';
+            clearSearchBtn.onclick = () => {
+                document.getElementById('global-search').value = '';
+                sectionTitle.innerHTML = '<i class="fas fa-sticky-note me-2"></i>Le Mie Annotazioni';
+                clearSearchBtn.remove();
+                loadAllAnnotations();
+            };
+            cardHeader.appendChild(clearSearchBtn);
+        }
+        
+        // Mostra i risultati
+        displayAnnotations(annotations);
+        
+        if (annotations.length === 0) {
+            showAlert(`Nessuna annotazione trovata per "${searchTerm}"`, 'info');
+        } else {
+            showAlert(`Trovate ${annotations.length} annotazioni per "${searchTerm}"`, 'success');
+        }
+        
+    } catch (error) {
+        console.error('Errore nella ricerca:', error);
+        showAlert('Errore durante la ricerca', 'danger');
+    }
+}
+
 function loadCategories() {
-    // TODO: Implementare caricamento categorie
-    showAlert('Funzione categorie in sviluppo', 'info');
+    // Implemento il caricamento delle categorie dalle annotazioni esistenti
+    fetchAnnotationsAPI('')
+        .then(annotations => {
+            const categories = new Set();
+            annotations.forEach(annotation => {
+                if (annotation.categoria && annotation.categoria.trim()) {
+                    categories.add(annotation.categoria.trim());
+                }
+            });
+            
+            const categorySelect = document.getElementById('annotation-category');
+            if (categorySelect) {
+                // Mantieni l'opzione vuota
+                categorySelect.innerHTML = '<option value="">Seleziona categoria (opzionale)</option>';
+                
+                // Aggiungi le categorie trovate
+                Array.from(categories).sort().forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    categorySelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Errore nel caricamento delle categorie:', error);
+        });
 }
 
 // Logout
@@ -604,3 +892,12 @@ function logout() {
         window.location.href = 'login.html';
     }
 }
+
+// Assicuriamoci che le funzioni principali siano disponibili globalmente
+window.showSection = showSection;
+window.toggleSidebar = toggleSidebar;
+window.viewAnnotation = viewAnnotation;
+window.editAnnotation = editAnnotation;
+window.confirmDeleteAnnotation = confirmDeleteAnnotation;
+window.performGlobalSearch = performGlobalSearch;
+window.logout = logout;

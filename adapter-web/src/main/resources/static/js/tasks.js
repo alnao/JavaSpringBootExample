@@ -1,6 +1,5 @@
 // Configurazione tasks
 const TASKS_API_BASE_URL = '/api/tasks';
-let currentUser = null;
 let allTasks = [];
 
 // Inizializzazione della pagina tasks

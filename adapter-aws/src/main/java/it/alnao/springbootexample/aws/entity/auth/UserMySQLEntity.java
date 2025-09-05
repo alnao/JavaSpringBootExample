@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * Entità JPA per MySQL AWS per gli utenti.
  */
 @Entity
-@Table(name = "users")
+@Table(name = "nome_tabella_user") //see CustomPhysicalNamingStrategy
 public class UserMySQLEntity {
     
     @Id

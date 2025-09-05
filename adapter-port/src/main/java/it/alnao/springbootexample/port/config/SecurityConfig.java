@@ -1,10 +1,10 @@
-package it.alnao.springbootexample.onprem.config;
+package it.alnao.springbootexample.port.config;
 
-import it.alnao.springbootexample.onprem.security.JwtAuthenticationEntryPoint;
-import it.alnao.springbootexample.onprem.security.JwtAuthenticationFilter;
+import it.alnao.springbootexample.port.security.JwtAuthenticationEntryPoint;
+import it.alnao.springbootexample.port.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -22,13 +22,41 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
 /**
- * Configurazione Spring Security per il profilo OnPrem.
+ * Configurazione Spring Security per JWT Authentication.
+ * Configurazione standard che può essere riutilizzata in tutti gli adapter.
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
-@Profile("onprem")
 public class SecurityConfig {
+    public static class JwtConfig {
+        private final String secret;
+        private final Long expiration;
+        private final Long refreshExpiration;
+
+        public JwtConfig(String secret, Long expiration, Long refreshExpiration) {
+            this.secret = secret;
+            this.expiration = expiration;
+            this.refreshExpiration = refreshExpiration;
+        }
+        public String getSecret() { return secret; }
+        public Long getExpiration() { return expiration; }
+        public Long getRefreshExpiration() { return refreshExpiration; }
+    }
+
+    @Value("${gestione-personale.jwt.secret:mySecretKey1234567890abcdefghijklmnopqrstuvwxyz}")
+    private String jwtSecret;
+
+    @Value("${gestione-personale.jwt.expiration:86400}")
+    private Long jwtExpiration;
+
+    @Value("${gestione-personale.jwt.refresh-expiration:604800}")
+    private Long jwtRefreshExpiration;
+
+    @Bean
+    public JwtConfig jwtConfig() {
+        return new JwtConfig(jwtSecret, jwtExpiration, jwtRefreshExpiration);
+    }
 
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 

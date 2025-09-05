@@ -190,6 +190,22 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
+                                    <h4 id="public-annotations">0</h4>
+                                    <p class="mb-0">Annotazioni Pubbliche</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="bi bi-globe fs-1 opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card stat-card bg-warning text-dark">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
                                     <h4 id="total-tasks">0</h4>
                                     <p class="mb-0">Tasks Attivi</p>
                                 </div>
@@ -202,7 +218,7 @@
                 </div>
                 
                 <div class="col-lg-3 col-md-6 mb-3">
-                    <div class="card stat-card bg-warning text-dark">
+                    <div class="card stat-card bg-info text-white">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
@@ -211,22 +227,6 @@
                                 </div>
                                 <div class="align-self-center">
                                     <i class="bi bi-clock fs-1 opacity-75"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-lg-3 col-md-6 mb-3">
-                    <div class="card stat-card bg-info text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h4 id="completed-today">0</h4>
-                                    <p class="mb-0">Completate Oggi</p>
-                                </div>
-                                <div class="align-self-center">
-                                    <i class="bi bi-check-circle fs-1 opacity-75"></i>
                                 </div>
                             </div>
                         </div>
@@ -270,6 +270,29 @@
                             <div>Profilo</div>
                         </div>
                     </button>
+                </div>
+            </div>
+
+            <!-- Recent Public Annotations -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-globe"></i> Annotazioni Pubbliche Recenti</h5>
+                            <a href="annotazioni.html" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-arrow-right"></i> Vedi tutte
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <div id="public-annotations-list">
+                                <!-- Le annotazioni pubbliche verranno caricate qui -->
+                                <div class="text-center py-4">
+                                    <i class="bi bi-hourglass-split text-muted"></i>
+                                    <p class="text-muted">Caricamento annotazioni pubbliche...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

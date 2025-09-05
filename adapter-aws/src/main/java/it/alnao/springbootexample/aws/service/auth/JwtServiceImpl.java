@@ -1,5 +1,6 @@
 package it.alnao.springbootexample.aws.service.auth;
 
+import it.alnao.springbootexample.port.config.SecurityConfig;
 import it.alnao.springbootexample.port.domain.auth.RefreshToken;
 import it.alnao.springbootexample.port.domain.auth.User;
 import it.alnao.springbootexample.port.repository.auth.RefreshTokenRepository;
@@ -24,19 +25,12 @@ import java.util.*;
 @Profile("aws")
 public class JwtServiceImpl implements JwtService {
     
-    @Value("${jwt.secret:mySecretKey1234567890abcdefghijklmnopqrstuvwxyz}")
-    private String secret;
-    
-    @Value("${jwt.expiration:86400}") // 24 ore default
-    private Long expiration;
-    
-    @Value("${jwt.refresh-expiration:604800}") // 7 giorni default
-    private Long refreshExpiration;
-    
+    private final SecurityConfig.JwtConfig jwtConfig;
     private final RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
-    public JwtServiceImpl(RefreshTokenRepository refreshTokenRepository) {
+    public JwtServiceImpl(SecurityConfig.JwtConfig jwtConfig, RefreshTokenRepository refreshTokenRepository) {
+        this.jwtConfig = jwtConfig;
         this.refreshTokenRepository = refreshTokenRepository;
     }
     
@@ -59,7 +53,7 @@ public class JwtServiceImpl implements JwtService {
         refreshToken.setId(UUID.randomUUID().toString());
         refreshToken.setToken(token);
         refreshToken.setUserId(user.getId());
-        refreshToken.setExpiryDate(LocalDateTime.now().plusSeconds(refreshExpiration));
+    refreshToken.setExpiryDate(LocalDateTime.now().plusSeconds(jwtConfig.getRefreshExpiration()));
         refreshToken.setCreatedAt(LocalDateTime.now());
         
         return refreshTokenRepository.save(refreshToken);
@@ -124,18 +118,18 @@ public class JwtServiceImpl implements JwtService {
     
     // Private helper methods
     private String createToken(Map<String, Object> claims, String subject) {
-        return Jwts.builder()
-                .claims(claims)
-                .subject(subject)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + expiration * 1000))
-                .signWith(getSignKey(), Jwts.SIG.HS512)
-                .compact();
+    return Jwts.builder()
+        .claims(claims)
+        .subject(subject)
+        .issuedAt(new Date(System.currentTimeMillis()))
+        .expiration(new Date(System.currentTimeMillis() + jwtConfig.getExpiration() * 1000))
+        .signWith(getSignKey(), Jwts.SIG.HS512)
+        .compact();
     }
     
     private SecretKey getSignKey() {
-        byte[] keyBytes = secret.getBytes();
-        return Keys.hmacShaKeyFor(keyBytes);
+    byte[] keyBytes = jwtConfig.getSecret().getBytes();
+    return Keys.hmacShaKeyFor(keyBytes);
     }
     
     private <T> T getClaimFromToken(String token, ClaimsResolver<T> claimsResolver) {

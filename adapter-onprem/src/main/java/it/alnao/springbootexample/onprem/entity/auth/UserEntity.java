@@ -14,7 +14,7 @@ import java.util.List;
  * Entità JPA per PostgreSQL per la gestione degli utenti.
  */
 @Entity
-@Table(name = "users")
+@Table(name = "nome_tabella_user") //see CustomPhysicalNamingStrategy
 public class UserEntity {
     
     @Id

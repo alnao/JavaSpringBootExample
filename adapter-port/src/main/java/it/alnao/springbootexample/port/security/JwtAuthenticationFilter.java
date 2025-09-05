@@ -1,4 +1,4 @@
-package it.alnao.springbootexample.aws.security;
+package it.alnao.springbootexample.port.security;
 
 import it.alnao.springbootexample.port.service.auth.JwtService;
 import it.alnao.springbootexample.port.service.auth.UserService;
@@ -7,7 +7,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.context.annotation.Profile;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -22,10 +21,9 @@ import java.util.Collections;
 import java.util.Optional;
 
 /**
- * Filtro JWT per autenticazione delle richieste AWS.
+ * Filtro JWT per autenticazione delle richieste.
  */
 @Component
-@Profile("aws")
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;

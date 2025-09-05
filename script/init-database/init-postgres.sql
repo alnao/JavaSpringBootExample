@@ -80,6 +80,7 @@ CREATE INDEX IF NOT EXISTS idx_annotazioni_metadata_categoria ON annotazioni_met
 CREATE INDEX IF NOT EXISTS idx_annotazioni_metadata_pubblica ON annotazioni_metadata(pubblica);
 CREATE INDEX IF NOT EXISTS idx_annotazioni_metadata_priorita ON annotazioni_metadata(priorita);
 CREATE INDEX IF NOT EXISTS idx_annotazioni_metadata_utente_creazione ON annotazioni_metadata(utente_creazione);
+CREATE INDEX IF NOT EXISTS idx_annotazioni_metadata_utente_ultima_modifica ON annotazioni_metadata(utente_ultima_modifica);
 CREATE INDEX IF NOT EXISTS idx_annotazioni_metadata_data_inserimento ON annotazioni_metadata(data_inserimento);
 
 -- Dati di esempio

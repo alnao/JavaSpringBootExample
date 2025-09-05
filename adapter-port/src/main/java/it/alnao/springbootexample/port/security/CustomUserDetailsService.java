@@ -1,10 +1,9 @@
-package it.alnao.springbootexample.onprem.security;
+package it.alnao.springbootexample.port.security;
 
 import it.alnao.springbootexample.port.domain.auth.User;
 import it.alnao.springbootexample.port.service.auth.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,10 +15,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 /**
- * Implementazione di UserDetailsService per l'autenticazione locale OnPrem.
+ * Implementazione di UserDetailsService per l'autenticazione locale.
  */
 @Service
-@Profile("onprem")
 public class CustomUserDetailsService implements UserDetailsService {
     
     private static final Logger logger = LoggerFactory.getLogger(CustomUserDetailsService.class);

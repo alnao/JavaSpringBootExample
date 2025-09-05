@@ -1,8 +1,7 @@
 // Configurazione per la home
-const API_BASE_URL = '/api';
+const HOME_BASE_URL = '/api';
 
 // Variabili globali
-let currentUser = null;
 let dashboardData = null;
 
 // Inizializzazione della pagina home
@@ -19,22 +18,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Verifica che l'utente sia autenticato
 function checkAuthentication() {
-    const token = localStorage.getItem('authToken');
-    const user = localStorage.getItem('currentUser');
-    
-    if (!token || !user) {
+    if (!window.authUtils || !window.authUtils.isAuthenticated()) {
         // Non autenticato, redirect al login
         window.location.href = 'login.html';
         return;
     }
     
-    try {
-        currentUser = JSON.parse(user);
-        displayUserInfo();
-    } catch (error) {
-        console.error('Errore nel parsing dei dati utente:', error);
+    const user = window.authUtils.getCurrentUser();
+    if (!user) {
         window.location.href = 'login.html';
+        return;
     }
+    
+    currentUser = user;
+    displayUserInfo();
 }
 
 // Mostra le informazioni dell'utente
@@ -59,15 +56,17 @@ function setupEventListeners() {
 async function loadDashboardData() {
     try {
         // Carica statistiche parallele
-        const [annotationsStats, tasksStats, recentActivities] = await Promise.all([
+        const [annotationsStats, tasksStats, recentActivities, publicAnnotations] = await Promise.all([
             loadAnnotationsStats(),
             loadTasksStats(),
-            loadRecentActivities()
+            loadRecentActivities(),
+            loadPublicAnnotations()
         ]);
         
         // Aggiorna l'interfaccia
-        updateStatistics(annotationsStats, tasksStats);
+        updateStatistics(annotationsStats, tasksStats, publicAnnotations);
         displayRecentActivities(recentActivities);
+        displayPublicAnnotations(publicAnnotations.recent);
         
     } catch (error) {
         console.error('Errore nel caricamento della dashboard:', error);
@@ -78,7 +77,7 @@ async function loadDashboardData() {
 // Carica statistiche delle annotazioni
 async function loadAnnotationsStats() {
     try {
-        const response = await window.authUtils.authenticatedFetch(API_BASE_URL + '/annotazioni/statistiche');
+        const response = await window.authUtils.authenticatedFetch(HOME_BASE_URL + '/annotazioni/statistiche');
         
         if (response.ok) {
             return await response.json();
@@ -96,7 +95,7 @@ async function loadAnnotationsStats() {
 async function loadTasksStats() {
     try {
         // Placeholder per quando verrà implementato l'endpoint dei tasks
-        const response = await window.authUtils.authenticatedFetch(API_BASE_URL + '/tasks/statistiche');
+        const response = await window.authUtils.authenticatedFetch(HOME_BASE_URL + '/tasks/statistiche');
         
         if (response.ok) {
             return await response.json();
@@ -110,44 +109,71 @@ async function loadTasksStats() {
     }
 }
 
+// Carica annotazioni pubbliche per la sezione dedicata
+async function loadPublicAnnotations() {
+    try {
+        const response = await window.authUtils.authenticatedFetch(HOME_BASE_URL + '/annotazioni/pubbliche');
+        if (response.ok) {
+            const publicAnnotations = await response.json();
+            // Restituisce un oggetto con sia il totale che le prime 5
+            return {
+                total: publicAnnotations.length,
+                recent: publicAnnotations
+                    .sort((a, b) => new Date(b.dataUltimaModifica) - new Date(a.dataUltimaModifica))
+                    .slice(0, 5)
+            };
+        } else {
+            console.warn('Endpoint annotazioni pubbliche non disponibile');
+            return { total: 0, recent: [] };
+        }
+    } catch (error) {
+        console.warn('Errore nel caricamento annotazioni pubbliche:', error);
+        return { total: 0, recent: [] };
+    }
+}
+
 // Carica attività recenti
 async function loadRecentActivities() {
     try {
-        // Combina annotazioni recenti e tasks recenti (quando disponibili)
         const activities = [];
         
-        // Carica annotazioni recenti
+        // Carica SOLO annotazioni pubbliche per la sezione "Attività recenti"
         try {
-            const annotationsResponse = await window.authUtils.authenticatedFetch(API_BASE_URL + '/annotazioni');
-            if (annotationsResponse.ok) {
-                const annotations = await annotationsResponse.json();
+            const publicAnnotationsResponse = await window.authUtils.authenticatedFetch(HOME_BASE_URL + '/annotazioni/pubbliche');
+            if (publicAnnotationsResponse.ok) {
+                const publicAnnotations = await publicAnnotationsResponse.json();
                 
-                // Prendi le 5 annotazioni più recenti
-                const recentAnnotations = annotations
+                // Prendi le 10 annotazioni pubbliche più recenti
+                const recentPublicAnnotations = publicAnnotations
                     .sort((a, b) => new Date(b.dataUltimaModifica) - new Date(a.dataUltimaModifica))
-                    .slice(0, 5);
+                    .slice(0, 10);
                 
-                recentAnnotations.forEach(annotation => {
+                recentPublicAnnotations.forEach(annotation => {
+                    const userInfo = annotation.utenteUltimaModifica && annotation.utenteUltimaModifica !== annotation.utenteCreazione
+                        ? `${annotation.utenteCreazione} (mod. da ${annotation.utenteUltimaModifica})`
+                        : annotation.utenteCreazione || annotation.utente || 'Sconosciuto';
+                    
                     activities.push({
                         type: 'annotation',
-                        title: annotation.descrizione,
-                        content: annotation.valoreNota,
+                        title: annotation.descrizione || 'Annotazione',
+                        content: annotation.valoreNota || '',
                         date: annotation.dataUltimaModifica,
+                        user: userInfo,
                         icon: 'bi-journal-text',
-                        color: 'primary'
+                        color: 'success' // Verde per annotazioni pubbliche
                     });
                 });
             }
         } catch (error) {
-            console.warn('Errore nel caricamento annotazioni recenti:', error);
+            console.warn('Errore nel caricamento annotazioni pubbliche:', error);
         }
         
         // TODO: Aggiungere tasks recenti quando saranno implementati
         
-        // Ordina per data
+        // Ordina per data (già ordinato sopra, ma per sicurezza)
         activities.sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        return activities.slice(0, 10); // Mostra solo le ultime 10 attività
+        return activities;
         
     } catch (error) {
         console.error('Errore nel caricamento attività recenti:', error);
@@ -156,14 +182,17 @@ async function loadRecentActivities() {
 }
 
 // Aggiorna le statistiche nell'interfaccia
-function updateStatistics(annotationsStats, tasksStats) {
+function updateStatistics(annotationsStats, tasksStats, publicAnnotations) {
     // Statistiche annotazioni
     document.getElementById('total-annotations').textContent = annotationsStats.totaleAnnotazioni || 0;
+    
+    // Statistiche annotazioni pubbliche
+    const publicCount = publicAnnotations && publicAnnotations.total ? publicAnnotations.total : 0;
+    document.getElementById('public-annotations').textContent = publicCount;
     
     // Statistiche tasks (placeholder)
     document.getElementById('total-tasks').textContent = tasksStats.totaleTasks || 0;
     document.getElementById('pending-tasks').textContent = tasksStats.tasksInScadenza || 0;
-    document.getElementById('completed-today').textContent = tasksStats.completateOggi || 0;
 }
 
 // Mostra le attività recenti
@@ -194,12 +223,58 @@ function displayRecentActivities(activities) {
                     <h6 class="mb-1">${escapeHtml(activity.title)}</h6>
                     <p class="mb-1 text-muted small">${truncateText(activity.content, 80)}</p>
                     <small class="text-muted">
+                        <i class="bi bi-person"></i> ${escapeHtml(activity.user || 'Sconosciuto')} • 
                         <i class="bi bi-clock"></i> ${formatRelativeTime(activity.date)}
                     </small>
                 </div>
             </div>
         `;
     });
+    
+    container.innerHTML = html;
+}
+
+// Mostra le annotazioni pubbliche
+function displayPublicAnnotations(annotations) {
+    const container = document.getElementById('public-annotations-list');
+    
+    if (!annotations || annotations.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-globe text-muted display-4"></i>
+                <p class="text-muted mt-2">Nessuna annotazione pubblica disponibile</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const html = annotations.map(annotation => {
+        const userInfo = annotation.utenteUltimaModifica && annotation.utenteUltimaModifica !== annotation.utenteCreazione
+            ? `Creata da ${escapeHtml(annotation.utenteCreazione)}, Modificata da ${escapeHtml(annotation.utenteUltimaModifica)}`
+            : `Creata da ${escapeHtml(annotation.utenteCreazione)}`;
+            
+        return `
+            <div class="border-bottom pb-3 mb-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${escapeHtml(annotation.descrizione)}</h6>
+                        <p class="text-muted mb-2 small">${escapeHtml(annotation.valoreNota.substring(0, 100))}${annotation.valoreNota.length > 100 ? '...' : ''}</p>
+                        <div class="d-flex align-items-center text-muted small">
+                            <i class="bi bi-person me-1"></i>
+                            <span class="me-3">${userInfo}</span>
+                            <i class="bi bi-clock me-1"></i>
+                            <span>${formatDate(annotation.dataUltimaModifica)}</span>
+                        </div>
+                        ${annotation.categoria ? `<span class="badge bg-secondary me-1 mt-1">${escapeHtml(annotation.categoria)}</span>` : ''}
+                        ${annotation.tags ? annotation.tags.split(',').map(tag => `<span class="badge bg-outline-primary me-1 mt-1">${escapeHtml(tag.trim())}</span>`).join('') : ''}
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="viewPublicAnnotation('${annotation.id}')">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
     
     container.innerHTML = html;
 }
@@ -222,6 +297,11 @@ function logout() {
         localStorage.clear();
         window.location.href = 'login.html';
     }
+}
+
+// Visualizza una annotazione pubblica (reindirizza alla pagina annotazioni)
+function viewPublicAnnotation(id) {
+    window.location.href = `annotazioni.html?view=${id}`;
 }
 
 // Utility functions
@@ -254,6 +334,18 @@ function formatRelativeTime(dateString) {
     return date.toLocaleDateString('it-IT');
 }
 
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('it-IT', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
 function showAlert(message, type = 'info') {
     // Rimuovi alert precedenti
     const existingAlert = document.querySelector('.alert');
@@ -278,3 +370,8 @@ function showAlert(message, type = 'info') {
         }
     }, 5000);
 }
+
+// Rendi le funzioni disponibili globalmente
+window.toggleSidebar = toggleSidebar;
+window.logout = logout;
+window.viewPublicAnnotation = viewPublicAnnotation;

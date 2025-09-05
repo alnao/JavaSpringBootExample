@@ -5,7 +5,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
-import it.alnao.springbootexample.port.config.SqlTableConfig;
 import it.alnao.springbootexample.port.config.NoSqlTableConfig;
 import it.alnao.springbootexample.port.service.AnnotazioneService;
 
@@ -17,15 +16,6 @@ public class TestConfig {
     @Primary
     public AnnotazioneService mockAnnotazioneService() {
         return Mockito.mock(AnnotazioneService.class);
-    }
-
-    @Bean
-    @Primary
-    public SqlTableConfig testSqlTableConfig() {
-        SqlTableConfig config = new SqlTableConfig();
-        config.setAnnotazioniTableName("test_annotazioni");
-        config.setAnnotazioniMetadataTableName("test_annotazioni_metadata");
-        return config;
     }
 
     @Bean

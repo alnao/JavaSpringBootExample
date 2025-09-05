@@ -260,6 +260,7 @@ cat > ./script/aws-ecs/task-def.json <<EOF
         { "containerPort": 8080, "protocol": "tcp" }
       ],
       "environment": [
+        { "name": "DDL_AUTO", "value": "create" },
         { "name": "AWS_ACCESS_KEY_ID", "value": "" },
         { "name": "AWS_SECRET_ACCESS_KEY", "value": "" },
         { "name": "SPRING_PROFILES_ACTIVE", "value": "aws" },
@@ -342,6 +343,7 @@ if [ "$TASK_ARN" != "None" ] && [ -n "$TASK_ARN" ]; then
 else
   echo "⚠️  Nessun task running trovato. Verifica nella console ECS."
 fi
+
 
 echo "=== INFO DEPLOY ==="
 echo "Aurora endpoint: $aurora_endpoint"

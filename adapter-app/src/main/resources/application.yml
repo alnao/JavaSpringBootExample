@@ -86,6 +86,9 @@ logging:
     it.alnao.springbootexample: INFO
     org.springframework: WARN
     org.hibernate: WARN
+    #org.hibernate.SQL: DEBUG
+    #org.hibernate.tool.hbm2ddl: DEBUG
+    #org.springframework.orm.jpa: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 
@@ -101,6 +104,9 @@ gestione-personale:
     annotazioni-storico-table-name: ${ANNOTAZIONI_STORICO_TABLE:annotazioni_storico}
   sql: #see CustomPhysicalNamingStrategy
     annotazioni-metadata-table-name: ${ANNOTAZIONI_METADATA_TABLE:annotazioni_metadata}
+    users-table-name: ${USERS_TABLE:users}
+    user-providers-table-name: ${USER_PROVIDERS_TABLE:user_providers}
+    refresh-tokens-table-name: ${REFRESH_TOKENS_TABLE:refresh_tokens}
   # Configurazioni JWT aggiuntive 
   jwt:
     secret: ${JWT_SECRET:myVeryLongSecretKeyForHS512ThatMustBeAtLeast512BitsLongToWorkProperly1234567890abcdefghijklmnopqrstuvwxyz}
@@ -139,8 +145,14 @@ spring:
   #      instance-profile: true
   
   jpa:
+    packages-to-scan: 
+      - it.alnao.springbootexample.aws.entity
+      - it.alnao.springbootexample.aws.entity.auth
     hibernate:
-      ddl-auto: validate
+      ddl-auto: ${DDL_AUTO:update} #ex validate
+      # ddl-auto: update: Hibernate aggiorna automaticamente lo schema del database all'avvio dell'applicazione, creando/modificando tabelle e colonne per adattarsi alle entity Java. Utile in sviluppo, ma rischioso in produzione perché può alterare dati o struttura.
+      # ddl-auto: validate: Hibernate verifica che lo schema del database corrisponda alle entity Java, ma non modifica nulla. Se ci sono differenze, l'applicazione non parte. È più sicuro per ambienti di produzione, come AWS, perché evita cambi non controllati al database.
+      # oppure cambiare temporaneamente ddl-auto: create per forzare la creazione.
     show-sql: false
     properties:
       hibernate:
