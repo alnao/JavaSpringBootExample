@@ -8,8 +8,8 @@ echo "[INFO] Rimuovo Adminer e Mongo Express..."
 kubectl delete -f script/minikube-onprem/adminer-deployment.yaml || true
 kubectl delete -f script/minikube-onprem/mongo-express-deployment.yaml || true
 
-echo "[INFO] Rimuovo backend gestionepersonale..."
-kubectl delete -f script/minikube-onprem/gestionepersonale-deployment.yaml || true
+echo "[INFO] Rimuovo backend gestioneannotazioni..."
+kubectl delete -f script/minikube-onprem/gestioneannotazioni-deployment.yaml || true
 
 echo "[INFO] Rimuovo MongoDB e PostgreSQL..."
 kubectl delete -f script/minikube-onprem/mongo-deployment.yaml || true

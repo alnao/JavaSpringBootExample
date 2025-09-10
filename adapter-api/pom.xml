@@ -12,8 +12,8 @@
     </parent>
 
     <artifactId>adapter-api</artifactId>
-    <name>Gestione Personale - API adapter</name>
-    <description>REST Controllers e DTO per il sistema gestione personale</description>
+    <name>Gestione Annotazioni - API adapter</name>
+    <description>REST Controllers e DTO per il sistema gestione annotazioni</description>
 
     <dependencies>
         <dependency>

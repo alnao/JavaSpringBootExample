@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "gestione-personale.nosql")
+@ConfigurationProperties(prefix = "gestione-annotazioni.nosql")
 public class NoSqlTableConfig {
 
     private String annotazioniTableName = ""; //annotazioni

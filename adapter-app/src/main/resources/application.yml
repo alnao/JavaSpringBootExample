@@ -7,16 +7,16 @@ server:
 # Configurazione applicazione Spring Boot
 spring:
   application:
-    name: sistema-gestione-personale
+    name: sistema-gestione-annotazioni
   
   profiles:
     active: onprem
 
   # Configurazione database (profilo-specifico)
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/gestione_personale}
-    username: ${DATABASE_USERNAME:gestione_personale_user}
-    password: ${DATABASE_PASSWORD:gestione_personale_pass}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/gestione_annotazioni}
+    username: ${DATABASE_USERNAME:gestione_annotazioni_user}
+    password: ${DATABASE_PASSWORD:gestione_annotazioni_pass}
     driver-class-name: org.postgresql.Driver
   
   # Configurazione JPA
@@ -33,7 +33,7 @@ spring:
   # Configurazione MongoDB
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/gestione_personale}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/gestione_annotazioni}
       auto-index-creation: true
   
   # Configurazione Web
@@ -96,7 +96,7 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 
 # Configurazione personalizzata
-gestione-personale:
+gestione-annotazioni:
   config:
     max-annotation-size: 10000
     max-description-size: 500
@@ -134,7 +134,7 @@ spring:
   
   # Manteniamo datasource già presente - non sovrascriviamo
   datasource:
-    url: ${AWS_RDS_URL:jdbc:mysql://localhost:3306/gestione_personale}
+    url: ${AWS_RDS_URL:jdbc:mysql://localhost:3306/gestione_annotazioni}
     username: ${AWS_RDS_USERNAME:admin}
     password: ${AWS_RDS_PASSWORD:password}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -188,9 +188,9 @@ spring:
   
   # Manteniamo datasource già presente - non sovrascriviamo
   datasource:
-    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/gestione_personale}
-    username: ${POSTGRES_USERNAME:gestione_personale_user}
-    password: ${POSTGRES_PASSWORD:gestione_personale_pass}
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/gestione_annotazioni}
+    username: ${POSTGRES_USERNAME:gestione_annotazioni_user}
+    password: ${POSTGRES_PASSWORD:gestione_annotazioni_pass}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -212,7 +212,7 @@ spring:
   # Manteniamo MongoDB già presente
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/gestione_personale_db}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/gestione_annotazioni_db}
 
 
 ---
@@ -224,7 +224,7 @@ spring:
   
   # Configurazione SQLite
   datasource:
-    url: ${DATABASE_URL:jdbc:sqlite:./data/database.sqlite}
+    url: ${DATABASE_URL:jdbc:sqlite:/tmp/database.sqlite}
     username: 
     password: 
     driver-class-name: org.sqlite.JDBC

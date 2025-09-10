@@ -26,10 +26,10 @@ import java.util.function.Function;
 public class JwtSQLiteService implements JwtService {
 	private static final Logger logger = LoggerFactory.getLogger(JwtSQLiteService.class);
 
-	@Value("${gestione-personale.jwt.secret:defaultSecretKeyForSQLite}")
+	@Value("${gestione-annotazioni.jwt.secret:defaultSecretKeyForSQLite}")
 	private String secret;
 
-	@Value("${gestione-personale.jwt.expiration:3600}")
+	@Value("${gestione-annotazioni.jwt.expiration:3600}")
 	private long expirationSeconds;
 
 	private SecretKey getSecretKey() {

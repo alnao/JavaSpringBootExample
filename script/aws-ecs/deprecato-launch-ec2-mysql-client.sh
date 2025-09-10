@@ -1,3 +1,6 @@
+# questo script è deprecato, usare script/aws-ecs/run-mysql-client-aurora.sh
+
+
 #!/bin/bash
 # Script: launch-ec2-mysql-client.sh
 # Avvia una EC2 nella stessa VPC e Security Group dei task ECS per eseguire operazioni MySQL su Aurora
@@ -13,7 +16,7 @@ INSTANCE_TYPE="t3.micro"
 KEY_NAME="alberto-nao-francoforte" # Aggiorna se necessario
 VPC_ID=$(aws ec2 describe-vpcs --filters Name=isDefault,Values=true --region $AWS_REGION --query 'Vpcs[0].VpcId' --output text)
 SUBNET_ID=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'Subnets[0].SubnetId' --output text)
-SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=gestionepersonale-sg Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'SecurityGroups[0].GroupId' --output text)
+SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=gestioneannotazioni-sg Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'SecurityGroups[0].GroupId' --output text)
 
 # Avvia EC2
 INSTANCE_ID=$(aws ec2 run-instances \
@@ -24,7 +27,7 @@ INSTANCE_ID=$(aws ec2 run-instances \
   --subnet-id $SUBNET_ID \
   --security-group-ids $SECURITY_GROUP_ID \
   --region $AWS_REGION \
-  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=gestionepersonale-mysql-client}]' \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=gestioneannotazioni-mysql-client}]' \
   --query 'Instances[0].InstanceId' --output text)
 
 echo "EC2 avviata: $INSTANCE_ID"

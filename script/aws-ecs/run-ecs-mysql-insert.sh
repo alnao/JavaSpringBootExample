@@ -11,26 +11,26 @@ export AWS_PAGER=""
 
 # === CONFIGURAZIONE ===
 AWS_REGION="eu-central-1"
-CLUSTER_NAME="gestionepersonale-cluster"
+CLUSTER_NAME="gestioneannotazioni-cluster"
 SECURITY_GROUP_ID="" # Da popolare
 SUBNETS="" # Da popolare
 AURORA_ENDPOINT="" # Da popolare
-AURORA_DB_NAME="gestionepersonale"
-AURORA_MASTER_USER="gestionepersonale_user"
-AURORA_MASTER_PASS="gestionepersonale_pass"
-LOG_GROUP_NAME="/ecs/gestionepersonale-app"
-TASK_ROLE_NAME="gestionepersonale-ecs-task-role"
-EXEC_ROLE_NAME="gestionepersonale-ecs-execution-role"
+AURORA_DB_NAME="gestioneannotazioni"
+AURORA_MASTER_USER="gestioneannotazioni_user"
+AURORA_MASTER_PASS="gestioneannotazioni_pass"
+LOG_GROUP_NAME="/ecs/gestioneannotazioni-app"
+TASK_ROLE_NAME="gestioneannotazioni-ecs-task-role"
+EXEC_ROLE_NAME="gestioneannotazioni-ecs-execution-role"
 
 # === Recupera VPC, Subnet, Security Group, Aurora endpoint ===
 VPC_ID=$(aws ec2 describe-vpcs --filters Name=isDefault,Values=true --region $AWS_REGION --query 'Vpcs[0].VpcId' --output text)
 SUBNETS=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'Subnets[*].SubnetId' --output text | tr '\t' ',')
-SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=gestionepersonale-sg Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'SecurityGroups[0].GroupId' --output text)
-AURORA_ENDPOINT=$(aws rds describe-db-clusters --db-cluster-identifier gestionepersonale-aurora-cluster --region $AWS_REGION --query 'DBClusters[0].Endpoint' --output text)
+SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=gestioneannotazioni-sg Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'SecurityGroups[0].GroupId' --output text)
+AURORA_ENDPOINT=$(aws rds describe-db-clusters --db-cluster-identifier gestioneannotazioni-aurora-cluster --region $AWS_REGION --query 'DBClusters[0].Endpoint' --output text)
 
 # === Definisci comando MySQL da eseguire ===
 # MYSQL_COMMAND="mysql -h $AURORA_ENDPOINT -u$AURORA_MASTER_USER -p$AURORA_MASTER_PASS $AURORA_DB_NAME -e \\\"INSERT INTO users (id, username, password, enabled) VALUES ('2b3c4d5e-6f7g-8h9i-0j1k-2l3m4n5o6p7q', 'admin', '\$2b\$12\$TUQyZEAT4R.5nsyGJYm6Z.HQMiD.Z8dRs8nc6k1fHZf31sKt4lUOa', true) ON DUPLICATE KEY UPDATE username='admin';\\\" "
-MYSQL_COMMAND="curl -o /tmp/init-mysql.sql https://raw.githubusercontent.com/alnao/JavaSpringBootExample/master/script/init-database/init-mysql.sql && cat /tmp/init-mysql.sql && mysql -h $AURORA_ENDPOINT -u$AURORA_MASTER_USER -p$AURORA_MASTER_PASS < /tmp/init-mysql.sql "
+MYSQL_COMMAND="curl -o /tmp/init-mysql.sql https://raw.githubusercontent.com/alnao/JavaSpringBootExample/master/script/init-database/init-mysql.sql && cat /tmp/init-mysql.sql && mysql -h $AURORA_ENDPOINT -u$AURORA_MASTER_USER -p$AURORA_MASTER_PASS < /tmp/init-mysql.sql && echo 'Script SQL eseguito con successo.' "
 
 # === Definisci container image (usa una pubblica con mysql client) ===
 MYSQL_IMAGE="mysql:8.0"
@@ -40,7 +40,7 @@ EXEC_ROLE_ARN=$(aws iam get-role --role-name $EXEC_ROLE_NAME --region $AWS_REGIO
 
 
 # === Definisci task definition temporanea ===
-TASK_DEF_NAME="gestionepersonale-mysql-client-task"
+TASK_DEF_NAME="gestioneannotazioni-mysql-client-task"
 cat > ./script/aws-ecs/mysql-task-def.json <<EOF
 {
   "family": "$TASK_DEF_NAME",

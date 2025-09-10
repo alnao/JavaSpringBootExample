@@ -1,5 +1,5 @@
--- Script per creare le tabelle di autenticazione in PostgreSQL
--- Script per creare le tabelle di autenticazione in PostgreSQL
+-- Script per creare le tabelle di gestioneannotazioni in PostgreSQL
+-- Script per creare le tabelle di gestioneannotazioni in PostgreSQL
 
 -- Tabella degli utenti
 CREATE TABLE IF NOT EXISTS users (

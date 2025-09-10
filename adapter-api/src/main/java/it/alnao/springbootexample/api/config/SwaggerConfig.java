@@ -10,10 +10,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
     @Bean
-    public OpenAPI getsionepersonaleOpenAPI() {
+    public OpenAPI getGestioneAnnotazioniOpenAPI() {
         return new OpenAPI()
-                .info(new Info().title("Sistema di Gestione personale API")
-                        .description("API per la gestione personale.")
+                .info(new Info().title("Sistema di Gestione Annotazioni API")
+                        .description("API per la gestione delle annotazioni.")
                         .version("v1.0.0")
                         .license(new License().name("GPL v3").url("https://www.gnu.org/licenses/gpl-3.0")))
                 .externalDocs(new ExternalDocumentation()

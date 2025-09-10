@@ -12,8 +12,8 @@
     </parent>
 
     <artifactId>adapter-web</artifactId>
-    <name>Gestione Personale - Web adapter</name>
-    <description>Interfaccia web con Bootstrap per il sistema gestione personale</description>
+    <name>Gestione annotazioni - Web adapter</name>
+    <description>Interfaccia web con Bootstrap per il sistema gestione annotazioni</description>
 
     <dependencies>
         <dependency>

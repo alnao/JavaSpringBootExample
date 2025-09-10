@@ -4,11 +4,11 @@ services:
   # MySQL per simulare RDS
   mysql:
     image: mysql:8.0
-    container_name: gestionepersonale-mysql
+    container_name: gestioneannotazioni-mysql
     environment:
-      MYSQL_DATABASE: gestionepersonale
-      MYSQL_USER: gestionepersonale_user
-      MYSQL_PASSWORD: gestionepersonale_pass
+      MYSQL_DATABASE: gestioneannotazioni
+      MYSQL_USER: gestioneannotazioni_user
+      MYSQL_PASSWORD: gestioneannotazioni_pass
       MYSQL_ROOT_PASSWORD: rootpass
     ports:
       - "3406:3306"
@@ -26,7 +26,7 @@ services:
   # DynamoDB local
   dynamodb:
     image: amazon/dynamodb-local:latest
-    container_name: gestionepersonale-dynamodb
+    container_name: gestioneannotazioni-dynamodb
     user: root
 #    working_dir: /home/albertonao/
     ports:
@@ -39,13 +39,13 @@ services:
 
   # Applicazione Spring Boot profilo AWS
   app:
-    image: alnao/gestionepersonale:latest
-    container_name: gestionepersonale-app-aws
+    image: alnao/gestioneannotazioni:latest
+    container_name: gestioneannotazioni-app-aws
     environment:
       SPRING_PROFILES_ACTIVE: aws
-      AWS_RDS_URL: jdbc:mysql://mysql:3306/gestionepersonale
-      AWS_RDS_USERNAME: gestionepersonale_user
-      AWS_RDS_PASSWORD: gestionepersonale_pass
+      AWS_RDS_URL: jdbc:mysql://mysql:3306/gestioneannotazioni
+      AWS_RDS_USERNAME: gestioneannotazioni_user
+      AWS_RDS_PASSWORD: gestioneannotazioni_pass
       AWS_REGION: eu-central-1
       AWS_ACCESS_KEY: dummy
       AWS_SECRET_KEY: dummy
@@ -70,7 +70,7 @@ services:
   # Adminer per MySQL
   adminer:
     image: adminer:4.8.1
-    container_name: gestionepersonale-adminer-aws
+    container_name: gestioneannotazioni-adminer-aws
     ports:
       - "8086:8080"
     environment:
@@ -83,7 +83,7 @@ services:
   # DynamoDB Admin UI
   dynamodb-admin:
     image: aaronshaf/dynamodb-admin
-    container_name: gestionepersonale-dynamodb-admin
+    container_name: gestioneannotazioni-dynamodb-admin
     environment:
       DYNAMO_ENDPOINT: http://dynamodb:8000
       AWS_REGION: eu-central-1
@@ -99,7 +99,7 @@ services:
   # Servizio one-shot per inizializzazione tabella DynamoDB
   init-dynamodb:
     image: amazon/aws-cli
-    container_name: gestionepersonale-init-dynamodb
+    container_name: gestioneannotazioni-init-dynamodb
     entrypoint: ["/bin/sh", "-c", "/init-database/init-dynamodb.sh"]
     environment:
       DYNAMO_ENDPOINT: http://dynamodb:8000
@@ -114,7 +114,7 @@ services:
 # Nginx reverse proxy per frontend statico e API
  # nginx:
  #   image: nginx:1.25
- #   container_name: gestionepersonale-nginx
+ #   container_name: gestioneannotazioni-nginx
  #   ports:
  #     - "8080:80"
  #   volumes:

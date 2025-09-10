@@ -1,53 +1,55 @@
-# Sistema di Gestione personale
+# Sistema di Gestione annotazioni
 
-Progetto sviluppato da &lt; AlNao /&gt; come esempio di progetto con Java Spring Boot.
+Progetto realizzato da < AlNao /> come esempio pratico con Java Spring Boot: consente di creare, modificare e visualizzare annotazioni e task in modo semplice e intuitivo.
 
-Un sistema di gestione personale multi-modulo basato su Spring Boot che implementa l'architettura esagonale (Hexagonal Architecture) con supporto per deployment sia on-premise che cloud AWS.
-Prevede
-- Una lista di annotazioni
+La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’architettura esagonale (Hexagonal Architecture), con pieno supporto al deployment sia in ambienti on-premise che su cloud AWS. Il progetto è pensato per essere agnostico rispetto al cloud provider, al DBMS utilizzato e ai sistemi di interfaccia: puoi adattarlo facilmente a diversi ambienti, database e frontend.
 
 
 ## 📚 Indice rapido
 
-- [🛠️ Struttura progetto](#️-struttura-progetto)
-- [⚙️ Esecuzione](#-esecuzione)
-- [📡 API Endpoints](#-api-endpoints)
-- [📊 Monitoring con actuator](#-monitoring-con-actuator)
-- [📖 Documentazione API con Swagger / OpenAPI](#-documentazione-api-con-swagger--openapi)
-- [📈 Analisi qualità e coverage con SonarQube](#-analisi-qualità-e-coverage-con-sonarqube)
-- [🐳 Deploy e utilizzo con DockerHub](#-deploy-e-utilizzo-con-dockerhub)
-- [🐳 Deploy completo con Docker Compose](#-deploy-completo-con-docker-compose)
-- [☸️ Deploy su Minikube e Kubernetes locale)](#-deploy-su-minikube-kubernetes-locale)
-- [📦 Versione SQLite per Replit](#-Versione-SQLite-per-Replit)
-- [🐳 Deploy AWS-onprem](#-Deploy-AWS-onprem-MySQL-e-DynamoDB-Local)
-- [🚀 Deploy su AWS EC2](#-Deploy-su-AWS-EC2)
-- [🐳 Deploy su AWS ECS Fargate](#-deploy-su-aws-ecs-fargate)
-- [📝 Roadmap / TODO](#-todo--roadmap)
+- 🛠️ [Struttura progetto](#️-struttura-progetto)
+- ⚙️ [Esecuzione](#-esecuzione)
+- 📡 [API Endpoints](#-api-endpoints)
+- 📊 [Monitoring con actuator](#-monitoring-con-actuator)
+- 📖 [Documentazione API con Swagger / OpenAPI](#-documentazione-api-con-swagger--openapi)
+- 📈 [Analisi qualità e coverage con SonarQube](#-analisi-qualità-e-coverage-con-sonarqube)
+- 🔒 [Sistema di autenticazione](#-Sistema-di-autenticazione)
+- 🐳 [Deploy e utilizzo con DockerHub](#-deploy-e-utilizzo-con-dockerhub)
+- 🐳 [Deploy completo con Docker Compose](#-deploy-completo-con-docker-compose)
+- ☸️ [Deploy su Minikube e Kubernetes locale)](#-deploy-su-minikube-kubernetes-locale)
+- 📦 [Versione SQLite per Replit](#-Versione-SQLite-per-Replit)
+- 🐳 [Deploy AWS-onprem](#-Deploy-AWS-onprem-MySQL-e-DynamoDB-Local)
+- 🚀 [Deploy su AWS EC2](#-Deploy-su-AWS-EC2)
+- 🐳 [Deploy su AWS ECS Fargate](#-deploy-su-aws-ecs-fargate)
+- 📝 [Roadmap & todo-list](#-Roadmap-&-todo-list)
+
 
 ## 🛠️ Struttura progetto:
-Il progetto segue i principi dell'*Hexagonal Architecture* (Ports and Adapters) e si basa su un'architettura a microservizi modulare:
-```
-📦 progetto
-├── 📁 adapter-port          # Interfacce e domini (Hexagonal Core)
-├── 📁 adapter-api           # REST API Controllers
-├── 📁 adapter-web           # Risorse statiche e configurazioni web
-├── 📁 adapter-aws           # Implementazione AWS (MySQL + DynamoDB)
-├── 📁 adapter-onprem        # Implementazione On-Premise (PostgreSQL + MongoDB)
-└── 📁 adapter-app           # Applicazione principale Spring Boot
-```
-
-Caratteristiche:
-- **Multi-ambiente**: Configurazioni dedicate per ambienti On-Premise e AWS Cloud, con profili Spring attivabili dinamicamente. Supporto per PostgreSQL, MySQL, MongoDB, DynamoDB
-- **Deploy flessibile**: Supporto per Docker, Docker Compose, Minikube/Kubernetes, AWS EC2, AWS ECS Fargate.
-- **Architettura esagonale**: Separazione netta tra business logic, API, e infrastruttura, con moduli dedicati per ogni adapter.
-- **REST API**: Endpoint completi per gestione dei dati. Tutti gli endpoint seguono le convenzioni REST, con metodi HTTP chiari (GET, POST, PUT, DELETE) e risposte in formato JSON. Tutte le operazioni sensibili sono protette da autenticazione JWT e, dove richiesto, da autorizzazione basata su ruolo.
-- **🔒 Autenticazione avanzata**: Gestione utenti, provider OAuth2 (Google, GitHub, Microsoft), refresh token e JWT con configurazione esterna. *OAuth2 (Google, GitHub, Microsoft) coming soon!*
-
-
-Prerequisiti:
-- On-Premise semplice: Java 17+, Maven 3.8+, PostgreSQL 13+, MongoDB 4.4+
-- On-Premise con docker: Docker & Docker-compose
-- Ambiente AWS: Java 17+, Maven 3.8+, AWS Account con accesso a RDS MySQL e DynamoDB. *Occhio ai costi perchè alcuni dei servizi usati prevede dei costi di esecuzione PayAsYouGo*
+- Il progetto segue i principi dell'*Hexagonal Architecture* (Ports and Adapters) e si basa su un'architettura a microservizi modulare:
+  ```
+  📦 progetto
+  ├── 📁 adapter-port          # Interfacce e domini (Hexagonal Core)
+  ├── 📁 adapter-api           # REST API Controllers
+  ├── 📁 adapter-web           # Risorse statiche e mini-sito di prova
+  ├── 📁 adapter-aws           # Implementazione AWS (DynamoDB + MySQL/Aurora)
+  ├── 📁 adapter-onprem        # Implementazione On-Premise (MongoDB + PostgreSQL)
+  ├── 📁 adapter-sqlite        # Implementazione SQLite (con solo il database SQLite locale)
+  └── 📁 adapter-app           # Applicazione principale Spring Boot
+  ```
+- **Caratteristiche**:
+  - **Multi-ambiente**: Configurazioni dedicate per ambienti On-Premise e AWS Cloud, con profili Spring attivabili dinamicamente. Supporto per PostgreSQL, MySQL, MongoDB, DynamoDB
+  - **Deploy flessibile**: Supporto per Docker, Docker Compose, Minikube/Kubernetes, AWS EC2, AWS ECS Fargate.
+  - **Architettura esagonale**: Separazione netta tra business logic, API, e infrastruttura, con moduli dedicati per ogni adapter.
+  - **REST API**: Endpoint completi per gestione dei dati. Tutti gli endpoint seguono le convenzioni REST, con metodi HTTP chiari (GET, POST, PUT, DELETE) e risposte in formato JSON. Tutte le operazioni sensibili sono protette da autenticazione JWT e, dove richiesto, da autorizzazione basata su ruolo.
+  - **🔒 Autenticazione avanzata**: Gestione utenti, refresh token e JWT con configurazione esterna. 
+    - *coming soon*: Integrazione con provider OAuth2 (Google, GitHub, Microsoft).
+- **Prerequisiti**:
+  - Il profilo *SQLite* in locale: Java 17+, Maven 3.8+, PostgreSQL 13+, MongoDB 4.4+ con Docker opzionale
+  - Il profilo *SQLite* in replit: profilo replit attivo e rilascio su progetto GitHub! *Può bastare il profilo gratuito*
+  - Il profilo *On-Premise* semplice: Java 17+, Maven 3.8+, PostgreSQL 13+, MongoDB
+  - Il profilo *On-Premise* con docker: I precedenti con Docker & Docker-compose
+  - Il profilo *AWS* eseguito in locale: I precedenti con Docker & Docker-compose
+  - Il profilo *AWS* eseguito on cloud: AWS Account con accesso a RDS MySQL e DynamoDB. *Occhio ai costi perchè alcuni dei servizi usati prevede dei costi di esecuzione PayAsYouGo*
 
 
 ## ⚙️ Esecuzione
@@ -58,41 +60,56 @@ Prerequisiti:
   # Build senza test
   mvn clean package -DskipTests
   ```
-- Esecuzione On-Premise con esecuzione diretta del jar (nel sistema devono essere avviati i servizi di database)
+- Esecuzione profilo SQLite in locale con database locale, senza bisogno di nessun server DBMS
+  ```
+  mvn clean package
+  java -jar adapter-app/target/adapter-app-1.0.0.jar \
+    --spring.profiles.active=sqlite \
+    --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
+    --server.port=8082
+  ```
+  - Comando utile per creare un nuovo utente
+    ```
+    curl -X POST http://localhost:8082/api/auth/register   -H "Content-Type: application/json"   -d '{
+      "username": "alnao2",
+      "password": "$2b$12$hFoVfPak5m77PJD0cIIe8u1Yo5out7B.h8PWvwfbaloys/ndX9Zpi",
+      "email": "admin@example.com"
+    }'
+    ```
+- Esecuzione profilo On-Premise con esecuzione diretta del jar, nel sistema devono essere avviati i servizi DBMS (MongoDB + PostgreSQL)
     ```bash
-    # Profilo on-premise (default)
+    # Profilo on-premise di default
     java -jar adapter-app/target/adapter-app-1.0.0.jar
 
     # Oppure specificando il profilo
     java -jar adapter-app/target/adapter-app-1.0.0.jar --spring.profiles.active=onprem
     ```
-- Esecuzione On-Premise con il docker-compose:
+- Esecuzione profilo On-Premise con il docker-compose che avvia anche i servizi DBMS
     ```bash
     docker-compose up -d --build
-    # oppure
     ```
-    E poi l'applicazione web di esempio sarà disponiible nella pagina
-    ```
-    http://localhost:8081/
-    ```
-    Per rimuovere tutto 
-    ```bash
-    docker-compose down --remove-orphans
-    docker network prune -f
-    docker volume rm $(docker volume ls -q)
-    docker rmi $(docker images -q)
-    ```
-- Comandi utili
-    ```bash
-    # Accesso ai log della applicazione
-    docker logs gestionepersonale-app --tail 500
-    # Esecuzione di query nel database postgres
-    docker exec -it gestionepersonale-postgres psql -U gestionepersonale_user -d gestionepersonale -c "\d users;"
-    docker exec -it gestionepersonale-postgres psql -U gestionepersonale_user -d gestionepersonale -c "SELECT username, email, account_type FROM users;"
-    docker exec -it gestionepersonale-postgres psql -U gestionepersonale_user -d gestionepersonale -c "SELECT username, password FROM users WHERE username='alnao';"
+    - l'applicazione web di esempio viene resa disponibile al endpoint
+      ```
+      http://localhost:8081/
+      ```
+    - per rimuovere tutto 
+      ```bash
+      docker-compose down --remove-orphans
+      docker network prune -f
+      docker volume rm $(docker volume ls -q)
+      docker rmi $(docker images -q)
+      ```
+    - comandi utili
+        ```bash
+        # Accesso ai log della applicazione
+        docker logs gestioneannotazioni-app --tail 500
+        # Esecuzione di query nel database postgres
+        docker exec -it gestioneannotazioni-postgres psql -U gestioneannotazioni_user -d gestioneannotazioni -c "\d users;"
+        docker exec -it gestioneannotazioni-postgres psql -U gestioneannotazioni_user -d gestioneannotazioni -c "SELECT username, email, account_type FROM users;"
+        docker exec -it gestioneannotazioni-postgres psql -U gestioneannotazioni_user -d gestioneannotazioni -c "SELECT username, password FROM users WHERE username='alnao';"
 
-    node -c adapter-web/src/main/resources/static/js/annotazioni.js
-    ```
+        node -c adapter-web/src/main/resources/static/js/annotazioni.js
+        ```
 
 ## 📡 API Endpoints
 - Eseguendo il sistema in locale la base degli URL è `http://localhost:8080` (8081/8085 nel caso di esecuzione tramite docker-compose su Minikube o AWS)
@@ -174,7 +191,7 @@ management:
 ## 📖 Documentazione API con Swagger / OpenAPI
 L'applicazione espone la documentazione interattiva delle API REST tramite Swagger UI (OpenAPI 3):
 - **Swagger UI**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)  (o `/swagger-ui/index.html`)
-  - In ambiente Docker Compose: [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
+  - In ambiente Docker Compose l'endpoint è [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
 - Abilitata con l'aggiunta la dipendenza `springdoc-openapi-starter-webmvc-ui` in `adapter-api/pom.xml`:
   ```xml
   <dependency>
@@ -188,10 +205,10 @@ L'applicazione espone la documentazione interattiva delle API REST tramite Swagg
     @Configuration
     public class SwaggerConfig {
         @Bean
-        public OpenAPI getsionepersonaleOpenAPI() {
+        public OpenAPI getGestioneAnnotazioniOpenAPI() {
             return new OpenAPI()
-                    .info(new Info().title("Sistema di Gestione personale API")
-                            .description("API per la gestione delle personale, versioning e storico note.")
+                    .info(new Info().title("Sistema di Gestione Annotazioni API")
+                            .description("API per la gestione delle Annotazioni, versioning e storico note.")
                             .version("v1.0.0")
                             .license(new License().name("GPL v3").url("https://www.gnu.org/licenses/gpl-3.0")))
                     .externalDocs(new ExternalDocumentation()
@@ -258,13 +275,46 @@ L'applicazione supporta l'analisi statica del codice, la code coverage e la qual
     - Puoi personalizzare le regole di qualità e i badge direttamente dalla dashboard SonarQube.
 
 
+## 🔒 Sistema di autenticazione
+
+Il sistema di autenticazione è progettato per garantire sicurezza, flessibilità e facilità d'integrazione in tutti i moduli del progetto. Le principali caratteristiche sono:
+
+- **Autenticazione locale con JWT**: Gli utenti possono registrarsi e autenticarsi tramite username e password. Dopo la login viene restituito un token JWT da utilizzare per tutte le richieste protette.
+- **Gestione utenti**: Endpoint dedicati per la registrazione (`/api/auth/register`), login (`/api/auth/login`), recupero profilo utente (`/api/auth/me`), refresh token e logout.
+- **Ruoli e autorizzazioni**: Le operazioni sensibili sono protette da autorizzazione basata su ruolo (es. ADMIN, USER), con validazione automatica dei permessi.
+- **Provider OAuth2 (in sviluppo)**: *coming soon* È prevista l'integrazione con provider esterni come Google, GitHub e Microsoft per login federata tramite OAuth2/OpenID Connect.
+- **Configurazione modulare**: La logica di autenticazione è separata dal dominio applicativo e facilmente estendibile, con adapter dedicati per ogni tipo di storage (PostgreSQL, MongoDB, SQLite, DynamoDB).
+- **Sicurezza**: Password salvate in modo sicuro (hash e salt), validazione input, gestione sicura dei token e delle sessioni.
+- **API RESTful**: Tutte le operazioni di autenticazione e gestione utenti sono esposte tramite API REST, con risposte in formato JSON e documentazione OpenAPI/Swagger.
+
+Esempi di istruzioni `curl` per consumare le API per registrarsi ed eseguire la login:
+```bash
+# Registrazione utente
+curl -X POST http://localhost:8082/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "alnao",
+    "password": "$2b$12$hFoVfPak5m77PJD0cIIe8u1Yo5out7B.h8PWvwfbaloys/ndX9Zpi",
+    "email": "admin@example.com"
+  }'
+
+# Login utente
+curl -X POST http://localhost:8082/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin",
+    "password": "bellissimo"
+  }'
+```
+
+
 ## 🐳 Deploy e utilizzo con DockerHub
-L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.docker.com/r/alnao/gestionepersonale) e può essere scaricata ed eseguita direttamente, senza necessità di build locale.
+L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.docker.com/r/alnao/gestioneannotazioni) e può essere scaricata ed eseguita direttamente, senza necessità di build locale.
 - **Compilazione e push dell'immagine**
     ```bash
     docker login
-    docker build -t alnao/gestionepersonale:latest .
-    docker push alnao/gestionepersonale:latest
+    docker build -t alnao/gestioneannotazioni:latest .
+    docker push alnao/gestioneannotazioni:latest
     ```
     oppure lanciare lo script 
     ```bash
@@ -272,15 +322,15 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
     ```
 - **Pull dell'immagine**:
     ```bash
-    docker pull alnao/gestionepersonale:latest
+    docker pull alnao/gestioneannotazioni:latest
     ```
     L'immagine viene aggiornata con le ultime versioni *stabili*.
 - **Esecuzione rapida**:
     ```bash
-    docker run --rm -p 8080:8080 alnao/gestionepersonale:latest
+    docker run --rm -p 8080:8080 alnao/gestioneannotazioni:latest
     ```
     L'applicazione sarà disponibile su [http://localhost:8080](http://localhost:8080) ma nel sistema devono esserci già installati e ben configuati MongoDb e Postgresql.
-- **Esecuzione completa**: 🔌 Rete Docker condivisa (alternativa più robusta)
+- **Esecuzione completa** 🔌 Rete Docker condivisa (alternativa più robusta) senza docker-compose:
     Possibile eseguire tutto con docker (senza docker-compose):
     ```bash
     # Creazione rete
@@ -288,43 +338,49 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
 
     # Esecuzione mongo
     docker run -d --name annotazioni-mongo \
+      --network annotazioni-network \
       -p 27017:27017 \
       -e MONGO_INITDB_DATABASE=annotazioni \
       -e MONGO_INITDB_ROOT_USERNAME=demo \
       -e MONGO_INITDB_ROOT_PASSWORD=demo \
       mongo:4.4
+    # Creazione document
+    docker cp script/init-database/init-mongodb.js annotazioni-mongo:/init-mongodb.js
+    docker exec -it annotazioni-mongo mongo -u demo -p demo --authenticationDatabase admin /init-mongodb.js
 
     # Esecuzione postgresql
-    docker run -d --name postgres-annotazioni \
+    docker run -d --name annotazioni-postgres \
       --network annotazioni-network \
       -p 5432:5432 \
       -e POSTGRES_DB=annotazioni \
       -e POSTGRES_USER=demo \
       -e POSTGRES_PASSWORD=demo \
       postgres:13
+    # Creazione database nel postgresql
+    docker cp script/init-database/init-postgres.sql annotazioni-postgres:/init-postgres.sql
+    docker exec -it annotazioni-postgres psql -U demo -d annotazioni -f /init-postgres.sql
 
     # Esecuzione servizio 
-    docker run --rm -p 8090:8080 \
+    docker run --rm -p 8082:8080 --name annotazioni-app \
       --network annotazioni-network \
       -e SPRING_DATASOURCE_URL=jdbc:postgresql://annotazioni-postgres:5432/annotazioni \
       -e SPRING_DATA_MONGODB_URI=mongodb://demo:demo@annotazioni-mongo:27017/annotazioni?authSource=admin \
       -e SPRING_DATASOURCE_USERNAME=demo \
       -e SPRING_DATASOURCE_PASSWORD=demo \
-      alnao/annotazioni:latest
+      alnao/gestioneannotazioni:latest
 
     # Per vedere i container nella rete
     docker network inspect annotazioni-network
 
     # Per fermare tutto e rimuovere la rete
-    docker stop annotazioni-mongo postgres-annotazioni
-    docker rm annotazioni-mongo postgres-annotazioni
+    docker stop annotazioni-app annotazioni-mongo annotazioni-postgres
+    docker rm annotazioni-app annotazioni-mongo annotazioni-postgres
     docker network rm annotazioni-network
     ```
 - **Note**:
     - L'immagine non contiene dati sensibili quindi non c'è problema se viene salvato
     - Utilizzare sempre variabili d'ambiente sicure per le password e le connessioni DB in produzione.
-    - Tutto sto casino può essere evitato con docker-compose,minikube e kubernetes. Vedere le sezioni dedicate.
-
+    - Tutto questo enorme casino può essere evitato con docker-compose,minikube e kubernetes. Vedere le sezioni dedicate.
 
 
 ## 🐳 Deploy completo con Docker Compose
@@ -398,20 +454,20 @@ Per semplificare l’avvio di tutti i servizi necessari (applicazione, PostgreSQ
 
 ## ☸️ Deploy su Minikube (Kubernetes locale)
 L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambiente Kubernetes locale, per simulare un cluster cloud-ready.
-- **Prerequisiti**: 
+- Prerequisiti: 
     - Minikube installato ([guida ufficiale](https://minikube.sigs.k8s.io/docs/start/))
     - Kubectl installato
     - Freelens/OpenLens consigliato per la gestione dei pod, service e risorse
-- **Avvio Minikube**:
+- Avvio Minikube:
     ```bash
     minikube start --memory=4096 --cpus=2
     ```
-- **Manifest già pronti**:
+- Manifest già pronti:
     Nella cartella `script/minikube-onprem` trovi i manifest YAML già pronti per avviare tutta l'infrastruttura, presente script che esegue nella giusta sequenza gli script di `kubectl apply`, lo script da lanciare è:
     ```bash
     ./script/minikube-onprem/start-all.sh
     ```
-- **Accesso all’applicazione**:
+- Accesso all’applicazione:
     - Usando l’Ingress, aggiungendo al file hosts la riga:
       ```
       127.0.0.1 annotazioni.local
@@ -423,9 +479,9 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
       ```
       e visitando [http://localhost:30080](http://localhost:30080)
     - Oppure con *freelens* si può creare l'endpoint selezionado il service specifico.
-- **Note**:
+- Note:
     - I dati di MongoDB e PostgreSQL sono persistenti grazie ai PVC di Kubernetes, a meno di usare lo script di `stop-all.sh` che rimuove anche i volumi persistenti.
-    - Viene usata l'immagine `alnao/annotazioni:latest` su dockerHub e non una immagine creata in sistema locale.
+    - Viene usata l'immagine `alnao/gestioneannotazioni:latest` su dockerHub e non una immagine creata in sistema locale.
     - Per rimuovere tutto lo script da lanciare è
       ```bash
       ./script/minikube-onprem/stop-all.sh
@@ -434,28 +490,96 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
 
 
 ## 📦 Versione SQLite per Replit
-E' stata sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessarie, studiato per funzionare nel sistema Replit.
-- Utilizza SQLite come unico database per tutte le funzionalità (annotazioni, utenti, storico).
-- Nessuna dipendenza da servizi esterni: tutto gira in locale, ideale per demo, test e ambienti cloud come Replit.
-- Profilo Spring Boot dedicato: `sqlite`.
-- Script di avvio e arresto già pronti per esecuzione locale e su Replit.
-
-
-- Eseguibile in sistema locale con Dockerfile, docker-compose e script dedicati, per eseguire tutto in locale eseguire lo script
+Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessarie al corretto funzionamento del servizio, studiato per funzionare anche nel cloud Replit.
+- Utilizzado SQLite come unico database per tutte le funzionalità (annotazioni, utenti, storico) non ha nessuna dipendenza da servizi esterni: è possibile eseguire tutto in locale, ideale per prove locali o test. Previsto un profilo Spring Boot specifico `sqlite`. I comandi per eseguire il microservizio in locale con questo profilo sono:
+  ```
+  mvn clean package
+  java -jar adapter-app/target/adapter-app-1.0.0.jar \
+    --spring.profiles.active=sqlite \
+    --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
+    --server.port=8082
+  ```
+- E' stato creato un docker-compose specifico, così da gestire il volume dei dati con docker. Script di avvio e arresto già pronti per esecuzione locale: per eseguire tutto in locale eseguire lo script:
   ```
   cd script/replit-locale
   ./start-all.sh
   ```
-- L'applicazione web sarà disponibile su [http://localhost:8082](http://localhost:8082)
-- Interfaccia di gestione SQLite su [http://localhost:8084](http://localhost:8084)
-- Fermare l'esecuzione
-  ```
-  cd script/replit-locale
-  ./stop-all.sh
-  ```
-- Tutti i dati sono salvati in file `.db` nella directory di lavoro.
-- Funziona anche su Replit, basta importare il progetto e lanciare lo script di start. **coming soon*
+  - L'applicazione web sarà disponibile su [http://localhost:8082](http://localhost:8082)
+  - Interfaccia di gestione SQLite su [http://localhost:8084](http://localhost:8084). All'inizio il database è vuoto quindi non c'è memmeno un utente, si può inserire da interfaccia web oppure chiamare l'API:
+    ```
+    curl -X POST http://localhost:8082/api/auth/register \
+      -H "Content-Type: application/json" \
+      -d '{
+        "username": "admin",
+        "password": "password123",
+        "email": "admin@example.com"
+      }'
+    curl -X POST http://localhost:8082/api/auth/login \
+      -H "Content-Type: application/json" \
+      -d '{
+        "username": "admin",
+        "password": "password123"
+      }'
+    ```
+  - Fermare l'esecuzione
+    ```
+    cd script/replit-locale
+    ./stop-all.sh
+    ```
+- Per l'esecuzione nel sistema **Replit**, i passi da eseguire sono:
+  - Eseguire login su [replit.com](https://replit.com/) con utenza, non serve avere abilitata la versione a pagamento.
+  - Selezionare la funzionalità `Import code or design` e selezionare il tipo `github`
+  - Nella schermata di configurazione inserire il repository pubblico
+    - per esempio `https://github.com/alnao/JavaSpringBootExample`
+  - Lasciare che il sistema scarichi il progetto e compili, in teoria l'IA di Replit intuirà da sola che deve avviare il progetto con il profilo `sqlite`. Se non lo fà bisgna indicarlo nella chat dell'agente che esegue il microservizio.
+  - Si può chiedere alla chat se il servizio è attivo e di ritornare l'endpoint che sarà del tipo:
+    ```
+    https://xxx-xxx-xxx.worf.replit.dev
+    ```
+  - Utilizzando postman/curl è possibile creare un utente con cui collegarsi, per esempio:
+    ```
+    curl -X POST https://xxx-xxx-xxx.worf.replit.dev/api/auth/register \
+      -H "Content-Type: application/json" \
+      -d '{
+        "username": "alnao",
+        "password": "$2b$12$hFoVfPak5m77PJD0cIIe8u1Yo5out7B.h8PWvwfbaloys/ndX9Zpi",
+        "email": "alnao@example.com"
+      }'
+    curl -X POST https://xxx-xxx-xxx.worf.replit.dev/api/auth/login \
+      -H "Content-Type: application/json" \
+      -d '{
+        "username": "alnao",
+        "password": "bellissimo"
+      }'
+    ```
+  - Verificare con browser che il servizio è disponibile all'endpoint: `https://xxx-xxx-xxx.worf.replit.dev`
+  - Il replit creato nel cloud risulta poi disponibile su:
+    ```
+    https://replit.com/@alnao84/JavaSpringBootExample
+    ```
+- Versione per AWS: è stata sviluppata anche uno script per eseguire il microservizio in una istanza EC2 con il profilo sqlite con docker e senza bisogno di RDS, Dynamo e ECS. 
+  - Script di creazione dello stack (Key, SecurityGroup e avvio istanza EC2):
+    ```
+    ./script/sqlite-ec2/start-all.sh 
+    ```
+  - Comandi per collegarsi all'istanza EC2, verificare l'output del user-data e la creazione dell'utente:
+    ```
+    ssh -i gestioneannotazioni-sqlite-ec2-key.pem ec2-user@x.y.z.a
+    sudo cat /var/log/cloud-init-output.log
+    sudo tail /var/log/cloud-init-output.log --follow
 
+    curl -X POST http://localhost:8082/api/auth/register \
+      -H "Content-Type: application/json" \
+      -d '{
+        "username": "alnao",
+        "password": "$2b$12$hFoVfPak5m77PJD0cIIe8u1Yo5out7B.h8PWvwfbaloys/ndX9Zpi",
+        "email": "alnao@example.com"
+      }'
+    ```
+  - Script di deprovisioning di tutte le risorse create:
+    ```
+    ./script/sqlite-ec2/stop-all.sh 
+    ```
 
 
 ## 🐳 Deploy AWS-onprem (MySQL e DynamoDB Local)
@@ -517,7 +641,9 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
     - Accedi da browser: `http://<EC2_PUBLIC_IP>:8080`
     - Accesso SSH:
       ```bash
-      ssh -i annotazioni-key.pem ec2-user@<EC2_PUBLIC_IP>
+      ssh -i gestioneannotazioni-key.pem ec2-user@<EC2_PUBLIC_IP>
+      sudo cat /var/log/cloud-init-output.log
+      sudo tail /var/log/cloud-init-output.log --follow
       ```
   - Pulizia/cleanup:
     Rimozione di tutte le risorse create (EC2, RDS, DynamoDB, Security Group, KeyPair, ecc):
@@ -528,8 +654,6 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
 - Note
   - Il provisioning è idempotente: puoi rilanciare lo script senza duplicare risorse
   - Tutte le risorse sono taggate per facile identificazione e cleanup
-  - Potrebbe avere qualche problema in fase di avvio perchè il database non viene *agganciato* dal microservizio, non so il perchè, ho *ignorato* il problema visto che conviene usare ECS e EKS.
-    - sembra che non arrivi il corretto `AURORA_ENDPOINT` nella configurazione del microservizio nel `user_data`.
   - L'infrastruttura AWS prevede dei costi, si riassume un breve preventivo:
     - Aurora: circa da 2,4 USD/giorno a 72 USD/mese
     - DynamoDB: circa da 0,01 USD/giorno a 1,25 USD/mese
@@ -576,7 +700,10 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
       ```
       ./script/aws-ecs/run-ecs-mysql-insert.sh
       ```
-      questo script esegue un task ECS per eseguire lo script init-mysql.sql che deve trovarsi nel path https://raw.githubusercontent.com/alnao/JavaSpringBootExample/master/script/init-database/init-mysql.sql
+      questo script esegue un task ECS per eseguire lo script init-mysql.sql che **DEVE** trovarsi nel path 
+      ```
+      https://raw.githubusercontent.com/alnao/JavaSpringBootExample/master/script/init-database/init-mysql.sql
+      ```
   - Accesso all'applicazione:
     - L'output finale dello script mostra l'IP pubblico del task ECS e la porta applicativa (8080)
     - Accedi da browser: `http://<TASK_PUBLIC_IP>:8080`
@@ -626,13 +753,13 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   | **TOTALE + ALB + NAT** | **~5,6 USD** | **~169 USD** | **~6,6 USD** | **~202 USD** |
 
 
-## 📝 TODO / Roadmap
+## 📝 Roadmap & todo-list
 - ✅ ⚙️ Creazione progetto con maven, creazione dei moduli adapter, adapter web con pagina web di esempio, test generale di esecuzione
   - ✅ 📝 Funzione di modifica annotazioni con registro con precedenti versioni delle note
   - ✅ 📖 Configurazione di OpenApi-Swagger e Quality-SonarQube, test coverage e compilazione dei moduli
-  - ✅ 🛠️ Modifica nome dell'applicazione in *gestione personale* e test applicazione web di esempio
-  - 🚧 🔧 Modifica nome dell'applicazione in *gestione annotazioni* e test applicazione web di esempio
-  - 🚧 📝 Modifica nome adapter "app" e "port"
+  - ✅ 🤖 Modifica nome dell'applicazione in *gestione personale* e test applicazione web di esempio
+  - ✅ 🛠️ Modifica nome dell'applicazione in *gestione annotazioni* e test applicazione web di esempio anche su AWS
+  - 🚧 🔧 Modifica nome adapter "app" e "port" in "ms-launcer" e "domain"
   - 🚧 📋 Creazione struttura task con flusso di lavoro e aggancio con le annotazioni
 - ✅ 🐳 Build e deploy su DockerHub della versione *OnPrem*
   - ✅ 🐳 configurazione di docker-compose con MongoDb e Postgresql
@@ -644,8 +771,8 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts
   - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
 - ✅ 📦 Creazione adapter con implementazione con SQLite come unica base dati
-  - 🚧 ☁️ Rilascio su sistema Replit per prova
-  - 🚧 ⚙️ Rilascio su sistema AWS-EC2 per provare
+  - ✅ ☁️ Sviluppo script per esecuzione profilo sqlite in sistema Replit
+  - ✅ ⚙️ Sviluppo script per esecuzione profilo sqlite in sistema AWS-EC2 con Docker senza RDS e Dynamo
 - ✅ 🔒 Autenticazione e autorizzazione (Spring Security) e token Jwt
   - ✅ 👥 introduzione sistema di verifica degli utenti e validazione richieste con tabella utenti
   - ✅ 📝 Gestione multiutente e modifica annotazioni con utente diverso dal creatore, test nell'applicazione web
@@ -694,6 +821,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - 🚧 ♻️ Green Computing Optimization: Automatic migration a data centers con energia rinnovabile
   - 🚧 📊 Sustainability Metrics: KPI per misurare efficienza energetica e carbon impact
   - 🚧 🌿 Eco-Friendly Features: Dark mode per battery saving, compression algorithms, lazy loading
+
 
 # &lt; AlNao /&gt;
 Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella misura massima possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 

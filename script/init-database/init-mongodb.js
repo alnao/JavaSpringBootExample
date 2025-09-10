@@ -1,5 +1,5 @@
 // Script di inizializzazione per MongoDB (OnPrem)
-db = db.getSiblingDB('gestionepersonale_db');
+db = db.getSiblingDB('gestioneannotazioni_db');
 
 // Crea collezione annotazioni se non esiste
 db.createCollection('annotazioni');

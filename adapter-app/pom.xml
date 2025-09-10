@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>adapter-app</artifactId>
-    <name>Gestione Personale - Application adapter</name>
+    <name>Gestione Annotazioni - Application adapter</name>
     <description>Applicazione principale Spring Boot</description>
 
     <dependencies>

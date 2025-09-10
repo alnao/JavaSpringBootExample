@@ -12,8 +12,8 @@
     </parent>
 
     <artifactId>adapter-port</artifactId>
-    <name>Gestione Personale - Port adapter</name>
-    <description>Interfacce e domini per il sistema gestione personale</description>
+    <name>Gestione annotazioni - Port adapter</name>
+    <description>Interfacce e domini per il sistema gestione annotazioni</description>
 
     <dependencies>
         <dependency>

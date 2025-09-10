@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script di provisioning e deploy completo su AWS ECS Fargate per il microservizio gestionepersonale
+# Script di provisioning e deploy completo su AWS ECS Fargate per il microservizio gestioneannotazioni
 # Richiede: AWS CLI configurata, permessi su ECS, ECR, RDS, DynamoDB, IAM, VPC
 # Esegue: build/push immagine, creazione risorse, deploy ECS, attese, init DB
 
@@ -9,21 +9,21 @@ export AWS_PAGER=""
 
 # === CONFIGURAZIONE ===
 AWS_REGION="eu-central-1"
-ECR_REPO_NAME="gestionepersonale"
+ECR_REPO_NAME="gestioneannotazioni"
 IMAGE_TAG="latest"
-CLUSTER_NAME="gestionepersonale-cluster"
-SERVICE_NAME="gestionepersonale-service"
-TASK_FAMILY="gestionepersonale-task"
-CONTAINER_NAME="gestionepersonale"
-RDS_DB_ID="gestionepersonale-db"
+CLUSTER_NAME="gestioneannotazioni-cluster"
+SERVICE_NAME="gestioneannotazioni-service"
+TASK_FAMILY="gestioneannotazioni-task"
+CONTAINER_NAME="gestioneannotazioni"
+RDS_DB_ID="gestioneannotazioni-db"
 DYNAMODB_TABLE="annotazioni"
 DYNAMODB_TABLE2="annotazioni_storico"
 
-AURORA_CLUSTER_ID="gestionepersonale-aurora-cluster"
-AURORA_DB_NAME="gestionepersonale"
-AURORA_MASTER_USER="gestionepersonale_user"
-AURORA_MASTER_PASS="gestionepersonale_pass"
-AURORA_INSTANCE_ID="gestionepersonale-aurora-instance"
+AURORA_CLUSTER_ID="gestioneannotazioni-aurora-cluster"
+AURORA_DB_NAME="gestioneannotazioni"
+AURORA_MASTER_USER="gestioneannotazioni_user"
+AURORA_MASTER_PASS="gestioneannotazioni_pass"
+AURORA_INSTANCE_ID="gestioneannotazioni-aurora-instance"
 AURORA_ENGINE="aurora-mysql"
 AURORA_ENGINE_VER="5.7.mysql_aurora.2.11.4"
 AURORA_INSTANCE_CLASS="db.t3.medium"
@@ -36,7 +36,7 @@ SECURITY_GROUP_ID="" # verrà creato
 # === 1. Build e push immagine su ECR ===
 echo "[1/7] Build e push immagine Docker su ECR..."
 if ! aws ecr describe-repositories --repository-names "$ECR_REPO_NAME" --region $AWS_REGION > /dev/null 2>&1; then
-  aws ecr create-repository --repository-name "$ECR_REPO_NAME" --region $AWS_REGION --tags Key=Name,Value=gestionepersonale-app Key=gestionepersonale-app,Value=true
+  aws ecr create-repository --repository-name "$ECR_REPO_NAME" --region $AWS_REGION --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
 else
   echo "ECR repository già esistente."
 fi
@@ -49,7 +49,7 @@ docker push $ECR_URL:$IMAGE_TAG
 
 # === 1b. Creazione IAM Role per ECS Task ===
 echo "[1b/7] Creazione IAM Role per ECS Task..."
-TASK_ROLE_NAME="gestionepersonale-ecs-task-role"
+TASK_ROLE_NAME="gestioneannotazioni-ecs-task-role"
 TASK_ROLE_ARN=""
 POLICY_ARN="arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
 if ! aws iam get-role --role-name $TASK_ROLE_NAME --region $AWS_REGION > /dev/null 2>&1; then
@@ -66,7 +66,7 @@ fi
 
 # === 1c. Creazione ECS Execution Role ===
 echo "[1c/7] Creazione ECS Execution Role..."
-EXEC_ROLE_NAME="gestionepersonale-ecs-execution-role"
+EXEC_ROLE_NAME="gestioneannotazioni-ecs-execution-role"
 EXEC_ROLE_ARN=""
 EXEC_POLICY_ARN="arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 LOGS_POLICY_ARN="arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
@@ -88,16 +88,16 @@ else
 fi
 
 # Tag IAM Role (Task e Execution)
-aws iam tag-role --role-name $TASK_ROLE_NAME --tags Key=Name,Value=gestionepersonale-app Key=gestionepersonale-app,Value=true --region $AWS_REGION || true
-aws iam tag-role --role-name $EXEC_ROLE_NAME --tags Key=Name,Value=gestionepersonale-app Key=gestionepersonale-app,Value=true --region $AWS_REGION || true
+aws iam tag-role --role-name $TASK_ROLE_NAME --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true --region $AWS_REGION || true
+aws iam tag-role --role-name $EXEC_ROLE_NAME --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true --region $AWS_REGION || true
 
 # === 2. Preparazione networking (deve essere prima di Aurora) ===
 echo "[2/7] Preparazione networking..."
 VPC_ID=$(aws ec2 describe-vpcs --filters Name=isDefault,Values=true --region $AWS_REGION --query 'Vpcs[0].VpcId' --output text)
 SUBNETS=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'Subnets[*].SubnetId' --output text | tr '\t' ',')
-if ! aws ec2 describe-security-groups --filters Name=group-name,Values=gestionepersonale-sg Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'SecurityGroups[0].GroupId' --output text | grep -v None > /dev/null 2>&1; then
-  SECURITY_GROUP_ID=$(aws ec2 create-security-group --group-name gestionepersonale-sg --description "gestionepersonale ECS SG" --vpc-id $VPC_ID --region $AWS_REGION --query 'GroupId' --output text)
-  aws ec2 create-tags --resources $SECURITY_GROUP_ID --tags Key=Name,Value=gestionepersonale-app Key=gestionepersonale-app,Value=true --region $AWS_REGION
+if ! aws ec2 describe-security-groups --filters Name=group-name,Values=gestioneannotazioni-sg Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'SecurityGroups[0].GroupId' --output text | grep -v None > /dev/null 2>&1; then
+  SECURITY_GROUP_ID=$(aws ec2 create-security-group --group-name gestioneannotazioni-sg --description "gestioneannotazioni ECS SG" --vpc-id $VPC_ID --region $AWS_REGION --query 'GroupId' --output text)
+  aws ec2 create-tags --resources $SECURITY_GROUP_ID --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true --region $AWS_REGION
 
   # Regole di sicurezza: apri solo le porte necessarie
   aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 8080 --cidr 0.0.0.0/0 --region $AWS_REGION # HTTP app
@@ -105,7 +105,7 @@ if ! aws ec2 describe-security-groups --filters Name=group-name,Values=gestionep
   aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 443 --cidr 0.0.0.0/0 --region $AWS_REGION # HTTPS (opzionale)
   aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 22 --cidr 0.0.0.0/0 --region $AWS_REGION # SSH (solo se necessario, meglio restringere)
 else
-  SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=gestionepersonale-sg Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'SecurityGroups[0].GroupId' --output text)
+  SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=gestioneannotazioni-sg Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'SecurityGroups[0].GroupId' --output text)
   echo "Security Group già esistente: $SECURITY_GROUP_ID"
 fi
 
@@ -123,7 +123,7 @@ if ! aws rds describe-db-clusters --db-cluster-identifier $AURORA_CLUSTER_ID --r
     --database-name $AURORA_DB_NAME \
     --vpc-security-group-ids $SECURITY_GROUP_ID \
     --region $AWS_REGION \
-    --tags Key=Name,Value=gestionepersonale-app Key=gestionepersonale-app,Value=true
+    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
 else
   echo "Aurora cluster già esistente."
 fi
@@ -136,7 +136,7 @@ if ! aws rds describe-db-instances --db-instance-identifier $AURORA_INSTANCE_ID 
     --engine $AURORA_ENGINE \
     --db-instance-class $AURORA_INSTANCE_CLASS \
     --region $AWS_REGION \
-    --tags Key=Name,Value=gestionepersonale-app Key=gestionepersonale-app,Value=true
+    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
 else
   echo "Aurora instance già esistente."
 fi
@@ -199,7 +199,7 @@ if ! aws dynamodb describe-table --table-name $DYNAMODB_TABLE --region $AWS_REGI
     --key-schema AttributeName=id,KeyType=HASH \
     --billing-mode PAY_PER_REQUEST \
     --region $AWS_REGION \
-    --tags Key=Name,Value=gestionepersonale-app Key=gestionepersonale-app,Value=true
+    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
 else
   echo "Tabella DynamoDB $DYNAMODB_TABLE già esistente."
 fi
@@ -210,7 +210,7 @@ if ! aws dynamodb describe-table --table-name $DYNAMODB_TABLE2 --region $AWS_REG
     --key-schema AttributeName=id,KeyType=HASH \
     --billing-mode PAY_PER_REQUEST \
     --region $AWS_REGION \
-    --tags Key=Name,Value=gestionepersonale-app Key=gestionepersonale-app,Value=true
+    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
 else
   echo "Tabella DynamoDB $DYNAMODB_TABLE2 già esistente."
 fi
@@ -223,15 +223,15 @@ if [ "$CLUSTER_STATUS" != "ACTIVE" ]; then
         echo "Creazione del cluster ECS: $CLUSTER_NAME"
         aws ecs create-cluster --cluster-name $CLUSTER_NAME --region $AWS_REGION \
             --tags '[
-                {"key": "Name", "value": "gestionepersonale-app"},
-                {"key": "Project", "value": "gestionepersonale-app"}
+                {"key": "Name", "value": "gestioneannotazioni-app"},
+                {"key": "Project", "value": "gestioneannotazioni-app"}
             ]' && echo "Cluster ECS creato con successo."
     else
         echo "Cluster $CLUSTER_NAME esiste ma non è attivo (stato: $CLUSTER_STATUS)"
         aws ecs create-cluster --cluster-name $CLUSTER_NAME --region $AWS_REGION \
             --tags '[
-                {"key": "Name", "value": "gestionepersonale-app"},
-                {"key": "Project", "value": "gestionepersonale-app"}
+                {"key": "Name", "value": "gestioneannotazioni-app"},
+                {"key": "Project", "value": "gestioneannotazioni-app"}
             ]' && echo "Cluster ECS creato con successo."
     fi
 else
@@ -240,7 +240,7 @@ fi
 
 # === 6. Definizione task ECS Fargate ===
 echo "[5/7] Definizione task ECS Fargate..."
-LOG_GROUP_NAME="/ecs/gestionepersonale-app"
+LOG_GROUP_NAME="/ecs/gestioneannotazioni-app"
 aws logs create-log-group --log-group-name $LOG_GROUP_NAME --region $AWS_REGION 2>/dev/null || true
 rm -f ./script/aws-ecs/task-def.json
 cat > ./script/aws-ecs/task-def.json <<EOF
@@ -308,8 +308,8 @@ if [ "$SERVICE_STATUS" != "ACTIVE" ]; then
         --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUP_ID],assignPublicIp=ENABLED}" \
         --region $AWS_REGION \
         --tags '[
-            {"key":"Name","value":"gestionepersonale-app"},
-            {"key":"Project","value":"gestionepersonale-app"},
+            {"key":"Name","value":"gestioneannotazioni-app"},
+            {"key":"Project","value":"gestioneannotazioni-app"},
             {"key":"Environment","value":"production"}
         ]' && echo "Servizio ECS creato con successo."
 else
@@ -351,7 +351,7 @@ echo "VPC ID: $VPC_ID"
 echo "Subnets: $SUBNETS"
 echo ""
 echo "Verifica lo stato su AWS ECS Console: https://$AWS_REGION.console.aws.amazon.com/ecs/v2/clusters/$CLUSTER_NAME/services/$SERVICE_NAME"
-echo "CloudWatch Logs: https://$AWS_REGION.console.aws.amazon.com/cloudwatch/home?region=$AWS_REGION#logsV2:log-groups/log-group/%2Fecs%2Fgestionepersonale-app"
+echo "CloudWatch Logs: https://$AWS_REGION.console.aws.amazon.com/cloudwatch/home?region=$AWS_REGION#logsV2:log-groups/log-group/%2Fecs%2Fgestioneannotazioni-app"
 echo ""
 echo "Comandi debug utili:"
 echo "aws ecs describe-tasks --cluster $CLUSTER_NAME --tasks \$(aws ecs list-tasks --cluster $CLUSTER_NAME --region $AWS_REGION --query 'taskArns[0]' --output text) --region $AWS_REGION"

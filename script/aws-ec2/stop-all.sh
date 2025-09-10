@@ -1,18 +1,18 @@
 #!/bin/bash
-# Rimozione completa stack Gestionepersonale AWS (Aurora MySQL, DynamoDB, EC2, Security Group)
+# Rimozione completa stack gestioneannotazioni AWS (Aurora MySQL, DynamoDB, EC2, Security Group)
 set -e
 
 # Disabilita paginazione aws cli
 export AWS_PAGER=""
 
 REGION="eu-central-1"
-DB_CLUSTER_ID="gestionepersonale-cluster"
-DB_INSTANCE_ID="gestionepersonale-instance"
-SG_NAME="gestionepersonale-sg"
-KEY_NAME="${KEY_NAME:-gestionepersonale-key}"
+DB_CLUSTER_ID="gestioneannotazioni-cluster"
+DB_INSTANCE_ID="gestioneannotazioni-instance"
+SG_NAME="gestioneannotazioni-sg"
+KEY_NAME="${KEY_NAME:-gestioneannotazioni-key}"
 
-# 1. Termina e rimuovi tutte le EC2 con tag gestionepersonale-app
-INSTANCE_IDS=$(aws ec2 describe-instances --region $REGION --filters Name=tag:gestionepersonale-app,Values=true Name=instance-state-name,Values=running,stopped --query 'Reservations[].Instances[].InstanceId' --output text)
+# 1. Termina e rimuovi tutte le EC2 con tag gestioneannotazioni-app
+INSTANCE_IDS=$(aws ec2 describe-instances --region $REGION --filters Name=tag:gestioneannotazioni-app,Values=true Name=instance-state-name,Values=running,stopped --query 'Reservations[].Instances[].InstanceId' --output text)
 if [ -n "$INSTANCE_IDS" ]; then
   aws ec2 terminate-instances --instance-ids $INSTANCE_IDS --region $REGION
   aws ec2 wait instance-terminated --instance-ids $INSTANCE_IDS --region $REGION
@@ -39,8 +39,8 @@ aws ec2 delete-key-pair --key-name $KEY_NAME --region $REGION || true
 rm -f $KEY_NAME.pem
 
 # 6. Rimuovi IAM Role e Instance Profile
-ROLE_NAME="gestionepersonale-ec2-role"
-INSTANCE_PROFILE_NAME="gestionepersonale-ec2-profile"
+ROLE_NAME="gestioneannotazioni-ec2-role"
+INSTANCE_PROFILE_NAME="gestioneannotazioni-ec2-profile"
 POLICY_ARN="arn:aws:iam::aws:policy/AmazonRDSFullAccess"
 POLICY_ARN2="arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
 POLICY_ARN3="arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
@@ -56,4 +56,4 @@ if aws iam get-role --role-name $ROLE_NAME --region $REGION &>/dev/null; then
   aws iam delete-role --role-name $ROLE_NAME --region $REGION || true
 fi
 
-echo "Stack AWS gestionepersonale rimosso. Tutte le EC2 con tag gestionepersonale-app terminate."
+echo "Stack AWS gestioneannotazioni rimosso. Tutte le EC2 con tag gestioneannotazioni-app terminate."

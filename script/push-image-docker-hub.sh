@@ -4,7 +4,7 @@
 set -e
 
 docker login
-docker build -t alnao/gestionepersonale:latest .
-docker push alnao/gestionepersonale:latest
+docker build -t alnao/gestioneannotazioni:latest .
+docker push alnao/gestioneannotazioni:latest
 
-echo "Immagine Docker 'alnao/gestionepersonale:latest' pushata su Docker Hub con successo."
+echo "Immagine Docker 'alnao/gestioneannotazioni:latest' pushata su Docker Hub con successo."

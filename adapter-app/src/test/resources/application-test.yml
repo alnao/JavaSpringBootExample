@@ -1,7 +1,7 @@
 # Configurazione Test - Database in-memory
 spring:
   application:
-    name: sistema-gestione-personale-test
+    name: sistema-gestione-annotazioni-test
 
   # Database H2 in-memory per test
   datasource:
@@ -51,7 +51,7 @@ logging:
     console: "%d{HH:mm:ss} - %msg%n"
 
 # Configurazione personalizzata per test
-gestione-personale:
+gestione-annotazioni:
   config:
     max-annotation-size: 1000
     max-description-size: 500

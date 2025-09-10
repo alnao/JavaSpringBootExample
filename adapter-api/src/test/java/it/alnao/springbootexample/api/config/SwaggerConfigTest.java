@@ -7,6 +7,6 @@ class SwaggerConfigTest {
     @Test
     void swaggerConfigBeanNotNull() {
         SwaggerConfig config = new SwaggerConfig();
-        assertNotNull(config.getsionepersonaleOpenAPI());
+        assertNotNull(config.getGestioneAnnotazioniOpenAPI());
     }
 }

@@ -1,24 +1,24 @@
 #!/bin/bash
-# Script di provisioning e deploy completo su AWS ECS Fargate per il microservizio gestionepersonale
+# Script di provisioning e deploy completo su AWS ECS Fargate per il microservizio gestioneannotazioni
 # Richiede: AWS CLI configurata, permessi su ECS, ECR, RDS, DynamoDB, IAM, VPC
 # Esegue: build/push immagine, creazione risorse, deploy ECS, attese, init DB
 
 AWS_REGION="eu-central-1"
-ECR_REPO_NAME="gestionepersonale"
+ECR_REPO_NAME="gestioneannotazioni"
 IMAGE_TAG="latest"
-CLUSTER_NAME="gestionepersonale-cluster"
-SERVICE_NAME="gestionepersonale-service"
-TASK_FAMILY="gestionepersonale-task"
-CONTAINER_NAME="gestionepersonale"
-RDS_DB_ID="gestionepersonale-db"
+CLUSTER_NAME="gestioneannotazioni-cluster"
+SERVICE_NAME="gestioneannotazioni-service"
+TASK_FAMILY="gestioneannotazioni-task"
+CONTAINER_NAME="gestioneannotazioni"
+RDS_DB_ID="gestioneannotazioni-db"
 DYNAMODB_TABLE="annotazioni"
 DYNAMODB_TABLE2="annotazioni_storico"
 
-AURORA_CLUSTER_ID="gestionepersonale-aurora-cluster"
-AURORA_DB_NAME="gestionepersonale"
-AURORA_MASTER_USER="gestionepersonale_user"
-AURORA_MASTER_PASS="gestionepersonale_pass"
-AURORA_INSTANCE_ID="gestionepersonale-aurora-instance"
+AURORA_CLUSTER_ID="gestioneannotazioni-aurora-cluster"
+AURORA_DB_NAME="gestioneannotazioni"
+AURORA_MASTER_USER="gestioneannotazioni_user"
+AURORA_MASTER_PASS="gestioneannotazioni_pass"
+AURORA_INSTANCE_ID="gestioneannotazioni-aurora-instance"
 AURORA_ENGINE="aurora-mysql"
 AURORA_ENGINE_VER="5.7.mysql_aurora.2.11.4"
 AURORA_INSTANCE_CLASS="db.t3.medium"

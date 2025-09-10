@@ -1,36 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gestionepersonale-app
+  name: gestioneannotazioni-app
 spec:
   replicas: 2 # Scalabilità: 2 pod
   selector:
     matchLabels:
-      app: gestionepersonale-app
+      app: gestioneannotazioni-app
   template:
     metadata:
       labels:
-        app: gestionepersonale-app
+        app: gestioneannotazioni-app
     spec:
       containers:
-        - name: gestionepersonale
-          image: alnao/gestionepersonale:latest
+        - name: gestioneannotazioni
+          image: alnao/gestioneannotazioni:latest
           env:
             - name: SPRING_DATASOURCE_URL
-              value: jdbc:postgresql://postgres:5432/gestionepersonale
+              value: jdbc:postgresql://postgres:5432/gestioneannotazioni
             - name: SPRING_DATASOURCE_USERNAME
               value: demo
             - name: SPRING_DATASOURCE_PASSWORD
               value: demo
             - name: SPRING_DATA_MONGODB_URI
-              value: mongodb://demo:demo@mongo:27017/gestionepersonale_db?authSource=admin
+              value: mongodb://demo:demo@mongo:27017/gestioneannotazioni_db?authSource=admin
           ports:
             - containerPort: 8080
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: gestionepersonale-app
+  name: gestioneannotazioni-app
 spec:
   type: NodePort
   ports:
@@ -38,4 +38,4 @@ spec:
       targetPort: 8080
       nodePort: 30080
   selector:
-    app: gestionepersonale-app
+    app: gestioneannotazioni-app

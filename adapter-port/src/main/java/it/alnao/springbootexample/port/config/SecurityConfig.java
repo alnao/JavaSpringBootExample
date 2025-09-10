@@ -44,13 +44,13 @@ public class SecurityConfig {
         public Long getRefreshExpiration() { return refreshExpiration; }
     }
 
-    @Value("${gestione-personale.jwt.secret:mySecretKey1234567890abcdefghijklmnopqrstuvwxyz}")
+    @Value("${gestione-annotazioni.jwt.secret:mySecretKey1234567890abcdefghijklmnopqrstuvwxyz}")
     private String jwtSecret;
 
-    @Value("${gestione-personale.jwt.expiration:86400}")
+    @Value("${gestione-annotazioni.jwt.expiration:86400}")
     private Long jwtExpiration;
 
-    @Value("${gestione-personale.jwt.refresh-expiration:604800}")
+    @Value("${gestione-annotazioni.jwt.refresh-expiration:604800}")
     private Long jwtRefreshExpiration;
 
     @Bean

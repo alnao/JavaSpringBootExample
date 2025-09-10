@@ -2,7 +2,7 @@
 FROM openjdk:17-jdk-slim AS builder
 
 LABEL maintainer="alnao.it"
-LABEL description="Sistema Gestione personale - Build Stage"
+LABEL description="Sistema Gestione Annotazioni - Build Stage"
 
 # Installa Maven
 RUN apt-get update && \
@@ -19,6 +19,7 @@ COPY adapter-api/pom.xml adapter-api/
 COPY adapter-web/pom.xml adapter-web/
 COPY adapter-aws/pom.xml adapter-aws/
 COPY adapter-onprem/pom.xml adapter-onprem/
+COPY adapter-sqlite/pom.xml adapter-sqlite/
 COPY adapter-app/pom.xml adapter-app/
 
 # Download delle dipendenze (layer cache optimization)
@@ -36,7 +37,7 @@ RUN mvn clean package -DskipTests -B
 FROM openjdk:17-jdk-slim AS runtime
 
 LABEL maintainer="alnao.it"
-LABEL description="Sistema Gestione personale - Runtime"
+LABEL description="Sistema Gestione Annotazioni - Runtime"
 
 # Installa curl per health check
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*

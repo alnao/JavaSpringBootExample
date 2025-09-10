@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>adapter-aws</artifactId>
-    <name>Gestione Personale - AWS adapter</name>
+    <name>Gestione annotazioni - AWS adapter</name>
     <description>Implementazioni AWS per DynamoDB e MySQL</description>
 
     <dependencies>

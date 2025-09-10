@@ -1,6 +1,10 @@
 annotazioni-key.pem
 bastion-key.pem
 gestionepersonale-bastion-key.pem
+gestioneannotazioni-bastion-key.pem
+gestioneannotazioni-key.pem
+gestioneannotazioni-sqlite-ec2-key.pem
+
 
 .vscode
 .vscode/settings.json

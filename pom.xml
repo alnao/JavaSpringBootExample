@@ -10,8 +10,8 @@
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
-    <name>Gestione Personale - Parent</name>
-    <description>Sistema di gestione personale multi-modulo con supporto AWS e On-Premise</description>
+    <name>Gestione Annotazioni - Parent</name>
+    <description>Sistema di gestione Annotazioni multi-modulo con supporto AWS e On-Premise</description>
 
     <parent>
         <groupId>org.springframework.boot</groupId>

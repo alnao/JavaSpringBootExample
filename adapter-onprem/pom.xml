@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>adapter-onprem</artifactId>
-    <name>Gestione Personale - OnPremise adapter</name>
+    <name>Gestione annotazioni - OnPremise adapter</name>
     <description>Implementazioni On-Premise per MongoDB e PostgreSQL</description>
 
     <dependencies>
