@@ -2,8 +2,8 @@
 -- nota: questo file è usato da alcuni script docker-compose
 -- nota: questo file è usato anche da script/aws-ecs/run-ecs-mysql-insert.sh
 
-CREATE DATABASE IF NOT EXISTS gestionepersonale;
-USE gestionepersonale;
+CREATE DATABASE IF NOT EXISTS gestioneannotazioni;
+USE gestioneannotazioni;
 
 -- Script per creare le tabelle di autenticazione in MySQL
 
