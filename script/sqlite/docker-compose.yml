@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+
+  # Applicazione Spring Boot con profilo sqlite (ex Replit)
+  spring-app:
+    build:
+      context: ../../
+      dockerfile: script/sqlite/Dockerfile
+    container_name: sqlite-spring-app
+    ports:
+      - "8082:8080"
+    volumes:
+      - sqlite-data:/app/data
+    environment:
+      - SPRING_PROFILES_ACTIVE=sqlite
+      - DATABASE_URL=jdbc:sqlite:./data/database.sqlite
+      - SERVER_PORT=8080
+    networks:
+      - sqlite-network
+    restart: unless-stopped
+
+  # SQLite Web - Interfaccia web leggera per SQLite
+  sqlite-web:
+    image: coleifer/sqlite-web
+    container_name: sqlite-web
+    ports:
+      - "8084:8080"
+    volumes:
+      - sqlite-data:/data
+    command: sqlite_web -H 0.0.0.0 -p 8080 /data/database.sqlite
+    networks:
+      - sqlite-network
+    depends_on:
+      - spring-app
+
+volumes:
+  sqlite-data:
+    driver: local
+
+networks:
+  sqlite-network:
+    driver: bridge

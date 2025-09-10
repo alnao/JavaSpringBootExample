@@ -59,6 +59,7 @@ public class JwtServiceImpl implements JwtService {
         return refreshTokenRepository.save(refreshToken);
     }
     
+
     @Override
     public boolean validateToken(String token, User user) {
         try {
@@ -128,8 +129,8 @@ public class JwtServiceImpl implements JwtService {
     }
     
     private SecretKey getSignKey() {
-    byte[] keyBytes = jwtConfig.getSecret().getBytes();
-    return Keys.hmacShaKeyFor(keyBytes);
+        byte[] keyBytes = jwtConfig.getSecret().getBytes();
+        return Keys.hmacShaKeyFor(keyBytes);
     }
     
     private <T> T getClaimFromToken(String token, ClaimsResolver<T> claimsResolver) {

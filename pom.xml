@@ -45,6 +45,7 @@
         <module>adapter-web</module>
         <module>adapter-aws</module>
         <module>adapter-onprem</module>
+        <module>adapter-sqlite</module>
         <module>adapter-app</module>
     </modules>
 
@@ -69,6 +70,11 @@
             <dependency>
                 <groupId>it.alnao.springbootexample</groupId>
                 <artifactId>adapter-aws</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>it.alnao.springbootexample</groupId>
+                <artifactId>adapter-sqlite</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

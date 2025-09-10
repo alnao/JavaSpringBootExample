@@ -16,6 +16,11 @@
     <description>Applicazione principale Spring Boot</description>
 
     <dependencies>
+        <!-- Spring Boot Actuator -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
         <!-- Moduli interni -->
         <dependency>
             <groupId>it.alnao.springbootexample</groupId>
@@ -38,6 +43,11 @@
         <dependency>
             <groupId>it.alnao.springbootexample</groupId>
             <artifactId>adapter-onprem</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>it.alnao.springbootexample</groupId>
+            <artifactId>adapter-sqlite</artifactId>
             <optional>true</optional>
         </dependency>
         <!-- TEST -->
@@ -81,6 +91,17 @@
                 <dependency>
                     <groupId>it.alnao.springbootexample</groupId>
                     <artifactId>adapter-onprem</artifactId>
+                    <optional>false</optional>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>sqlite</id>
+            <dependencies>
+                <dependency>
+                    <groupId>it.alnao.springbootexample</groupId>
+                    <artifactId>adapter-sqlite</artifactId>
                     <optional>false</optional>
                 </dependency>
             </dependencies>

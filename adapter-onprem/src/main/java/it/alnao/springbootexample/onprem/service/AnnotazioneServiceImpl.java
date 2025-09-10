@@ -6,6 +6,7 @@ import it.alnao.springbootexample.port.domain.AnnotazioneMetadata;
 import it.alnao.springbootexample.port.repository.AnnotazioneRepository;
 import it.alnao.springbootexample.port.repository.AnnotazioneMetadataRepository;
 import it.alnao.springbootexample.port.service.AnnotazioneService;
+import it.alnao.springbootexample.port.utils.AnnotazioniUtils;
 import it.alnao.springbootexample.onprem.entity.AnnotazioneStoricoEntity;
 import it.alnao.springbootexample.onprem.repository.AnnotazioneStoricoMongoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,7 +90,7 @@ public class AnnotazioneServiceImpl implements AnnotazioneService {
 
             // 2. Aggiorna annotazione
             annotazione.setValoreNota(nuovoValore);
-            annotazione.setVersioneNota(incrementaVersione(annotazione.getVersioneNota()));
+            annotazione.setVersioneNota(AnnotazioniUtils.incrementaVersione(annotazione.getVersioneNota()));
             Annotazione updatedAnnotazione = annotazioneRepository.save(annotazione);
 
             // 3. Aggiorna metadata
@@ -262,32 +263,4 @@ public class AnnotazioneServiceImpl implements AnnotazioneService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Incrementa la versione da stringa (es. "1.0" -> "1.1", "v2.3" -> "v2.4")
-     */
-    private String incrementaVersione(String versioneCorrente) {
-        if (versioneCorrente == null || versioneCorrente.isEmpty()) {
-            return "1.0";
-        }
-        
-        // Cerca pattern come "1.0", "2.3", "v1.5"
-        if (versioneCorrente.matches("^v?\\d+\\.\\d+$")) {
-            String prefix = versioneCorrente.startsWith("v") ? "v" : "";
-            String numberPart = versioneCorrente.replace("v", "");
-            String[] parts = numberPart.split("\\.");
-            
-            try {
-                int major = Integer.parseInt(parts[0]);
-                int minor = Integer.parseInt(parts[1]);
-                minor++;
-                return prefix + major + "." + minor;
-            } catch (NumberFormatException e) {
-                // Fallback: aggiungi .1
-                return versioneCorrente + ".1";
-            }
-        } else {
-            // Per versioni non standard, aggiungi .1
-            return versioneCorrente + ".1";
-        }
-    }
 }

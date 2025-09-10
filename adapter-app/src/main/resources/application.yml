@@ -79,6 +79,9 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    enable:
+      processor: false
 
 # Configurazione logging
 logging:
@@ -160,7 +163,13 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
         physical_naming_strategy: it.alnao.springbootexample.port.config.CustomPhysicalNamingStrategy
-  
+
+  # Disabilita MongoDB per il profilo aws
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+
 # Configurazione DynamoDB (manteniamo quella già presente)
 aws:
   region: ${AWS_REGION:us-central-1}
@@ -205,6 +214,58 @@ spring:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/gestione_personale_db}
 
+
+---
+# Profilo sqlite - SQLite (ex ReplitDB)
+spring:
+  config:
+    activate:
+      on-profile: sqlite #ex replit
+  
+  # Configurazione SQLite
+  datasource:
+    url: ${DATABASE_URL:jdbc:sqlite:./data/database.sqlite}
+    username: 
+    password: 
+    driver-class-name: org.sqlite.JDBC
+
+  # Configurazione JPA per SQLite
+  jpa:
+    hibernate:
+      ddl-auto: update 
+      # create-drop Non usare ddl-auto: create-drop in produzione, perché cancella le tabelle ad ogni riavvio. Usa ddl-auto: update per mantenere i dati.
+    show-sql: true
+    #non so se serve # database-platform: org.hibernate.dialect.SQLiteDialect
+    properties:
+      hibernate:
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+        format_sql: true
+        physical_naming_strategy: it.alnao.springbootexample.port.config.CustomPhysicalNamingStrategy
+        jdbc:
+          time_zone: UTC
+
+    packages-to-scan:
+      - it.alnao.springbootexample.sqlite.entity
+      - it.alnao.springbootexample.sqlite.entity.auth
+
+  # Disabilita MongoDB per il profilo sqlite
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+
+# Configurazione ReplitDB
+#replit:
+#  db:
+#    url: ${REPLIT_DB_URL:https://kv.replit.com/v0}
+#    timeout: 10000
+
+# Logging configurazione per sqlite/Replit
+logging:
+  level:
+    it.alnao.springbootexample: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
 
 ---
 # Profilo Development

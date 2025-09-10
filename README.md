@@ -17,7 +17,8 @@ Prevede
 - [📈 Analisi qualità e coverage con SonarQube](#-analisi-qualità-e-coverage-con-sonarqube)
 - [🐳 Deploy e utilizzo con DockerHub](#-deploy-e-utilizzo-con-dockerhub)
 - [🐳 Deploy completo con Docker Compose](#-deploy-completo-con-docker-compose)
-- [☸️ Deploy su Minikube e Kubernetes locale)](#️-deploy-su-minikube-kubernetes-locale)
+- [☸️ Deploy su Minikube e Kubernetes locale)](#-deploy-su-minikube-kubernetes-locale)
+- [📦 Versione SQLite per Replit](#-Versione-SQLite-per-Replit)
 - [🐳 Deploy AWS-onprem](#-Deploy-AWS-onprem-MySQL-e-DynamoDB-Local)
 - [🚀 Deploy su AWS EC2](#-Deploy-su-AWS-EC2)
 - [🐳 Deploy su AWS ECS Fargate](#-deploy-su-aws-ecs-fargate)
@@ -431,6 +432,32 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
       minikube delete
       ```
 
+
+## 📦 Versione SQLite per Replit
+E' stata sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessarie, studiato per funzionare nel sistema Replit.
+- Utilizza SQLite come unico database per tutte le funzionalità (annotazioni, utenti, storico).
+- Nessuna dipendenza da servizi esterni: tutto gira in locale, ideale per demo, test e ambienti cloud come Replit.
+- Profilo Spring Boot dedicato: `sqlite`.
+- Script di avvio e arresto già pronti per esecuzione locale e su Replit.
+
+
+- Eseguibile in sistema locale con Dockerfile, docker-compose e script dedicati, per eseguire tutto in locale eseguire lo script
+  ```
+  cd script/replit-locale
+  ./start-all.sh
+  ```
+- L'applicazione web sarà disponibile su [http://localhost:8082](http://localhost:8082)
+- Interfaccia di gestione SQLite su [http://localhost:8084](http://localhost:8084)
+- Fermare l'esecuzione
+  ```
+  cd script/replit-locale
+  ./stop-all.sh
+  ```
+- Tutti i dati sono salvati in file `.db` nella directory di lavoro.
+- Funziona anche su Replit, basta importare il progetto e lanciare lo script di start. **coming soon*
+
+
+
 ## 🐳 Deploy AWS-onprem (MySQL e DynamoDB Local)
 
 Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, DynamoDB Admin UI, Spring Boot profilo AWS):
@@ -604,7 +631,9 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - ✅ 📝 Funzione di modifica annotazioni con registro con precedenti versioni delle note
   - ✅ 📖 Configurazione di OpenApi-Swagger e Quality-SonarQube, test coverage e compilazione dei moduli
   - ✅ 🛠️ Modifica nome dell'applicazione in *gestione personale* e test applicazione web di esempio
-  - 🚧 📝 Creazione struttura task con flusso di lavoro e aggancio con le annotazioni
+  - 🚧 🔧 Modifica nome dell'applicazione in *gestione annotazioni* e test applicazione web di esempio
+  - 🚧 📝 Modifica nome adapter "app" e "port"
+  - 🚧 📋 Creazione struttura task con flusso di lavoro e aggancio con le annotazioni
 - ✅ 🐳 Build e deploy su DockerHub della versione *OnPrem*
   - ✅ 🐳 configurazione di docker-compose con MongoDb e Postgresql
   - ✅ ☸️ Esecuzione su Kubernetes/Minikube locale con yaml dedicati
@@ -614,6 +643,9 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - 🚧 🐳 Deploy su AWS su EKS
   - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts
   - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
+- ✅ 📦 Creazione adapter con implementazione con SQLite come unica base dati
+  - 🚧 ☁️ Rilascio su sistema Replit per prova
+  - 🚧 ⚙️ Rilascio su sistema AWS-EC2 per provare
 - ✅ 🔒 Autenticazione e autorizzazione (Spring Security) e token Jwt
   - ✅ 👥 introduzione sistema di verifica degli utenti e validazione richieste con tabella utenti
   - ✅ 📝 Gestione multiutente e modifica annotazioni con utente diverso dal creatore, test nell'applicazione web

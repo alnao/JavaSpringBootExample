@@ -62,7 +62,7 @@ public class AuthController {
             logger.info("POST /api/auth/login - Ricerca utente per username: {}", request.getUsername());
             User user = userService.findByUsername(request.getUsername())
                 .orElseThrow(() -> new BadCredentialsException("Utente non trovato"));
-            logger.info("POST /api/auth/login - Utente trovato: {}", user.getUsername());
+            logger.info("POST /api/auth/login - Utente trovato: {} {}", user.getUsername() , user.getAccountType() );
             
             logger.info("POST /api/auth/login - Controllo account locale per username: {}", request.getUsername());
             if (!user.isLocalAccount()) {

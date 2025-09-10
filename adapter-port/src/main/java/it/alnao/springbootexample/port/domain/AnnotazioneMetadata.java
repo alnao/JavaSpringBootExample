@@ -132,13 +132,18 @@ public class AnnotazioneMetadata {
     
     @Override
     public String toString() {
-        return "AnnotazioneMetadata{" +
-                "id=" + id +
-                ", versioneNota=" + versioneNota +
-                ", utenteCreazione='" + utenteCreazione + '\'' +
-                ", dataInserimento=" + dataInserimento +
-                ", descrizione='" + descrizione + '\'' +
-                ", categoria='" + categoria + '\'' +
-                '}';
+    return "AnnotazioneMetadata{" +
+        "id=" + id +
+        ", versioneNota='" + versioneNota + '\'' +
+        ", utenteCreazione='" + utenteCreazione + '\'' +
+        ", dataInserimento=" + dataInserimento +
+        ", dataUltimaModifica=" + dataUltimaModifica +
+        ", utenteUltimaModifica='" + utenteUltimaModifica + '\'' +
+        ", descrizione='" + descrizione + '\'' +
+        ", categoria='" + categoria + '\'' +
+        ", tags='" + tags + '\'' +
+        ", pubblica=" + pubblica +
+        ", priorita=" + priorita +
+        '}';
     }
 }
