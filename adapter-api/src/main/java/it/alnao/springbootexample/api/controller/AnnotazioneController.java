@@ -9,8 +9,8 @@ import it.alnao.springbootexample.api.dto.AggiornaAnnotazioneRequest;
 import it.alnao.springbootexample.api.dto.AnnotazioneResponse;
 import it.alnao.springbootexample.api.dto.CreaAnnotazioneRequest;
 import it.alnao.springbootexample.api.mapper.AnnotazioneMapper;
-import it.alnao.springbootexample.port.domain.AnnotazioneCompleta;
-import it.alnao.springbootexample.port.service.AnnotazioneService;
+import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
+import it.alnao.springbootexample.core.portService.AnnotazioniPortService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ public class AnnotazioneController {
     private static final Logger logger = LoggerFactory.getLogger(AnnotazioneController.class);
     
     @Autowired
-    private AnnotazioneService annotazioneService;
+    private AnnotazioniPortService annotazioniPortService;
     
     @Operation(summary = "Crea una nuova annotazione")
     @ApiResponses(value = {
@@ -45,33 +45,10 @@ public class AnnotazioneController {
     @PostMapping
     public ResponseEntity<AnnotazioneResponse> creaAnnotazione(
             @Valid @RequestBody CreaAnnotazioneRequest request) {
+        logger.info("POST /api/annotazioni - Creazione annotazione per utente: {}, valore: {}", request.getUtente(), request.getValoreNota());
         
-        logger.info("POST /api/annotazioni - Creazione annotazione per utente: {}, valore: {}", 
-                    request.getUtente(), request.getValoreNota());
-        
-        AnnotazioneCompleta annotazioneCompleta = annotazioneService.creaAnnotazione(
-                request.getValoreNota(),
-                request.getDescrizione(),
-                request.getUtente()
-        );
-        
-        // Imposta i campi aggiuntivi se presenti
-        if (request.getCategoria() != null) {
-            annotazioneService.impostaCategoria(annotazioneCompleta.getId(), request.getCategoria(), request.getUtente());
-        }
-        if (request.getTags() != null) {
-            annotazioneService.impostaTags(annotazioneCompleta.getId(), request.getTags(), request.getUtente());
-        }
-        if (request.getPubblica() != null) {
-            annotazioneService.impostaVisibilitaPubblica(annotazioneCompleta.getId(), request.getPubblica(), request.getUtente());
-        }
-        if (request.getPriorita() != null) {
-            annotazioneService.impostaPriorita(annotazioneCompleta.getId(), request.getPriorita(), request.getUtente());
-        }
-        
-        // Ricarica l'annotazione aggiornata
-        annotazioneCompleta = annotazioneService.trovaPerID(annotazioneCompleta.getId()).orElse(annotazioneCompleta);
-        
+        AnnotazioneCompleta annotazioneCompleta = annotazioniPortService.creaAnnotazione(AnnotazioneMapper.fromCreateRequest(request),request.getUtente());
+
         logger.info("POST /api/annotazioni - Annotazione creata con successo, ID: {}", annotazioneCompleta.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(AnnotazioneMapper.toResponse(annotazioneCompleta));
@@ -81,7 +58,7 @@ public class AnnotazioneController {
     @GetMapping
     public ResponseEntity<List<AnnotazioneResponse>> ottieniTutteLeAnnotazioni() {
         logger.info("GET /api/annotazioni - Richiesta tutte le annotazioni");
-        List<AnnotazioneCompleta> annotazioni = annotazioneService.trovaTutte();
+        List<AnnotazioneCompleta> annotazioni = annotazioniPortService.trovaTutte();
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
     
@@ -92,7 +69,7 @@ public class AnnotazioneController {
             @PathVariable UUID id) {
         
         logger.info("GET /api/annotazioni/{} - Richiesta annotazione per ID", id);
-        return annotazioneService.trovaPerID(id)
+        return annotazioniPortService.trovaPerID(id)
                 .map(annotazione -> ResponseEntity.ok(AnnotazioneMapper.toResponse(annotazione)))
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -103,34 +80,9 @@ public class AnnotazioneController {
             @Parameter(description = "ID dell'annotazione")
             @PathVariable UUID id,
             @Valid @RequestBody AggiornaAnnotazioneRequest request) {
-        
         logger.info("PUT /api/annotazioni/{} - Aggiornamento annotazione per utente: {}", id, request.getUtente());
         request.setId(id);
-        
-        AnnotazioneCompleta annotazioneAggiornata = annotazioneService.aggiornaAnnotazione(
-                id,
-                request.getValoreNota(),
-                request.getDescrizione(),
-                request.getUtente()
-        );
-        
-        // Aggiorna i campi aggiuntivi se presenti
-        if (request.getCategoria() != null) {
-            annotazioneService.impostaCategoria(id, request.getCategoria(), request.getUtente());
-        }
-        if (request.getTags() != null) {
-            annotazioneService.impostaTags(id, request.getTags(), request.getUtente());
-        }
-        if (request.getPubblica() != null) {
-            annotazioneService.impostaVisibilitaPubblica(id, request.getPubblica(), request.getUtente());
-        }
-        if (request.getPriorita() != null) {
-            annotazioneService.impostaPriorita(id, request.getPriorita(), request.getUtente());
-        }
-        
-        // Ricarica l'annotazione aggiornata
-        annotazioneAggiornata = annotazioneService.trovaPerID(id).orElse(annotazioneAggiornata);
-        
+        AnnotazioneCompleta annotazioneAggiornata = annotazioniPortService.aggiornaAnnotazione(AnnotazioneMapper.fromUpdateRequest(request),request.getUtente());
         logger.info("PUT /api/annotazioni/{} - Annotazione aggiornata con successo", id);
         return ResponseEntity.ok(AnnotazioneMapper.toResponse(annotazioneAggiornata));
     }
@@ -140,14 +92,8 @@ public class AnnotazioneController {
     public ResponseEntity<Void> eliminaAnnotazione(
             @Parameter(description = "ID dell'annotazione")
             @PathVariable UUID id) {
-        
         logger.info("DELETE /api/annotazioni/{} - Eliminazione annotazione", id);
-        if (!annotazioneService.esisteAnnotazione(id)) {
-            logger.warn("DELETE /api/annotazioni/{} - Annotazione non trovata", id);
-            return ResponseEntity.notFound().build();
-        }
-        
-        annotazioneService.eliminaAnnotazione(id);
+        annotazioniPortService.eliminaAnnotazione(id);
         logger.info("DELETE /api/annotazioni/{} - Annotazione eliminata con successo", id);
         return ResponseEntity.noContent().build();
     }
@@ -159,7 +105,7 @@ public class AnnotazioneController {
             @RequestParam String testo) {
         
         logger.info("GET /api/annotazioni/cerca?testo={} - Ricerca annotazioni per testo", testo);
-        List<AnnotazioneCompleta> annotazioni = annotazioneService.cercaPerTesto(testo);
+        List<AnnotazioneCompleta> annotazioni = annotazioniPortService.cercaPerTesto(testo);
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
     
@@ -170,7 +116,7 @@ public class AnnotazioneController {
             @PathVariable String utente) {
         
         logger.info("GET /api/annotazioni/utente/{} - Richiesta annotazioni per utente", utente);
-        List<AnnotazioneCompleta> annotazioni = annotazioneService.trovaPerUtente(utente);
+        List<AnnotazioneCompleta> annotazioni = annotazioniPortService.trovaPerUtente(utente);
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
     
@@ -181,7 +127,7 @@ public class AnnotazioneController {
             @PathVariable String categoria) {
         
         logger.info("GET /api/annotazioni/categoria/{} - Richiesta annotazioni per categoria", categoria);
-        List<AnnotazioneCompleta> annotazioni = annotazioneService.trovaPerCategoria(categoria);
+        List<AnnotazioneCompleta> annotazioni = annotazioniPortService.trovaPerCategoria(categoria);
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
     
@@ -189,7 +135,7 @@ public class AnnotazioneController {
     @GetMapping("/pubbliche")
     public ResponseEntity<List<AnnotazioneResponse>> ottieniAnnotazioniPubbliche() {
         logger.info("GET /api/annotazioni/pubbliche - Richiesta annotazioni pubbliche");
-        List<AnnotazioneCompleta> annotazioni = annotazioneService.trovaPubbliche();
+        List<AnnotazioneCompleta> annotazioni = annotazioniPortService.trovaPubbliche();
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
     
@@ -197,7 +143,7 @@ public class AnnotazioneController {
     @GetMapping("/statistiche")
     public ResponseEntity<StatisticheResponse> ottieniStatistiche() {
         logger.info("GET /api/annotazioni/statistiche - Richiesta statistiche annotazioni");
-        long totaleAnnotazioni = annotazioneService.contaAnnotazioni();
+        long totaleAnnotazioni = annotazioniPortService.contaAnnotazioni();
         
         StatisticheResponse statistiche = new StatisticheResponse();
         statistiche.setTotaleAnnotazioni(totaleAnnotazioni);

@@ -40,13 +40,13 @@
     </properties>
 
     <modules>
-        <module>adapter-port</module>
         <module>adapter-api</module>
         <module>adapter-web</module>
         <module>adapter-aws</module>
         <module>adapter-onprem</module>
         <module>adapter-sqlite</module>
-        <module>adapter-app</module>
+        <module>application</module>
+        <module>core</module>
     </modules>
 
     <dependencyManagement>
@@ -54,7 +54,7 @@
             <!-- Internal adapters -->
             <dependency>
                 <groupId>it.alnao.springbootexample</groupId>
-                <artifactId>adapter-port</artifactId>
+                <artifactId>core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

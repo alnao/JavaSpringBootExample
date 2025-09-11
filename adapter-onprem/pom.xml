@@ -18,7 +18,7 @@
     <dependencies>
         <dependency>
             <groupId>it.alnao.springbootexample</groupId>
-            <artifactId>adapter-port</artifactId>
+            <artifactId>core</artifactId>
         </dependency>
         
         <dependency>

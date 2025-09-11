@@ -1,9 +1,9 @@
 package it.alnao.springbootexample.api.mapper;
 
 import it.alnao.springbootexample.api.dto.AnnotazioneResponse;
-import it.alnao.springbootexample.port.domain.Annotazione;
-import it.alnao.springbootexample.port.domain.AnnotazioneCompleta;
-import it.alnao.springbootexample.port.domain.AnnotazioneMetadata;
+import it.alnao.springbootexample.core.domain.Annotazione;
+import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
+import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;

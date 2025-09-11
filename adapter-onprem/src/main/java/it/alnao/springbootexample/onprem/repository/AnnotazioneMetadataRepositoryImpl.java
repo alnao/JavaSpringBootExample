@@ -1,8 +1,8 @@
 package it.alnao.springbootexample.onprem.repository;
 
 import it.alnao.springbootexample.onprem.entity.AnnotazioneMetadataEntity;
-import it.alnao.springbootexample.port.domain.AnnotazioneMetadata;
-import it.alnao.springbootexample.port.repository.AnnotazioneMetadataRepository;
+import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
+import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;

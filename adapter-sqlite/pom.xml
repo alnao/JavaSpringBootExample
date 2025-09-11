@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>adapter-sqlite</artifactId>
-    <name>Adapter SQLite</name>
+    <name>Gestione annotazioni - SQLite adapter</name>
     <description>Implementazioni solo SQLite (ex per Replit: ReplitDB)</description>
 
     <dependencies>
@@ -23,7 +23,7 @@
         <!-- Dipendenza dal port -->
         <dependency>
             <groupId>it.alnao.springbootexample</groupId>
-            <artifactId>adapter-port</artifactId>
+            <artifactId>core</artifactId>
             <version>${project.version}</version>
         </dependency>
 

@@ -14,13 +14,13 @@ WORKDIR /workspace
 
 # Copia i file di configurazione Maven
 COPY pom.xml .
-COPY adapter-port/pom.xml adapter-port/
+COPY core/pom.xml core/
 COPY adapter-api/pom.xml adapter-api/
 COPY adapter-web/pom.xml adapter-web/
 COPY adapter-aws/pom.xml adapter-aws/
 COPY adapter-onprem/pom.xml adapter-onprem/
 COPY adapter-sqlite/pom.xml adapter-sqlite/
-COPY adapter-app/pom.xml adapter-app/
+COPY application/pom.xml application/
 
 # Download delle dipendenze (layer cache optimization)
 RUN mvn dependency:go-offline -B
@@ -49,7 +49,7 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 WORKDIR /app
 
 # Copia il JAR compilato dal stage di build
-COPY --from=builder /workspace/adapter-app/target/adapter-app-*.jar app.jar
+COPY --from=builder /workspace/application/target/application-*.jar app.jar
 
 # Cambia ownership
 RUN chown appuser:appuser /app/app.jar

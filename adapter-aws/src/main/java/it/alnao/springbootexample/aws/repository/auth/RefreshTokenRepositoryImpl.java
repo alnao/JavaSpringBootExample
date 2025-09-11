@@ -1,8 +1,8 @@
 package it.alnao.springbootexample.aws.repository.auth;
 
 import it.alnao.springbootexample.aws.entity.auth.RefreshTokenMySQLEntity;
-import it.alnao.springbootexample.port.domain.auth.RefreshToken;
-import it.alnao.springbootexample.port.repository.auth.RefreshTokenRepository;
+import it.alnao.springbootexample.core.domain.auth.RefreshToken;
+import it.alnao.springbootexample.core.repository.auth.RefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;

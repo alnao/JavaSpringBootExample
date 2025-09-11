@@ -1,7 +1,7 @@
 package it.alnao.springbootexample.sqlite.service.auth;
 
-import it.alnao.springbootexample.port.domain.auth.UserProvider;
-import it.alnao.springbootexample.port.repository.auth.UserProviderRepository;
+import it.alnao.springbootexample.core.domain.auth.UserProvider;
+import it.alnao.springbootexample.core.repository.auth.UserProviderRepository;
 import it.alnao.springbootexample.sqlite.entity.auth.UserProviderSQLiteEntity;
 import it.alnao.springbootexample.sqlite.repository.auth.UserProviderSQLiteRepository;
 import org.springframework.beans.factory.annotation.Autowired;

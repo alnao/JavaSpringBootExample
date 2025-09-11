@@ -46,7 +46,7 @@ services:
   # Applicazione Spring Boot
   app:
     build:
-      context: ./ #adapter-app
+      context: ./ #application
       dockerfile: Dockerfile
     container_name: gestioneannotazioni-app
     environment:

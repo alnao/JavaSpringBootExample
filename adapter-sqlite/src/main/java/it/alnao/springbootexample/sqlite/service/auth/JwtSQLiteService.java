@@ -1,8 +1,8 @@
 package it.alnao.springbootexample.sqlite.service.auth;
 
-import it.alnao.springbootexample.port.domain.auth.RefreshToken;
-import it.alnao.springbootexample.port.domain.auth.User;
-import it.alnao.springbootexample.port.service.auth.JwtService;
+import it.alnao.springbootexample.core.domain.auth.RefreshToken;
+import it.alnao.springbootexample.core.domain.auth.User;
+import it.alnao.springbootexample.core.service.auth.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

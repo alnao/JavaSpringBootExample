@@ -1,6 +1,6 @@
 package it.alnao.springbootexample.onprem.entity.auth;
 
-import it.alnao.springbootexample.port.domain.auth.UserProvider;
+import it.alnao.springbootexample.core.domain.auth.UserProvider;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

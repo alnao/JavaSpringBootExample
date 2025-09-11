@@ -1,7 +1,7 @@
 package it.alnao.springbootexample.sqlite.repository.auth;
 
-import it.alnao.springbootexample.port.domain.auth.RefreshToken;
-import it.alnao.springbootexample.port.repository.auth.RefreshTokenRepository;
+import it.alnao.springbootexample.core.domain.auth.RefreshToken;
+import it.alnao.springbootexample.core.repository.auth.RefreshTokenRepository;
 import it.alnao.springbootexample.sqlite.entity.auth.RefreshTokenSQLiteEntity;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.repository.JpaRepository;

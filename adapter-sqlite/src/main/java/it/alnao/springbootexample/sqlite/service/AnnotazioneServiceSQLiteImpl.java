@@ -1,7 +1,7 @@
 package it.alnao.springbootexample.sqlite.service;
 
-import it.alnao.springbootexample.port.service.AnnotazioneService;
-import it.alnao.springbootexample.port.utils.AnnotazioniUtils;
+import it.alnao.springbootexample.core.service.AnnotazioneService;
+import it.alnao.springbootexample.core.utils.AnnotazioniUtils;
 import it.alnao.springbootexample.sqlite.repository.AnnotazioneSQLiteRepository;
 import it.alnao.springbootexample.sqlite.repository.AnnotazioneMetadataSQLiteRepository;
 import it.alnao.springbootexample.sqlite.entity.AnnotazioneSQLiteEntity;
@@ -23,7 +23,7 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
     private AnnotazioneMetadataSQLiteRepository metadataRepository;
 
     // Aggiornamento completo di annotazione e metadata
-    public it.alnao.springbootexample.port.domain.AnnotazioneCompleta aggiornaAnnotazioneCompleta(
+    public it.alnao.springbootexample.core.domain.AnnotazioneCompleta aggiornaAnnotazioneCompleta(
             java.util.UUID id, String nuovoValore, String nuovaDescrizione, String utente,
             String categoria, String tags, Boolean pubblica, Integer priorita) {
         logger.info("Richiesta aggiornamento completo annotazione con ID: {}", id);
@@ -37,7 +37,7 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
         annotazioneEntity.setDataUltimaModifica(java.time.LocalDateTime.now());
         annotazioneEntity = annotazioneRepository.save(annotazioneEntity);
         var metadataOpt = metadataRepository.findById(id.toString());
-        it.alnao.springbootexample.port.domain.AnnotazioneMetadata metadata;
+        it.alnao.springbootexample.core.domain.AnnotazioneMetadata metadata;
         if (metadataOpt.isPresent()) {
             var metadataEntity = metadataOpt.get();
             metadata = metadataEntity.toDomain();
@@ -54,8 +54,8 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
             logger.warn("Metadati per annotazione {} non trovati, nessun aggiornamento eseguito.", id);
             return null;
         }
-        return new it.alnao.springbootexample.port.domain.AnnotazioneCompleta(
-            new it.alnao.springbootexample.port.domain.Annotazione(
+        return new it.alnao.springbootexample.core.domain.AnnotazioneCompleta(
+            new it.alnao.springbootexample.core.domain.Annotazione(
                 java.util.UUID.fromString(annotazioneEntity.getId()),
                 annotazioneEntity.getVersioneNota(),
                 annotazioneEntity.getValoreNota()
@@ -66,20 +66,20 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
 
     // Storage in memoria per test locale
     @Override
-    public it.alnao.springbootexample.port.domain.AnnotazioneCompleta creaAnnotazione(String valoreNota, String descrizione, String utente) {
+    public it.alnao.springbootexample.core.domain.AnnotazioneCompleta creaAnnotazione(String valoreNota, String descrizione, String utente) {
         java.util.UUID id=java.util.UUID.randomUUID();
         var annotazioneEntity = new AnnotazioneSQLiteEntity(id, valoreNota, "1");
         logger.warn("creaAnnotazione annotazioneEntity con ID {} ", annotazioneEntity.getId());
         annotazioneEntity = annotazioneRepository.save(annotazioneEntity);
-        var metadata = new it.alnao.springbootexample.port.domain.AnnotazioneMetadata(
+        var metadata = new it.alnao.springbootexample.core.domain.AnnotazioneMetadata(
             id, annotazioneEntity.getVersioneNota(), utente, descrizione
         );
         logger.warn("creaAnnotazione metadata con ID {} ", metadata.getId());
         var metadataEntity = new AnnotazioneMetadataSQLiteEntity(metadata);
         logger.warn("creaAnnotazione metadataEntity con ID {} ", metadata.getId());
         metadataRepository.save(metadataEntity);
-        return new it.alnao.springbootexample.port.domain.AnnotazioneCompleta(
-            new it.alnao.springbootexample.port.domain.Annotazione(
+        return new it.alnao.springbootexample.core.domain.AnnotazioneCompleta(
+            new it.alnao.springbootexample.core.domain.Annotazione(
                 id,
                 annotazioneEntity.getVersioneNota(),
                 annotazioneEntity.getValoreNota()
@@ -89,7 +89,7 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
     }
 
     @Override
-    public it.alnao.springbootexample.port.domain.AnnotazioneCompleta aggiornaAnnotazione(java.util.UUID id, String nuovoValore, String nuovaDescrizione, String utente) {
+    public it.alnao.springbootexample.core.domain.AnnotazioneCompleta aggiornaAnnotazione(java.util.UUID id, String nuovoValore, String nuovaDescrizione, String utente) {
         logger.info("Richiesta aggiornamento annotazione con ID: {}", id);
         var opt = annotazioneRepository.findById(id.toString());
         if (opt.isEmpty()) {
@@ -103,7 +103,7 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
         annotazioneEntity = annotazioneRepository.save(annotazioneEntity); 
         
         var metadataOpt = metadataRepository.findById(id.toString());
-        it.alnao.springbootexample.port.domain.AnnotazioneMetadata metadata;
+        it.alnao.springbootexample.core.domain.AnnotazioneMetadata metadata;
         if (metadataOpt.isPresent()) {
             var metadataEntity = metadataOpt.get();
             metadata = metadataEntity.toDomain();
@@ -116,8 +116,8 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
             logger.warn("Metadati per annotazione {} non trovati, nessun aggiornamento eseguito.", id);
             return null;
         }
-        return new it.alnao.springbootexample.port.domain.AnnotazioneCompleta(
-            new it.alnao.springbootexample.port.domain.Annotazione(
+        return new it.alnao.springbootexample.core.domain.AnnotazioneCompleta(
+            new it.alnao.springbootexample.core.domain.Annotazione(
                 java.util.UUID.fromString(annotazioneEntity.getId()),
                 annotazioneEntity.getVersioneNota(),
                 annotazioneEntity.getValoreNota()
@@ -127,14 +127,14 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
     }
 
     @Override
-    public java.util.Optional<it.alnao.springbootexample.port.domain.AnnotazioneCompleta> trovaPerID(java.util.UUID id) {
+    public java.util.Optional<it.alnao.springbootexample.core.domain.AnnotazioneCompleta> trovaPerID(java.util.UUID id) {
         var opt = annotazioneRepository.findById(id.toString());
         if (opt.isEmpty()) return java.util.Optional.empty();
         var annotazioneEntity = opt.get();
         var metadataOpt = metadataRepository.findById(id.toString());
-        it.alnao.springbootexample.port.domain.AnnotazioneMetadata metadata = metadataOpt.map(AnnotazioneMetadataSQLiteEntity::toDomain).orElse(null);
-        return java.util.Optional.of(new it.alnao.springbootexample.port.domain.AnnotazioneCompleta(
-            new it.alnao.springbootexample.port.domain.Annotazione(
+        it.alnao.springbootexample.core.domain.AnnotazioneMetadata metadata = metadataOpt.map(AnnotazioneMetadataSQLiteEntity::toDomain).orElse(null);
+        return java.util.Optional.of(new it.alnao.springbootexample.core.domain.AnnotazioneCompleta(
+            new it.alnao.springbootexample.core.domain.Annotazione(
                 java.util.UUID.fromString(annotazioneEntity.getId()),
                 annotazioneEntity.getVersioneNota(),
                 annotazioneEntity.getValoreNota()
@@ -144,13 +144,13 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
     }
 
     @Override
-    public java.util.List<it.alnao.springbootexample.port.domain.AnnotazioneCompleta> trovaTutte() {
-        var list = new java.util.ArrayList<it.alnao.springbootexample.port.domain.AnnotazioneCompleta>();
+    public java.util.List<it.alnao.springbootexample.core.domain.AnnotazioneCompleta> trovaTutte() {
+        var list = new java.util.ArrayList<it.alnao.springbootexample.core.domain.AnnotazioneCompleta>();
         for (var annotazioneEntity : annotazioneRepository.findAll()) {
             var metadataOpt = metadataRepository.findById(annotazioneEntity.getId());
-            it.alnao.springbootexample.port.domain.AnnotazioneMetadata metadata = metadataOpt.map(AnnotazioneMetadataSQLiteEntity::toDomain).orElse(null);
-            list.add(new it.alnao.springbootexample.port.domain.AnnotazioneCompleta(
-                new it.alnao.springbootexample.port.domain.Annotazione(
+            it.alnao.springbootexample.core.domain.AnnotazioneMetadata metadata = metadataOpt.map(AnnotazioneMetadataSQLiteEntity::toDomain).orElse(null);
+            list.add(new it.alnao.springbootexample.core.domain.AnnotazioneCompleta(
+                new it.alnao.springbootexample.core.domain.Annotazione(
                     java.util.UUID.fromString(annotazioneEntity.getId()),
                     annotazioneEntity.getVersioneNota(),
                     annotazioneEntity.getValoreNota()
@@ -162,21 +162,21 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
     }
 
     @Override
-    public java.util.List<it.alnao.springbootexample.port.domain.AnnotazioneCompleta> trovaPerUtente(String utente) {
+    public java.util.List<it.alnao.springbootexample.core.domain.AnnotazioneCompleta> trovaPerUtente(String utente) {
         return trovaTutte().stream()
             .filter(a -> utente != null && utente.equals(a.getMetadata().getUtenteCreazione()))
             .collect(java.util.stream.Collectors.toList());
     }
 
     @Override
-    public java.util.List<it.alnao.springbootexample.port.domain.AnnotazioneCompleta> trovaPerCategoria(String categoria) {
+    public java.util.List<it.alnao.springbootexample.core.domain.AnnotazioneCompleta> trovaPerCategoria(String categoria) {
         return trovaTutte().stream()
             .filter(a -> categoria != null && categoria.equals(a.getMetadata().getCategoria()))
             .collect(java.util.stream.Collectors.toList());
     }
 
     @Override
-    public java.util.List<it.alnao.springbootexample.port.domain.AnnotazioneCompleta> trovaPerPeriodo(java.time.LocalDateTime inizio, java.time.LocalDateTime fine) {
+    public java.util.List<it.alnao.springbootexample.core.domain.AnnotazioneCompleta> trovaPerPeriodo(java.time.LocalDateTime inizio, java.time.LocalDateTime fine) {
         return trovaTutte().stream()
             .filter(a -> {
                 var data = a.getMetadata().getDataInserimento();
@@ -186,7 +186,7 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
     }
 
     @Override
-    public java.util.List<it.alnao.springbootexample.port.domain.AnnotazioneCompleta> cercaPerTesto(String testo) {
+    public java.util.List<it.alnao.springbootexample.core.domain.AnnotazioneCompleta> cercaPerTesto(String testo) {
         return trovaTutte().stream()
             .filter(a -> (a.getAnnotazione().getValoreNota() != null && a.getAnnotazione().getValoreNota().contains(testo))
                 || (a.getMetadata().getDescrizione() != null && a.getMetadata().getDescrizione().contains(testo)))
@@ -194,7 +194,7 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
     }
 
     @Override
-    public java.util.List<it.alnao.springbootexample.port.domain.AnnotazioneCompleta> trovaPubbliche() {
+    public java.util.List<it.alnao.springbootexample.core.domain.AnnotazioneCompleta> trovaPubbliche() {
         return trovaTutte().stream()
             .filter(a -> Boolean.TRUE.equals(a.getMetadata().getPubblica()))
             .collect(java.util.stream.Collectors.toList());

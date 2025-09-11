@@ -1,7 +1,7 @@
 package it.alnao.springbootexample.aws.repository;
 
 import it.alnao.springbootexample.aws.entity.AnnotazioneStoricoDynamoEntity;
-import it.alnao.springbootexample.port.config.NoSqlTableConfig;
+import it.alnao.springbootexample.core.config.NoSqlTableConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;

@@ -1,8 +1,8 @@
 package it.alnao.springbootexample.sqlite.entity.auth;
 
-import it.alnao.springbootexample.port.domain.auth.User;
-import it.alnao.springbootexample.port.domain.auth.AccountType;
-import it.alnao.springbootexample.port.domain.auth.UserRole;
+import it.alnao.springbootexample.core.domain.auth.User;
+import it.alnao.springbootexample.core.domain.auth.AccountType;
+import it.alnao.springbootexample.core.domain.auth.UserRole;
 import jakarta.persistence.*;
 import org.hibernate.annotations.UuidGenerator;
 

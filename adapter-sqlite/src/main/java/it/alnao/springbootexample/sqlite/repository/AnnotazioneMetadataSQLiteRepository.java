@@ -1,7 +1,7 @@
 package it.alnao.springbootexample.sqlite.repository;
 
-import it.alnao.springbootexample.port.domain.AnnotazioneMetadata;
-import it.alnao.springbootexample.port.repository.AnnotazioneMetadataRepository;
+import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
+import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import it.alnao.springbootexample.sqlite.entity.AnnotazioneMetadataSQLiteEntity;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.repository.JpaRepository;

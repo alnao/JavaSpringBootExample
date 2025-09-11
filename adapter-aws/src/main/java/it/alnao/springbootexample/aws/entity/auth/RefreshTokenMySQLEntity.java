@@ -1,6 +1,6 @@
 package it.alnao.springbootexample.aws.entity.auth;
 
-import it.alnao.springbootexample.port.domain.auth.RefreshToken;
+import it.alnao.springbootexample.core.domain.auth.RefreshToken;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 

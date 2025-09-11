@@ -1,7 +1,7 @@
 package it.alnao.springbootexample.onprem.repository.auth;
 
 import it.alnao.springbootexample.onprem.entity.auth.UserEntity;
-import it.alnao.springbootexample.port.domain.auth.AccountType;
+import it.alnao.springbootexample.core.domain.auth.AccountType;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

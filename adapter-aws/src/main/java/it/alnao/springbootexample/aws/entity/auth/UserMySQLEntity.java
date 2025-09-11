@@ -1,8 +1,8 @@
 package it.alnao.springbootexample.aws.entity.auth;
 
-import it.alnao.springbootexample.port.domain.auth.AccountType;
-import it.alnao.springbootexample.port.domain.auth.User;
-import it.alnao.springbootexample.port.domain.auth.UserRole;
+import it.alnao.springbootexample.core.domain.auth.AccountType;
+import it.alnao.springbootexample.core.domain.auth.User;
+import it.alnao.springbootexample.core.domain.auth.UserRole;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

@@ -1,8 +1,8 @@
 package it.alnao.springbootexample.onprem.repository.auth;
 
 import it.alnao.springbootexample.onprem.entity.auth.RefreshTokenEntity;
-import it.alnao.springbootexample.port.domain.auth.RefreshToken;
-import it.alnao.springbootexample.port.repository.auth.RefreshTokenRepository;
+import it.alnao.springbootexample.core.domain.auth.RefreshToken;
+import it.alnao.springbootexample.core.repository.auth.RefreshTokenRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;

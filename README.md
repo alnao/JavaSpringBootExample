@@ -28,13 +28,13 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
 - Il progetto segue i principi dell'*Hexagonal Architecture* (Ports and Adapters) e si basa su un'architettura a microservizi modulare:
   ```
   📦 progetto
-  ├── 📁 adapter-port          # Interfacce e domini (Hexagonal Core)
+  ├── 📁 core                  # Interfacce e domini (Hexagonal Core)
   ├── 📁 adapter-api           # REST API Controllers
   ├── 📁 adapter-web           # Risorse statiche e mini-sito di prova
   ├── 📁 adapter-aws           # Implementazione AWS (DynamoDB + MySQL/Aurora)
   ├── 📁 adapter-onprem        # Implementazione On-Premise (MongoDB + PostgreSQL)
   ├── 📁 adapter-sqlite        # Implementazione SQLite (con solo il database SQLite locale)
-  └── 📁 adapter-app           # Applicazione principale Spring Boot
+  └── 📁 application           # Applicazione principale Spring Boot
   ```
 - **Caratteristiche**:
   - **Multi-ambiente**: Configurazioni dedicate per ambienti On-Premise e AWS Cloud, con profili Spring attivabili dinamicamente. Supporto per PostgreSQL, MySQL, MongoDB, DynamoDB
@@ -63,7 +63,7 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
 - Esecuzione profilo SQLite in locale con database locale, senza bisogno di nessun server DBMS
   ```
   mvn clean package
-  java -jar adapter-app/target/adapter-app-1.0.0.jar \
+  java -jar application/target/application-1.0.0.jar \
     --spring.profiles.active=sqlite \
     --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
     --server.port=8082
@@ -79,10 +79,10 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
 - Esecuzione profilo On-Premise con esecuzione diretta del jar, nel sistema devono essere avviati i servizi DBMS (MongoDB + PostgreSQL)
     ```bash
     # Profilo on-premise di default
-    java -jar adapter-app/target/adapter-app-1.0.0.jar
+    java -jar application/target/application-1.0.0.jar
 
     # Oppure specificando il profilo
-    java -jar adapter-app/target/adapter-app-1.0.0.jar --spring.profiles.active=onprem
+    java -jar application/target/application-1.0.0.jar --spring.profiles.active=onprem
     ```
 - Esecuzione profilo On-Premise con il docker-compose che avvia anche i servizi DBMS
     ```bash
@@ -330,7 +330,7 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
     docker run --rm -p 8080:8080 alnao/gestioneannotazioni:latest
     ```
     L'applicazione sarà disponibile su [http://localhost:8080](http://localhost:8080) ma nel sistema devono esserci già installati e ben configuati MongoDb e Postgresql.
-- **Esecuzione completa** 🔌 Rete Docker condivisa (alternativa più robusta) senza docker-compose:
+- **Esecuzione completa** 🔌 Rete Docker condivisa, alternativa robusta ma senza docker-compose:
     Possibile eseguire tutto con docker (senza docker-compose):
     ```bash
     # Creazione rete
@@ -376,9 +376,12 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
     docker stop annotazioni-app annotazioni-mongo annotazioni-postgres
     docker rm annotazioni-app annotazioni-mongo annotazioni-postgres
     docker network rm annotazioni-network
+    docker network prune -f
+    docker volume rm $(docker volume ls -q)
+    docker rmi $(docker images -q)
     ```
 - **Note**:
-    - L'immagine non contiene dati sensibili quindi non c'è problema se viene salvato
+    - L'immagine non contiene dati sensibili quindi non c'è problema se viene pubblicata
     - Utilizzare sempre variabili d'ambiente sicure per le password e le connessioni DB in produzione.
     - Tutto questo enorme casino può essere evitato con docker-compose,minikube e kubernetes. Vedere le sezioni dedicate.
 
@@ -494,14 +497,14 @@ Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessar
 - Utilizzado SQLite come unico database per tutte le funzionalità (annotazioni, utenti, storico) non ha nessuna dipendenza da servizi esterni: è possibile eseguire tutto in locale, ideale per prove locali o test. Previsto un profilo Spring Boot specifico `sqlite`. I comandi per eseguire il microservizio in locale con questo profilo sono:
   ```
   mvn clean package
-  java -jar adapter-app/target/adapter-app-1.0.0.jar \
+  java -jar application/target/application-1.0.0.jar \
     --spring.profiles.active=sqlite \
     --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
     --server.port=8082
   ```
 - E' stato creato un docker-compose specifico, così da gestire il volume dei dati con docker. Script di avvio e arresto già pronti per esecuzione locale: per eseguire tutto in locale eseguire lo script:
   ```
-  cd script/replit-locale
+  cd script/sqlite-locale/
   ./start-all.sh
   ```
   - L'applicazione web sarà disponibile su [http://localhost:8082](http://localhost:8082)
@@ -510,9 +513,9 @@ Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessar
     curl -X POST http://localhost:8082/api/auth/register \
       -H "Content-Type: application/json" \
       -d '{
-        "username": "admin",
-        "password": "password123",
-        "email": "admin@example.com"
+        "username": "alnao",
+        "password": "$2b$12$hFoVfPak5m77PJD0cIIe8u1Yo5out7B.h8PWvwfbaloys/ndX9Zpi",
+        "email": "alnao@example.com"
       }'
     curl -X POST http://localhost:8082/api/auth/login \
       -H "Content-Type: application/json" \
@@ -599,10 +602,6 @@ Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, 
   - **Frontend**:        [http://localhost:8085](http://localhost:8085)
   - **Backend API**:     [http://localhost:8085/api/annotazioni](http://localhost:8085/api/annotazioni)
   - **Adminer (MySQL)**: [http://localhost:8086](http://localhost:8086)
-    - Server: `mysql`
-    - User: `annotazioni_user`
-    - Password: `annotazioni_pass`
-    - Database: `annotazioni`
   - **DynamoDB Admin**:  [http://localhost:8087](http://localhost:8087)
 - Per vedere i log di un servizio:
   ```bash
@@ -759,8 +758,23 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - ✅ 📖 Configurazione di OpenApi-Swagger e Quality-SonarQube, test coverage e compilazione dei moduli
   - ✅ 🤖 Modifica nome dell'applicazione in *gestione personale* e test applicazione web di esempio
   - ✅ 🛠️ Modifica nome dell'applicazione in *gestione annotazioni* e test applicazione web di esempio anche su AWS
-  - 🚧 🔧 Modifica nome adapter "app" e "port" in "ms-launcer" e "domain"
-  - 🚧 📋 Creazione struttura task con flusso di lavoro e aggancio con le annotazioni
+  - ✅ 🔧 Modifica nome adapter "app" e "port" in "application" e "core"
+  - ✅ 🎯 Creazione portService, modifica ai Controller-api e spostamento logiche dai Controller nei Service nel core
+  - 🚧 🔧 Nuove tabelle Stati (nome, descrizione, utente) e Cagetoria (nome)
+    - 🚧 🧩 Service per aggiungere le categorie e interfaccia API per permettere ad AMIN di creare le categorie
+    - 🚧 🔄 Aggiunta campo "Stato" nei metadati delle annotazioni
+    - 🚧 🧿 Script per aggiungere stati e categorie all'avvio dell'infrastruttura, creazione di tre profili in ogni ambiente!
+    - 🚧 🧮 Nuova tabella StoricoStati (id, ...)
+    - 🚧 🕸️ Service per cambio stato che modifica solo il metadata e non il valore ma salva nella tabella storico
+    - 🚧 🧑‍🔬 Solo chi ha profilo USER può inserire una nota: contollo lato API e l'annotazione va in stato INSERITA
+    - 🚧 🛰️ Solo chi ha profilo MODERATOR può confermare una nota: contollo lato API e l'annotazione va in stato CONFERMATA 
+    - 🚧 🛡️ Solo chi ha profilo MODERATOR può rifiutare una nota e metterla in stato RIFIUTATA
+    - 🚧 🧱 Una annotazione già esistente è modificabile da chiunque solo se è in INSERITA e/o RIFIUTATA
+    - 🚧 🧬 Solo chi ha profilo ADMIN può pubblicare la annotazione che va in stato PUBBLICATA oppure RIFIUTATA
+    - 🚧 🧭 Quando una annotazione è in stato PUBBLICATA solo ADMIN può rimetterla in RIFIUTATA
+    - 🚧 🧑‍🤝‍🧑 Elenco task: utenti USER vedono le annotazioni RIFIUTATE con la possiblità di cambiarle in INSERITA
+    - 🚧 🗃️ Elenco task: utenti MODERATOR vedono le annotazioni INSERITA con la possibiltà di rifiutarle o confermarle
+    - 🚧 🏁 Elenco task: utenti ADMIN vedono le annotazioni CONFERMATA con la possiblità di pubblicarle
 - ✅ 🐳 Build e deploy su DockerHub della versione *OnPrem*
   - ✅ 🐳 configurazione di docker-compose con MongoDb e Postgresql
   - ✅ ☸️ Esecuzione su Kubernetes/Minikube locale con yaml dedicati

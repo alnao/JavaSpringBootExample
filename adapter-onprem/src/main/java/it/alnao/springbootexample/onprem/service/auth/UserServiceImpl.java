@@ -1,12 +1,12 @@
 package it.alnao.springbootexample.onprem.service.auth;
 
-import it.alnao.springbootexample.port.domain.auth.User;
-import it.alnao.springbootexample.port.domain.auth.AccountType;
-import it.alnao.springbootexample.port.domain.auth.UserProvider;
-import it.alnao.springbootexample.port.repository.auth.UserRepository;
-import it.alnao.springbootexample.port.repository.auth.UserProviderRepository;
-import it.alnao.springbootexample.port.service.auth.UserService;
-import it.alnao.springbootexample.port.service.auth.UserStatistics;
+import it.alnao.springbootexample.core.domain.auth.User;
+import it.alnao.springbootexample.core.domain.auth.AccountType;
+import it.alnao.springbootexample.core.domain.auth.UserProvider;
+import it.alnao.springbootexample.core.repository.auth.UserRepository;
+import it.alnao.springbootexample.core.repository.auth.UserProviderRepository;
+import it.alnao.springbootexample.core.service.auth.UserService;
+import it.alnao.springbootexample.core.service.auth.UserStatistics;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;

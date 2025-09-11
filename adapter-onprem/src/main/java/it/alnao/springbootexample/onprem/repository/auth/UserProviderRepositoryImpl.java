@@ -1,8 +1,8 @@
 package it.alnao.springbootexample.onprem.repository.auth;
 
 import it.alnao.springbootexample.onprem.entity.auth.UserProviderEntity;
-import it.alnao.springbootexample.port.domain.auth.UserProvider;
-import it.alnao.springbootexample.port.repository.auth.UserProviderRepository;
+import it.alnao.springbootexample.core.domain.auth.UserProvider;
+import it.alnao.springbootexample.core.repository.auth.UserProviderRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;

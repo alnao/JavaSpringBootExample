@@ -1,8 +1,8 @@
 package it.alnao.springbootexample.aws.repository.auth;
 
 import it.alnao.springbootexample.aws.entity.auth.UserProviderMySQLEntity;
-import it.alnao.springbootexample.port.domain.auth.UserProvider;
-import it.alnao.springbootexample.port.repository.auth.UserProviderRepository;
+import it.alnao.springbootexample.core.domain.auth.UserProvider;
+import it.alnao.springbootexample.core.repository.auth.UserProviderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;

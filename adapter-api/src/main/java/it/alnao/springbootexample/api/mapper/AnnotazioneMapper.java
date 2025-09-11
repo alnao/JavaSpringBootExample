@@ -1,7 +1,7 @@
 package it.alnao.springbootexample.api.mapper;
 
 import it.alnao.springbootexample.api.dto.AnnotazioneResponse;
-import it.alnao.springbootexample.port.domain.AnnotazioneCompleta;
+import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -10,6 +10,45 @@ import java.util.stream.Collectors;
  * Mapper per convertire tra domini e DTO
  */
 public class AnnotazioneMapper {
+    /**
+     * Converte CreaAnnotazioneRequest in AnnotazioneCompleta
+     */
+    public static AnnotazioneCompleta fromCreateRequest(it.alnao.springbootexample.api.dto.CreaAnnotazioneRequest request) {
+        AnnotazioneCompleta ac = new AnnotazioneCompleta();
+        // Popola i dati base
+        it.alnao.springbootexample.core.domain.Annotazione annotazione = new it.alnao.springbootexample.core.domain.Annotazione();
+        annotazione.setValoreNota(request.getValoreNota());
+        ac.setAnnotazione(annotazione);
+        it.alnao.springbootexample.core.domain.AnnotazioneMetadata metadata = new it.alnao.springbootexample.core.domain.AnnotazioneMetadata();
+        metadata.setDescrizione(request.getDescrizione());
+        metadata.setUtenteCreazione(request.getUtente());
+        metadata.setCategoria(request.getCategoria());
+        metadata.setTags(request.getTags());
+        metadata.setPubblica(request.getPubblica());
+        metadata.setPriorita(request.getPriorita());
+        ac.setMetadata(metadata);
+        return ac;
+    }
+
+    /**
+     * Converte AggiornaAnnotazioneRequest in AnnotazioneCompleta
+     */
+    public static AnnotazioneCompleta fromUpdateRequest(it.alnao.springbootexample.api.dto.AggiornaAnnotazioneRequest request) {
+        AnnotazioneCompleta ac = new AnnotazioneCompleta();
+        it.alnao.springbootexample.core.domain.Annotazione annotazione = new it.alnao.springbootexample.core.domain.Annotazione();
+        annotazione.setId(request.getId());
+        annotazione.setValoreNota(request.getValoreNota());
+        ac.setAnnotazione(annotazione);
+        it.alnao.springbootexample.core.domain.AnnotazioneMetadata metadata = new it.alnao.springbootexample.core.domain.AnnotazioneMetadata();
+        metadata.setDescrizione(request.getDescrizione());
+        metadata.setUtenteCreazione(request.getUtente());
+        metadata.setCategoria(request.getCategoria());
+        metadata.setTags(request.getTags());
+        metadata.setPubblica(request.getPubblica());
+        metadata.setPriorita(request.getPriorita());
+        ac.setMetadata(metadata);
+        return ac;
+    }
     
     /**
      * Converte un'annotazione completa in response DTO

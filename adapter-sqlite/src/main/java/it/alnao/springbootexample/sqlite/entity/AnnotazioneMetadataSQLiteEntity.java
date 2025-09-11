@@ -1,6 +1,6 @@
 package it.alnao.springbootexample.sqlite.entity;
 
-import it.alnao.springbootexample.port.domain.AnnotazioneMetadata;
+import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
 import jakarta.persistence.*;
 import org.hibernate.annotations.UuidGenerator;
 

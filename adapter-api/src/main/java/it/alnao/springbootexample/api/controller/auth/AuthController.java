@@ -1,9 +1,9 @@
 package it.alnao.springbootexample.api.controller.auth;
 
 import it.alnao.springbootexample.api.dto.auth.*;
-import it.alnao.springbootexample.port.domain.auth.User;
-import it.alnao.springbootexample.port.service.auth.UserService;
-import it.alnao.springbootexample.port.service.auth.JwtService;
+import it.alnao.springbootexample.core.domain.auth.User;
+import it.alnao.springbootexample.core.service.auth.UserService;
+import it.alnao.springbootexample.core.service.auth.JwtService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

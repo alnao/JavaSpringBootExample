@@ -1,6 +1,6 @@
 package it.alnao.springbootexample.api.dto.auth;
 
-import it.alnao.springbootexample.port.domain.auth.AccountType;
+import it.alnao.springbootexample.core.domain.auth.AccountType;
 
 import java.util.List;
 

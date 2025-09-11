@@ -2,13 +2,13 @@ package it.alnao.springbootexample.aws.service;
 
 import it.alnao.springbootexample.aws.entity.AnnotazioneStoricoDynamoEntity;
 import it.alnao.springbootexample.aws.repository.AnnotazioneStoricoDynamoRepository;
-import it.alnao.springbootexample.port.domain.Annotazione;
-import it.alnao.springbootexample.port.domain.AnnotazioneCompleta;
-import it.alnao.springbootexample.port.domain.AnnotazioneMetadata;
-import it.alnao.springbootexample.port.repository.AnnotazioneRepository;
-import it.alnao.springbootexample.port.repository.AnnotazioneMetadataRepository;
-import it.alnao.springbootexample.port.service.AnnotazioneService;
-import it.alnao.springbootexample.port.utils.AnnotazioniUtils;
+import it.alnao.springbootexample.core.domain.Annotazione;
+import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
+import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
+import it.alnao.springbootexample.core.repository.AnnotazioneRepository;
+import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
+import it.alnao.springbootexample.core.service.AnnotazioneService;
+import it.alnao.springbootexample.core.utils.AnnotazioniUtils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;

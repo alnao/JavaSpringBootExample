@@ -2,11 +2,11 @@ package it.alnao.springbootexample.onprem.service;
 
 import it.alnao.springbootexample.onprem.entity.AnnotazioneStoricoEntity;
 import it.alnao.springbootexample.onprem.repository.AnnotazioneStoricoMongoRepository;
-import it.alnao.springbootexample.port.domain.Annotazione;
-import it.alnao.springbootexample.port.domain.AnnotazioneCompleta;
-import it.alnao.springbootexample.port.domain.AnnotazioneMetadata;
-import it.alnao.springbootexample.port.repository.AnnotazioneRepository;
-import it.alnao.springbootexample.port.repository.AnnotazioneMetadataRepository;
+import it.alnao.springbootexample.core.domain.Annotazione;
+import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
+import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
+import it.alnao.springbootexample.core.repository.AnnotazioneRepository;
+import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
