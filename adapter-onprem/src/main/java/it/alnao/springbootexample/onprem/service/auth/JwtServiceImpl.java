@@ -9,7 +9,6 @@ import it.alnao.springbootexample.core.service.auth.JwtService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,6 +77,11 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String getUserIdFromToken(String token) {
         return getClaimFromToken(token, claims -> claims.get("userId", String.class));
+    }
+    
+    @Override
+    public String getRoleFromToken(String token) {
+        return getClaimFromToken(token, claims -> claims.get("role", String.class));
     }
     
     @Override

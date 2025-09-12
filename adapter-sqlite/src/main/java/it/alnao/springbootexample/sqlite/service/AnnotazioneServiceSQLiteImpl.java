@@ -14,6 +14,39 @@ import org.springframework.stereotype.Service;
 @Profile("sqlite")
 @Service
 public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
+    @Override
+    public it.alnao.springbootexample.core.domain.AnnotazioneCompleta cambiaStato(java.util.UUID id, String nuovoStato, String utenteModifica) {
+        var metadataOpt = metadataRepository.findById(id.toString());
+        var annotazioneOpt = annotazioneRepository.findById(id.toString());
+        if (metadataOpt.isPresent() && annotazioneOpt.isPresent()) {
+            var metadataEntity = metadataOpt.get();
+            var metadata = metadataEntity.toDomain();
+            boolean statoValido = false;
+            for (it.alnao.springbootexample.core.domain.StatoAnnotazione statoEnum : it.alnao.springbootexample.core.domain.StatoAnnotazione.values()) {
+                if (statoEnum.getValue().equals(nuovoStato)) {
+                    statoValido = true;
+                    break;
+                }
+            }
+            if (!statoValido) {
+                throw new IllegalArgumentException("Stato annotazione non valido: " + nuovoStato);
+            }
+            metadata.setStato(nuovoStato);
+            metadata.setUtenteUltimaModifica(utenteModifica);
+            metadata.setDataUltimaModifica(java.time.LocalDateTime.now());
+            metadataRepository.save(new it.alnao.springbootexample.sqlite.entity.AnnotazioneMetadataSQLiteEntity(metadata));
+            var annotazioneEntity = annotazioneOpt.get();
+            return new it.alnao.springbootexample.core.domain.AnnotazioneCompleta(
+                new it.alnao.springbootexample.core.domain.Annotazione(
+                    java.util.UUID.fromString(annotazioneEntity.getId()),
+                    annotazioneEntity.getVersioneNota(),
+                    annotazioneEntity.getValoreNota()
+                ),
+                metadata
+            );
+        }
+        throw new RuntimeException("Annotazione non trovata con ID: " + id);
+    }
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AnnotazioneServiceSQLiteImpl.class);
 
     @Autowired
@@ -74,6 +107,7 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
         var metadata = new it.alnao.springbootexample.core.domain.AnnotazioneMetadata(
             id, annotazioneEntity.getVersioneNota(), utente, descrizione
         );
+        metadata.setStato(it.alnao.springbootexample.core.domain.StatoAnnotazione.INSERITA.getValue());
         logger.warn("creaAnnotazione metadata con ID {} ", metadata.getId());
         var metadataEntity = new AnnotazioneMetadataSQLiteEntity(metadata);
         logger.warn("creaAnnotazione metadataEntity con ID {} ", metadata.getId());
@@ -110,6 +144,10 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
             metadata.setDescrizione(nuovaDescrizione);
             metadata.setUtenteUltimaModifica(utente);
             metadata.setDataUltimaModifica(java.time.LocalDateTime.now());
+            // esempio: aggiorna stato in base a logica
+            if (metadata.getStato() == null || metadata.getStato().isEmpty() || metadata.getStato().equals(it.alnao.springbootexample.core.domain.StatoAnnotazione.INSERITA.getValue())) {
+                metadata.setStato(it.alnao.springbootexample.core.domain.StatoAnnotazione.MODIFICATA.getValue());
+            }
             metadataRepository.save(new AnnotazioneMetadataSQLiteEntity(metadata));
             logger.info("Annotazione {} aggiornata con successo.", id);
         } else {
@@ -197,6 +235,13 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
     public java.util.List<it.alnao.springbootexample.core.domain.AnnotazioneCompleta> trovaPubbliche() {
         return trovaTutte().stream()
             .filter(a -> Boolean.TRUE.equals(a.getMetadata().getPubblica()))
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    public java.util.List<it.alnao.springbootexample.core.domain.AnnotazioneCompleta> trovaPerStato(it.alnao.springbootexample.core.domain.StatoAnnotazione stato) {
+        return trovaTutte().stream()
+            .filter(a -> stato.equals(a.getMetadata().getStato()))
             .collect(java.util.stream.Collectors.toList());
     }
 

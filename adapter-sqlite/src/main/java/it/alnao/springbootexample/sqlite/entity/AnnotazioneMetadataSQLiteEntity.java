@@ -44,6 +44,9 @@ public class AnnotazioneMetadataSQLiteEntity {
     private Boolean pubblica = false;
     
     private Integer priorita = 1;
+
+    @Column(name = "stato")
+    private String stato = "ERROR";
     
     @PrePersist
     protected void onCreate() {
@@ -57,6 +60,13 @@ public class AnnotazioneMetadataSQLiteEntity {
     protected void onUpdate() {
         dataUltimaModifica = LocalDateTime.now();
     }
+
+        public String getStato() {
+            return stato;
+        }
+        public void setStato(String stato) {
+            this.stato = stato;
+        }
     
     // Costruttori
     public AnnotazioneMetadataSQLiteEntity() {}
@@ -73,11 +83,12 @@ public class AnnotazioneMetadataSQLiteEntity {
         this.tags = metadata.getTags();
         this.pubblica = metadata.getPubblica();
         this.priorita = metadata.getPriorita();
+        this.stato=metadata.getStato();
     }
     
     public AnnotazioneMetadata toDomain() {
         AnnotazioneMetadata metadata = new AnnotazioneMetadata();
-    metadata.setId(UUID.fromString(this.id));
+        metadata.setId(UUID.fromString(this.id));
         metadata.setVersioneNota(this.versioneNota);
         metadata.setUtenteCreazione(this.utenteCreazione);
         metadata.setDataInserimento(this.dataInserimento);
@@ -88,6 +99,7 @@ public class AnnotazioneMetadataSQLiteEntity {
         metadata.setTags(this.tags);
         metadata.setPubblica(this.pubblica);
         metadata.setPriorita(this.priorita);
+        metadata.setStato(this.stato);
         return metadata;
     }
     

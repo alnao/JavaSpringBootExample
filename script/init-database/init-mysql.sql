@@ -80,7 +80,8 @@ CREATE TABLE IF NOT EXISTS annotazioni_metadata (
     categoria VARCHAR(100),
     tags TEXT,
     pubblica BOOLEAN DEFAULT FALSE,
-    priorita INTEGER DEFAULT 1
+    priorita INTEGER DEFAULT 1,
+    stato VARCHAR(50) DEFAULT 'ERROR'
 );
 
 -- Indici per migliorare le performance
@@ -138,15 +139,15 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 -- Dati di esempio
  INSERT IGNORE INTO annotazioni_metadata (
     id, versione_nota, utente_creazione, data_inserimento, data_ultima_modifica,
-    utente_ultima_modifica, descrizione, categoria, tags, pubblica, priorita
+    utente_ultima_modifica, descrizione, categoria, tags, pubblica, priorita, stato
  ) VALUES 
  (
     '3a2b7c91-9e5f-4f0e-8b69-d0e989f0b2f6', 'v1.0', 'admin', NOW(), NOW(),
-    'admin', 'Annotazione AWS di esempio per test', 'Cloud', 'aws,esempio,test', true, 3
+    'admin', 'Annotazione AWS di esempio per test', 'Cloud', 'aws,esempio,test', true, 3, 'INSERITA'
  ),
  (
     '6d1c2a40-1f90-4b8b-9f5e-4e014a6da2bb', 'v1.1', 'user1', NOW(), NOW(),
-    'user1', 'Seconda annotazione AWS', 'Sviluppo', 'aws,sviluppo', false, 2
+    'user1', 'Seconda annotazione AWS', 'Sviluppo', 'aws,sviluppo', false, 2, 'INSERITA'
  );
 
 -- Inserimento utenti di esempio per MySQL/AWS

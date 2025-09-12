@@ -1,6 +1,7 @@
 package it.alnao.springbootexample.onprem.repository;
 
 import it.alnao.springbootexample.onprem.entity.AnnotazioneMetadataEntity;
+import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +18,8 @@ public interface AnnotazioneMetadataJpaRepository extends JpaRepository<Annotazi
     List<AnnotazioneMetadataEntity> findByCategoria(String categoria);
     
     List<AnnotazioneMetadataEntity> findByPubblica(Boolean pubblica);
+    
+    List<AnnotazioneMetadataEntity> findByStato(StatoAnnotazione stato);
     
     List<AnnotazioneMetadataEntity> findByPriorita(Integer priorita);
     

@@ -1,6 +1,7 @@
 package it.alnao.springbootexample.aws.repository;
 
 import it.alnao.springbootexample.aws.entity.AnnotazioneMetadataMysqlEntity;
+import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +18,8 @@ public interface AnnotazioneMetadataMysqlRepository extends JpaRepository<Annota
     List<AnnotazioneMetadataMysqlEntity> findByCategoria(String categoria);
     
     List<AnnotazioneMetadataMysqlEntity> findByPubblica(Boolean pubblica);
+    
+    List<AnnotazioneMetadataMysqlEntity> findByStato(StatoAnnotazione stato);
     
     List<AnnotazioneMetadataMysqlEntity> findByPriorita(Integer priorita);
     

@@ -5,6 +5,7 @@ import it.alnao.springbootexample.aws.repository.AnnotazioneStoricoDynamoReposit
 import it.alnao.springbootexample.core.domain.Annotazione;
 import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
+import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneRepository;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import it.alnao.springbootexample.core.service.AnnotazioneService;
@@ -23,6 +24,30 @@ import java.util.stream.Collectors;
 @Service
 @Profile("aws")
 public class AnnotazioneServiceAwsImpl implements AnnotazioneService {
+    @Override
+    public AnnotazioneCompleta cambiaStato(UUID id, String nuovoStato, String utenteModifica) {
+        Optional<AnnotazioneMetadata> existingMetadata = metadataRepository.findById(id);
+        Optional<Annotazione> existingAnnotazione = annotazioneRepository.findById(id);
+        if (existingMetadata.isPresent() && existingAnnotazione.isPresent()) {
+            AnnotazioneMetadata metadata = existingMetadata.get();
+            boolean statoValido = false;
+            for (it.alnao.springbootexample.core.domain.StatoAnnotazione statoEnum : it.alnao.springbootexample.core.domain.StatoAnnotazione.values()) {
+                if (statoEnum.getValue().equals(nuovoStato)) {
+                    statoValido = true;
+                    break;
+                }
+            }
+            if (!statoValido) {
+                throw new IllegalArgumentException("Stato annotazione non valido: " + nuovoStato);
+            }
+            metadata.setStato(nuovoStato);
+            metadata.setUtenteUltimaModifica(utenteModifica);
+            metadata.setDataUltimaModifica(java.time.LocalDateTime.now());
+            AnnotazioneMetadata updatedMetadata = metadataRepository.save(metadata);
+            return new AnnotazioneCompleta(existingAnnotazione.get(), updatedMetadata);
+        }
+        throw new RuntimeException("Annotazione non trovata con ID: " + id);
+    }
 
     @Autowired
     private AnnotazioneRepository annotazioneRepository;
@@ -54,6 +79,7 @@ public class AnnotazioneServiceAwsImpl implements AnnotazioneService {
         metadata.setDataUltimaModifica(now);
         metadata.setUtenteUltimaModifica(utente);
         metadata.setDescrizione(descrizione);
+        metadata.setStato(it.alnao.springbootexample.core.domain.StatoAnnotazione.INSERITA.getValue());
         AnnotazioneMetadata savedMetadata = metadataRepository.save(metadata);
 
         return new AnnotazioneCompleta(savedAnnotazione, savedMetadata);
@@ -192,6 +218,19 @@ public class AnnotazioneServiceAwsImpl implements AnnotazioneService {
     @Override
     public List<AnnotazioneCompleta> trovaPubbliche() {
         List<AnnotazioneMetadata> metadatas = metadataRepository.findByPubblica(true);
+        
+        return metadatas.stream()
+                .map(metadata -> {
+                    Optional<Annotazione> annotazione = annotazioneRepository.findById(metadata.getId());
+                    return annotazione.map(a -> new AnnotazioneCompleta(a, metadata)).orElse(null);
+                })
+                .filter(ac -> ac != null)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AnnotazioneCompleta> trovaPerStato(StatoAnnotazione stato) {
+        List<AnnotazioneMetadata> metadatas = metadataRepository.findByStato(stato);
         
         return metadatas.stream()
                 .map(metadata -> {

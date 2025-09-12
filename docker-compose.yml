@@ -1,4 +1,9 @@
 version: '3.8'
+# docker-compose up -d --build
+#      docker-compose down --remove-orphans
+#      docker volume rm $(docker volume ls -q)
+#      docker rmi $(docker images -q)
+
 
 services:
   # PostgreSQL per metadati

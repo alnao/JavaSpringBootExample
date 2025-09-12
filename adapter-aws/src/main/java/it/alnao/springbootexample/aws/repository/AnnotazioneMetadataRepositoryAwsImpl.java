@@ -2,6 +2,7 @@ package it.alnao.springbootexample.aws.repository;
 
 import it.alnao.springbootexample.aws.entity.AnnotazioneMetadataMysqlEntity;
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
+import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -74,6 +75,14 @@ public class AnnotazioneMetadataRepositoryAwsImpl implements AnnotazioneMetadata
     }
 
     @Override
+    public List<AnnotazioneMetadata> findByStato(StatoAnnotazione stato) {
+        return mysqlRepository.findByStato(stato)
+                .stream()
+                .map(entity -> this.toDomain(entity))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<AnnotazioneMetadata> findByPriorita(Integer priorita) {
         return mysqlRepository.findByPriorita(priorita)
                 .stream()
@@ -135,6 +144,7 @@ public class AnnotazioneMetadataRepositoryAwsImpl implements AnnotazioneMetadata
         entity.setTags(domain.getTags());
         entity.setPubblica(domain.getPubblica());
         entity.setPriorita(domain.getPriorita());
+        entity.setStato(domain.getStato());
         return entity;
     }
 
@@ -151,6 +161,7 @@ public class AnnotazioneMetadataRepositoryAwsImpl implements AnnotazioneMetadata
         domain.setTags(entity.getTags());
         domain.setPubblica(entity.getPubblica());
         domain.setPriorita(entity.getPriorita());
+        domain.setStato(entity.getStato());
         return domain;
     }
 }

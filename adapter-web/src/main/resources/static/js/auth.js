@@ -29,6 +29,7 @@ window.authUtils = {
             username: loginData.username,
             email: loginData.email,
             accountType: loginData.accountType,
+            role: loginData.role,
             tokenType: loginData.tokenType || 'Bearer'
         };
         

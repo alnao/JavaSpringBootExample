@@ -2,6 +2,7 @@ package it.alnao.springbootexample.onprem.repository;
 
 import it.alnao.springbootexample.onprem.entity.AnnotazioneMetadataEntity;
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
+import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -82,6 +83,14 @@ public class AnnotazioneMetadataRepositoryImpl implements AnnotazioneMetadataRep
     }
 
     @Override
+    public List<AnnotazioneMetadata> findByStato(StatoAnnotazione stato) {
+        return jpaRepository.findByStato(stato)
+                .stream()
+                .map(entity -> this.toDomain(entity))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<AnnotazioneMetadata> findByPriorita(Integer priorita) {
         return jpaRepository.findByPriorita(priorita)
                 .stream()
@@ -138,6 +147,7 @@ public class AnnotazioneMetadataRepositoryImpl implements AnnotazioneMetadataRep
         entity.setTags(domain.getTags());
         entity.setPubblica(domain.getPubblica());
         entity.setPriorita(domain.getPriorita());
+        entity.setStato(domain.getStato());
         return entity;
     }
 
@@ -154,6 +164,7 @@ public class AnnotazioneMetadataRepositoryImpl implements AnnotazioneMetadataRep
         domain.setTags(entity.getTags());
         domain.setPubblica(entity.getPubblica());
         domain.setPriorita(entity.getPriorita());
+        domain.setStato(entity.getStato());
         return domain;
     }
 }

@@ -40,7 +40,18 @@ public class AnnotazioneMetadataEntity {
     @Column(name = "priorita")
     private Integer priorita;
 
+    @Column(name = "stato")
+    private String stato;
+
     public AnnotazioneMetadataEntity() {
+    }
+
+    public String getStato() {
+        return stato;
+    }
+    
+    public void setStato(String stato) {
+        this.stato = stato;
     }
 
     // Getters and Setters

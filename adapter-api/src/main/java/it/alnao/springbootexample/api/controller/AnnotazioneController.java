@@ -7,9 +7,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import it.alnao.springbootexample.api.dto.AggiornaAnnotazioneRequest;
 import it.alnao.springbootexample.api.dto.AnnotazioneResponse;
+import it.alnao.springbootexample.api.dto.CambiaStatoAnnotazioneRequest;
 import it.alnao.springbootexample.api.dto.CreaAnnotazioneRequest;
+import it.alnao.springbootexample.api.dto.TransizioneStatoResponse;
 import it.alnao.springbootexample.api.mapper.AnnotazioneMapper;
+import it.alnao.springbootexample.api.mapper.TransizioneStatoMapper;
 import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
+import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.portService.AnnotazioniPortService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -139,6 +143,23 @@ public class AnnotazioneController {
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
     
+    @Operation(summary = "Ottieni annotazioni per stato")
+    @GetMapping("/stato/{stato}")
+    public ResponseEntity<List<AnnotazioneResponse>> ottieniAnnotazioniPerStato(
+            @Parameter(description = "Stato delle annotazioni")
+            @PathVariable String stato) {
+        
+        logger.info("GET /api/annotazioni/stato/{} - Richiesta annotazioni per stato", stato);
+        try {
+            StatoAnnotazione statoEnum = StatoAnnotazione.valueOf(stato.toUpperCase());
+            List<AnnotazioneCompleta> annotazioni = annotazioniPortService.trovaPerStato(statoEnum);
+            return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
+        } catch (IllegalArgumentException e) {
+            logger.error("GET /api/annotazioni/stato/{} - Stato non valido: {}", stato, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
     @Operation(summary = "Ottieni statistiche delle annotazioni")
     @GetMapping("/statistiche")
     public ResponseEntity<StatisticheResponse> ottieniStatistiche() {
@@ -150,6 +171,70 @@ public class AnnotazioneController {
         statistiche.setDataGenerazione(LocalDateTime.now());
         
         return ResponseEntity.ok(statistiche);
+    }
+
+    @Operation(summary = "Ottieni tutte le transizioni di stato configurate")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Lista delle transizioni ottenuta con successo"),
+        @ApiResponse(responseCode = "500", description = "Errore interno del server")
+    })
+    @GetMapping("/transizioni-stato")
+    public ResponseEntity<List<TransizioneStatoResponse>> ottieniTransizioniStato() {
+        logger.info("GET /api/annotazioni/transizioni-stato - Richiesta lista transizioni di stato");
+        
+        try {
+            List<TransizioneStatoResponse> transizioni = TransizioneStatoMapper.toResponseList(
+                annotazioniPortService.listaCambiamentiStati()
+            );
+            
+            logger.info("GET /api/annotazioni/transizioni-stato - Restituite {} transizioni", transizioni.size());
+            return ResponseEntity.ok(transizioni);
+            
+        } catch (Exception e) {
+            logger.error("GET /api/annotazioni/transizioni-stato - Errore: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @Operation(summary = "Cambia lo stato di un'annotazione")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Stato cambiato con successo"),
+        @ApiResponse(responseCode = "400", description = "Dati di input non validi o transizione non permessa"),
+        @ApiResponse(responseCode = "404", description = "Annotazione o utente non trovato"),
+        @ApiResponse(responseCode = "403", description = "Utente non autorizzato per questa transizione")
+    })
+    @PatchMapping("/{id}/stato")
+    public ResponseEntity<AnnotazioneResponse> cambiaStato(
+            @Parameter(description = "ID dell'annotazione")
+            @PathVariable UUID id,
+            @Valid @RequestBody CambiaStatoAnnotazioneRequest request) {
+        
+        logger.info("PATCH /api/annotazioni/{}/stato - Cambio stato da {} a {} per utente: {}", 
+                   id, request.getVecchioStato(), request.getNuovoStato(), request.getUtente());
+        
+        try {
+            StatoAnnotazione vecchioStato = StatoAnnotazione.valueOf(request.getVecchioStato());
+            StatoAnnotazione nuovoStato = StatoAnnotazione.valueOf(request.getNuovoStato());
+            
+            AnnotazioneCompleta annotazioneAggiornata = annotazioniPortService.cambiaStato(
+                id, vecchioStato, nuovoStato, request.getUtente()
+            );
+            
+            logger.info("PATCH /api/annotazioni/{}/stato - Stato cambiato con successo da {} a {}", 
+                       id, request.getVecchioStato(), request.getNuovoStato());
+            
+            return ResponseEntity.ok(AnnotazioneMapper.toResponse(annotazioneAggiornata));
+            
+        } catch (IllegalArgumentException e) {
+            logger.error("PATCH /api/annotazioni/{}/stato - Errore validazione: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (IllegalStateException e) {
+            logger.error("PATCH /api/annotazioni/{}/stato - Transizione non permessa: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception e) {
+            logger.error("PATCH /api/annotazioni/{}/stato - Errore interno: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
     
     // Classe interna per le statistiche

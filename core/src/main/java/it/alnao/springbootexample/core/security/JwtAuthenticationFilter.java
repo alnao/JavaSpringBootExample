@@ -43,15 +43,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (StringUtils.hasText(jwt)) {
                 String userId = jwtService.getUserIdFromToken(jwt);
+                String userRole = jwtService.getRoleFromToken(jwt);
                 
-                if (StringUtils.hasText(userId)) {
+                if (StringUtils.hasText(userId) && StringUtils.hasText(userRole)) {
                     Optional<User> userOptional = userService.findById(userId);
                     
                     if (userOptional.isPresent()) {
                         User user = userOptional.get();
                         
                         if (jwtService.validateToken(jwt, user)) {
-                            String roleName = "ROLE_" + user.getRole().getRoleName();
+                            // Usa il role dal token JWT invece che dal database per migliori performance
+                            String roleName = "" + userRole; //ex "ROLE_" +
                             SimpleGrantedAuthority authority = new SimpleGrantedAuthority(roleName);
                             
                             UsernamePasswordAuthenticationToken authentication = 

@@ -3,12 +3,16 @@ package it.alnao.springbootexample.onprem.service;
 import it.alnao.springbootexample.core.domain.Annotazione;
 import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
+import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneRepository;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import it.alnao.springbootexample.core.service.AnnotazioneService;
 import it.alnao.springbootexample.core.utils.AnnotazioniUtils;
 import it.alnao.springbootexample.onprem.entity.AnnotazioneStoricoEntity;
 import it.alnao.springbootexample.onprem.repository.AnnotazioneStoricoMongoRepository;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -25,6 +29,35 @@ import java.util.stream.Collectors;
 @Profile("onprem")
 @Transactional
 public class AnnotazioneServiceImpl implements AnnotazioneService {
+    private static final Logger logger = LoggerFactory.getLogger(AnnotazioneServiceImpl.class);
+    
+
+    @Override
+    public AnnotazioneCompleta cambiaStato(UUID id, String nuovoStato, String utenteModifica) {
+        logger.info("AnnotazioneServiceImpl Cambiando stato dell'annotazione con ID: {} a nuovo stato: {} da utente: {}", id, nuovoStato, utenteModifica);
+        Optional<AnnotazioneMetadata> existingMetadata = metadataRepository.findById(id);
+        Optional<Annotazione> existingAnnotazione = annotazioneRepository.findById(id);
+        if (existingMetadata.isPresent() && existingAnnotazione.isPresent()) {
+            AnnotazioneMetadata metadata = existingMetadata.get();
+            boolean statoValido = false;
+            for (it.alnao.springbootexample.core.domain.StatoAnnotazione statoEnum : it.alnao.springbootexample.core.domain.StatoAnnotazione.values()) {
+                if (statoEnum.getValue().equals(nuovoStato)) {
+                    statoValido = true;
+                    break;
+                }
+            }
+            if (!statoValido) {
+                throw new IllegalArgumentException("Stato annotazione non valido: " + nuovoStato);
+            }
+            metadata.setStato(nuovoStato);
+            metadata.setUtenteUltimaModifica(utenteModifica);
+            metadata.setDataUltimaModifica(LocalDateTime.now());
+            AnnotazioneMetadata updatedMetadata = metadataRepository.save(metadata);
+            logger.info("Aggiornata {}",updatedMetadata);
+            return new AnnotazioneCompleta(existingAnnotazione.get(), updatedMetadata);
+        }
+        throw new RuntimeException("Annotazione non trovata con ID: " + id);
+    }
 
     @Autowired
     private AnnotazioneRepository annotazioneRepository;
@@ -58,6 +91,7 @@ public class AnnotazioneServiceImpl implements AnnotazioneService {
         metadata.setDescrizione(descrizione);
         metadata.setCategoria("Default");
         metadata.setTags("");
+        metadata.setStato(it.alnao.springbootexample.core.domain.StatoAnnotazione.INSERITA.getValue());
         metadata.setPubblica(false);
         metadata.setPriorita(1);
         AnnotazioneMetadata savedMetadata = metadataRepository.save(metadata);
@@ -98,6 +132,10 @@ public class AnnotazioneServiceImpl implements AnnotazioneService {
             metadata.setUtenteUltimaModifica(utente);
             metadata.setDescrizione(nuovaDescrizione);
             metadata.setVersioneNota(annotazione.getVersioneNota());
+                // tolto perchè deve farlo il portService esempio: aggiorna stato in base a logica
+                //if (metadata.getStato() == null || metadata.getStato().isEmpty() || metadata.getStato().equals(it.alnao.springbootexample.core.domain.StatoAnnotazione.INSERITA.getValue())) {
+                //    metadata.setStato(it.alnao.springbootexample.core.domain.StatoAnnotazione.MODIFICATA.getValue());
+                //}
             AnnotazioneMetadata updatedMetadata = metadataRepository.save(metadata);
 
             return new AnnotazioneCompleta(updatedAnnotazione, updatedMetadata);
@@ -172,6 +210,12 @@ public class AnnotazioneServiceImpl implements AnnotazioneService {
     @Override
     public List<AnnotazioneCompleta> trovaPubbliche() {
         List<AnnotazioneMetadata> metadatas = metadataRepository.findByPubblica(true);
+        return buildAnnotazioniComplete(metadatas);
+    }
+
+    @Override
+    public List<AnnotazioneCompleta> trovaPerStato(StatoAnnotazione stato) {
+        List<AnnotazioneMetadata> metadatas = metadataRepository.findByStato(stato);
         return buildAnnotazioniComplete(metadatas);
     }
 

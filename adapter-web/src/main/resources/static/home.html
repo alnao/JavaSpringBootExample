@@ -206,11 +206,11 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
-                                    <h4 id="total-tasks">0</h4>
-                                    <p class="mb-0">Tasks Attivi</p>
+                                    <h4 id="inserita-annotations">0</h4>
+                                    <p class="mb-0">Annotazioni Inserite</p>
                                 </div>
                                 <div class="align-self-center">
-                                    <i class="bi bi-check2-square fs-1 opacity-75"></i>
+                                    <i class="bi bi-pencil-square fs-1 opacity-75"></i>
                                 </div>
                             </div>
                         </div>
@@ -220,56 +220,20 @@
                 <div class="col-lg-3 col-md-6 mb-3">
                     <div class="card stat-card bg-info text-white">
                         <div class="card-body">
-                            <div class="d-flex justify-content-between">
+                            <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h4 id="pending-tasks">0</h4>
-                                    <p class="mb-0">Tasks in Scadenza</p>
+                                    <h5 class="mb-2">Crea Nuova</h5>
+                                    <button class="btn btn-light btn-sm" onclick="window.location.href='annotazioni.html#create'">
+                                        <i class="bi bi-plus-circle me-1"></i>
+                                        Annotazione
+                                    </button>
                                 </div>
                                 <div class="align-self-center">
-                                    <i class="bi bi-clock fs-1 opacity-75"></i>
+                                    <i class="bi bi-plus-square fs-1 opacity-75"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h4 class="mb-3"><i class="bi bi-lightning"></i> Azioni Rapide</h4>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <button class="btn btn-outline-primary w-100 quick-action-btn" onclick="window.location.href='annotazioni.html#create'">
-                        <div class="text-center">
-                            <i class="bi bi-plus-circle display-4 mb-2"></i>
-                            <div>Nuova Annotazione</div>
-                        </div>
-                    </button>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <button class="btn btn-outline-success w-100 quick-action-btn" onclick="window.location.href='tasks.html#create'">
-                        <div class="text-center">
-                            <i class="bi bi-plus-square display-4 mb-2"></i>
-                            <div>Nuovo Task</div>
-                        </div>
-                    </button>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <button class="btn btn-outline-info w-100 quick-action-btn" onclick="window.location.href='annotazioni.html#search'">
-                        <div class="text-center">
-                            <i class="bi bi-search display-4 mb-2"></i>
-                            <div>Cerca Annotazioni</div>
-                        </div>
-                    </button>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <button class="btn btn-outline-secondary w-100 quick-action-btn" onclick="window.location.href='utente.html'">
-                        <div class="text-center">
-                            <i class="bi bi-person-gear display-4 mb-2"></i>
-                            <div>Profilo</div>
-                        </div>
-                    </button>
                 </div>
             </div>
 
@@ -298,7 +262,7 @@
 
             <!-- Recent Activity -->
             <div class="row">
-                <div class="col-lg-8 mb-4">
+                <div class="col-12 mb-4">
                     <div class="card">
                         <div class="card-header">
                             <h5 class="mb-0"><i class="bi bi-clock-history"></i> Attività Recenti</h5>
@@ -309,23 +273,6 @@
                                 <div class="text-center py-4">
                                     <i class="bi bi-hourglass-split text-muted"></i>
                                     <p class="text-muted">Caricamento attività...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-lg-4 mb-4">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Promemoria</h5>
-                        </div>
-                        <div class="card-body">
-                            <div id="upcoming-reminders">
-                                <!-- I promemoria verranno caricati qui -->
-                                <div class="text-center py-3">
-                                    <i class="bi bi-calendar-check text-muted"></i>
-                                    <p class="text-muted mb-0">Nessun promemoria</p>
                                 </div>
                             </div>
                         </div>

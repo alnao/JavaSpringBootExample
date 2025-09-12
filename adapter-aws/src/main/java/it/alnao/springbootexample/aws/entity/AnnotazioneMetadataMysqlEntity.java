@@ -40,7 +40,17 @@ public class AnnotazioneMetadataMysqlEntity {
     @Column(name = "priorita")
     private Integer priorita;
 
+    @Column(name = "stato")
+    private String stato;
+
     public AnnotazioneMetadataMysqlEntity() {
+    }
+
+    public String getStato() {
+        return stato;
+    }
+    public void setStato(String stato) {
+        this.stato = stato;
     }
 
     // Getters and Setters

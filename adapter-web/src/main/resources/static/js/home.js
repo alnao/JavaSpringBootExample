@@ -56,15 +56,15 @@ function setupEventListeners() {
 async function loadDashboardData() {
     try {
         // Carica statistiche parallele
-        const [annotationsStats, tasksStats, recentActivities, publicAnnotations] = await Promise.all([
+        const [annotationsStats, inseritaAnnotations, recentActivities, publicAnnotations] = await Promise.all([
             loadAnnotationsStats(),
-            loadTasksStats(),
+            loadInseritaAnnotations(),
             loadRecentActivities(),
             loadPublicAnnotations()
         ]);
         
         // Aggiorna l'interfaccia
-        updateStatistics(annotationsStats, tasksStats, publicAnnotations);
+        updateStatistics(annotationsStats, inseritaAnnotations, publicAnnotations);
         displayRecentActivities(recentActivities);
         displayPublicAnnotations(publicAnnotations.recent);
         
@@ -91,21 +91,21 @@ async function loadAnnotationsStats() {
     }
 }
 
-// Carica statistiche dei tasks (placeholder per futuro sviluppo)
-async function loadTasksStats() {
+// Carica annotazioni in stato INSERITA
+async function loadInseritaAnnotations() {
     try {
-        // Placeholder per quando verrà implementato l'endpoint dei tasks
-        const response = await window.authUtils.authenticatedFetch(HOME_BASE_URL + '/tasks/statistiche');
+        const response = await window.authUtils.authenticatedFetch(HOME_BASE_URL + '/annotazioni/stato/INSERITA');
         
         if (response.ok) {
-            return await response.json();
+            const annotazioni = await response.json();
+            return { count: annotazioni.length };
         } else {
-            console.warn('Endpoint statistiche tasks non disponibile');
-            return { totaleTasks: 0, tasksInScadenza: 0, completateOggi: 0 };
+            console.warn('Endpoint annotazioni INSERITA non disponibile');
+            return { count: 0 };
         }
     } catch (error) {
-        console.warn('Errore nel caricamento statistiche tasks:', error);
-        return { totaleTasks: 0, tasksInScadenza: 0, completateOggi: 0 };
+        console.warn('Errore nel caricamento annotazioni INSERITA:', error);
+        return { count: 0 };
     }
 }
 
@@ -182,7 +182,7 @@ async function loadRecentActivities() {
 }
 
 // Aggiorna le statistiche nell'interfaccia
-function updateStatistics(annotationsStats, tasksStats, publicAnnotations) {
+function updateStatistics(annotationsStats, inseritaAnnotations, publicAnnotations) {
     // Statistiche annotazioni
     document.getElementById('total-annotations').textContent = annotationsStats.totaleAnnotazioni || 0;
     
@@ -190,9 +190,8 @@ function updateStatistics(annotationsStats, tasksStats, publicAnnotations) {
     const publicCount = publicAnnotations && publicAnnotations.total ? publicAnnotations.total : 0;
     document.getElementById('public-annotations').textContent = publicCount;
     
-    // Statistiche tasks (placeholder)
-    document.getElementById('total-tasks').textContent = tasksStats.totaleTasks || 0;
-    document.getElementById('pending-tasks').textContent = tasksStats.tasksInScadenza || 0;
+    // Statistiche annotazioni inserite
+    document.getElementById('inserita-annotations').textContent = inseritaAnnotations.count || 0;
 }
 
 // Mostra le attività recenti

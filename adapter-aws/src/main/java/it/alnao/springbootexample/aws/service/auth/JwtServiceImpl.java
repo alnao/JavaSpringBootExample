@@ -82,6 +82,11 @@ public class JwtServiceImpl implements JwtService {
     }
     
     @Override
+    public String getRoleFromToken(String token) {
+        return getClaimFromToken(token, claims -> claims.get("role", String.class));
+    }
+    
+    @Override
     public boolean isTokenExpired(String token) {
         final Date expiration = getExpirationDateFromToken(token);
         return expiration.before(new Date());

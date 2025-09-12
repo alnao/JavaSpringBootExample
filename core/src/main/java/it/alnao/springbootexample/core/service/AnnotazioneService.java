@@ -3,6 +3,7 @@ package it.alnao.springbootexample.core.service;
 import it.alnao.springbootexample.core.domain.Annotazione;
 import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
+import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,8 +23,14 @@ public interface AnnotazioneService {
     /**
      * Aggiorna un'annotazione esistente
      */
-    AnnotazioneCompleta aggiornaAnnotazione(UUID id, String nuovoValore, String nuovaDescrizione, String utente);
-    
+    AnnotazioneCompleta aggiornaAnnotazione(UUID id, String nuovoValore, String nuovaDescrizione, String utenteModifica);
+
+
+    /**
+     * Aggiorna lo stato di un'annotazione esistente
+     */
+    AnnotazioneCompleta cambiaStato(UUID id, String nuovoStato, String utenteModifica);
+
     /**
      * Trova un'annotazione completa per ID
      */
@@ -58,6 +65,11 @@ public interface AnnotazioneService {
      * Trova annotazioni pubbliche
      */
     List<AnnotazioneCompleta> trovaPubbliche();
+    
+    /**
+     * Trova annotazioni per stato
+     */
+    List<AnnotazioneCompleta> trovaPerStato(StatoAnnotazione stato);
     
     /**
      * Elimina un'annotazione

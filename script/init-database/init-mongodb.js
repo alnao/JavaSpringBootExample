@@ -22,4 +22,36 @@ db.annotazioni.insertMany([
     }
 ]);
 
+// Crea collezione per storico stati annotazioni
+db.createCollection('annotazioni_storicoStati');
+
+// Crea indici per migliorare le performance dello storico
+db.annotazioni_storicoStati.createIndex({ "idAnnotazione": 1 });
+db.annotazioni_storicoStati.createIndex({ "dataModifica": -1 });
+db.annotazioni_storicoStati.createIndex({ "utente": 1 });
+db.annotazioni_storicoStati.createIndex({ "statoNew": 1 });
+db.annotazioni_storicoStati.createIndex({ "statoOld": 1 });
+
+// Inserisci dati di esempio per storico stati
+db.annotazioni_storicoStati.insertMany([
+    {
+        "idAnnotazione": "3a2b7c91-9e5f-4f0e-8b69-d0e989f0b2f6",
+        "versione": "v1.0",
+        "statoNew": "INSERITA",
+        "statoOld": null,
+        "utente": "admin",
+        "dataModifica": new Date(),
+        "notaOperazione": "Creazione iniziale dell'annotazione"
+    },
+    {
+        "idAnnotazione": "6d1c2a40-1f90-4b8b-9f5e-4e014a6da2bb",
+        "versione": "v1.0",
+        "statoNew": "INSERITA",
+        "statoOld": null,
+        "utente": "admin",
+        "dataModifica": new Date(),
+        "notaOperazione": "Creazione iniziale dell'annotazione"
+    }
+]);
+
 print("Database MongoDB inizializzato con successo!");

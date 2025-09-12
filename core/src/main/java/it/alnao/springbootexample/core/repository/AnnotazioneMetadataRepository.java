@@ -1,6 +1,7 @@
 package it.alnao.springbootexample.core.repository;
 
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
+import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -45,6 +46,11 @@ public interface AnnotazioneMetadataRepository {
      * Trova metadati pubblici
      */
     List<AnnotazioneMetadata> findByPubblica(Boolean pubblica);
+    
+    /**
+     * Trova metadati per stato
+     */
+    List<AnnotazioneMetadata> findByStato(StatoAnnotazione stato);
     
     /**
      * Trova metadati per priorità

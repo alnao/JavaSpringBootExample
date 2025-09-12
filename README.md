@@ -756,25 +756,28 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
 - ✅ ⚙️ Creazione progetto con maven, creazione dei moduli adapter, adapter web con pagina web di esempio, test generale di esecuzione
   - ✅ 📝 Funzione di modifica annotazioni con registro con precedenti versioni delle note
   - ✅ 📖 Configurazione di OpenApi-Swagger e Quality-SonarQube, test coverage e compilazione dei moduli
-  - ✅ 🤖 Modifica nome dell'applicazione in *gestione personale* e test applicazione web di esempio
-  - ✅ 🛠️ Modifica nome dell'applicazione in *gestione annotazioni* e test applicazione web di esempio anche su AWS
-  - ✅ 🔧 Modifica nome adapter "app" e "port" in "application" e "core"
-  - ✅ 🎯 Creazione portService, modifica ai Controller-api e spostamento logiche dai Controller nei Service nel core
-  - 🚧 🔧 Nuove tabelle Stati (nome, descrizione, utente) e Cagetoria (nome)
-    - 🚧 🧩 Service per aggiungere le categorie e interfaccia API per permettere ad AMIN di creare le categorie
-    - 🚧 🔄 Aggiunta campo "Stato" nei metadati delle annotazioni
-    - 🚧 🧿 Script per aggiungere stati e categorie all'avvio dell'infrastruttura, creazione di tre profili in ogni ambiente!
-    - 🚧 🧮 Nuova tabella StoricoStati (id, ...)
-    - 🚧 🕸️ Service per cambio stato che modifica solo il metadata e non il valore ma salva nella tabella storico
-    - 🚧 🧑‍🔬 Solo chi ha profilo USER può inserire una nota: contollo lato API e l'annotazione va in stato INSERITA
-    - 🚧 🛰️ Solo chi ha profilo MODERATOR può confermare una nota: contollo lato API e l'annotazione va in stato CONFERMATA 
-    - 🚧 🛡️ Solo chi ha profilo MODERATOR può rifiutare una nota e metterla in stato RIFIUTATA
-    - 🚧 🧱 Una annotazione già esistente è modificabile da chiunque solo se è in INSERITA e/o RIFIUTATA
-    - 🚧 🧬 Solo chi ha profilo ADMIN può pubblicare la annotazione che va in stato PUBBLICATA oppure RIFIUTATA
-    - 🚧 🧭 Quando una annotazione è in stato PUBBLICATA solo ADMIN può rimetterla in RIFIUTATA
-    - 🚧 🧑‍🤝‍🧑 Elenco task: utenti USER vedono le annotazioni RIFIUTATE con la possiblità di cambiarle in INSERITA
-    - 🚧 🗃️ Elenco task: utenti MODERATOR vedono le annotazioni INSERITA con la possibiltà di rifiutarle o confermarle
-    - 🚧 🏁 Elenco task: utenti ADMIN vedono le annotazioni CONFERMATA con la possiblità di pubblicarle
+  - ✅ 📦 Creazione adapter con implementazione con SQLite come unica base dati
+    - ✅ ☁️ Sviluppo script per esecuzione profilo sqlite in sistema Replit
+    - ✅ ⚙️ Sviluppo script per esecuzione profilo sqlite in sistema AWS-EC2 con Docker senza RDS e Dynamo
+  - ✅ 🤖 Gestione dell'applicazione in *gestione annotazioni* e test applicazione web di esempio
+    - ✅ 🛠️ Test applicazione web di esempio anche su AWS
+    - ✅ 🔧 Modifica nome adapter "app" e "port" in "application" e "core"
+    - ✅ 🎯 Creazione portService, modifica ai Controller-api e spostamento logiche dai Controller nei Service nel core
+- ✅ 🔧 Creazione enum Stato di una annotazione
+  - ✅ 🔄 Aggiunta campo "Stato" nei metadati delle annotazioni nelle tabelle
+  - ✅ 🧮 Nuova tabella StoricoStati, sviluppo service e port per la gestione dello storico
+  - ✅ 🕸️ Modifica service per cambio stato che modifica il metadata e non il valore più la tabella storico
+  - ✅ 🧩 Service per modificar lo stato con salvataggio nella tabella StoricoStati
+  - 🚧 🧿 Script per creazione di tre profili in ogni ambiente 
+  - ✅ 🧑‍🔬 Inserimento di una nuova annotazione in stato INSERITA
+  - 🚧 🛰️ Gestione delle annotazioni quando son in CONFERMATA 
+  - 🚧 🛡️ Gestione delle annotazioni in stato RIFIUTATA o BANNATA
+  - 🚧 🧱 Verifica che utenti non possano fare operazioni il cui ruolo non lo prevede
+  - 🚧 🧬 Gestione delle annotazioni instato PUBBLICATA
+  - 🚧 🧭 Quando una annotazione è in stato PUBBLICATA solo ADMIN può rimetterla in RIFIUTATA
+  - 🚧 🧑‍🤝‍🧑 Elenco task: utenti USER vedono le annotazioni RIFIUTATE con la possiblità di cambiarle in INSERITA
+  - 🚧 🗃️ Elenco task: utenti MODERATOR vedono le annotazioni INSERITA con la possibiltà di rifiutarle o confermarle
+  - 🚧 🏁 Elenco task: utenti ADMIN vedono le annotazioni CONFERMATA con la possiblità di pubblicarle
 - ✅ 🐳 Build e deploy su DockerHub della versione *OnPrem*
   - ✅ 🐳 configurazione di docker-compose con MongoDb e Postgresql
   - ✅ ☸️ Esecuzione su Kubernetes/Minikube locale con yaml dedicati
@@ -784,9 +787,6 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - 🚧 🐳 Deploy su AWS su EKS
   - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts
   - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
-- ✅ 📦 Creazione adapter con implementazione con SQLite come unica base dati
-  - ✅ ☁️ Sviluppo script per esecuzione profilo sqlite in sistema Replit
-  - ✅ ⚙️ Sviluppo script per esecuzione profilo sqlite in sistema AWS-EC2 con Docker senza RDS e Dynamo
 - ✅ 🔒 Autenticazione e autorizzazione (Spring Security) e token Jwt
   - ✅ 👥 introduzione sistema di verifica degli utenti e validazione richieste con tabella utenti
   - ✅ 📝 Gestione multiutente e modifica annotazioni con utente diverso dal creatore, test nell'applicazione web
@@ -800,7 +800,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
 - 🚧 ⚡ Redis Caching Layer: Cache multi-livello (L1: in-memory, L2: Redis) con invalidation strategies e cache warming
   - 🚧 📊 Read Replicas: Separazione read/write con eventual consistency e load balancing intelligente
   - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
-- 🚧 💾 Backup & Disaster Recovery: Cross-region backup, point-in-time recovery, RTO/RPO compliance
+  - 🚧 💾 Backup & Disaster Recovery: Cross-region backup, point-in-time recovery, RTO/RPO compliance
 - 🚧 🔒 API Rate Limiting: Rate limiting intelligente con burst allowance, IP whitelisting, geographic restrictions
 - 🚧 🔍 Elasticsearch Integration: Ricerca full-text avanzata con highlighting, auto-complete, ricerca semantica
 - 🚧 🏗️ GitOps Workflow: ArgoCD/Flux per deployment automatici, configuration drift detection

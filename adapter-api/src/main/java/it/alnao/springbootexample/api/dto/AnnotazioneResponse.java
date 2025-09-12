@@ -20,6 +20,7 @@ public class AnnotazioneResponse {
     private String tags;
     private Boolean pubblica;
     private Integer priorita;
+    private String stato;
     
     // Constructors
     public AnnotazioneResponse() {}
@@ -119,5 +120,13 @@ public class AnnotazioneResponse {
     
     public void setPriorita(Integer priorita) {
         this.priorita = priorita;
+    }
+
+    public String getStato() {
+        return stato;
+    }
+
+    public void setStato(String stato) {
+        this.stato = stato;
     }
 }

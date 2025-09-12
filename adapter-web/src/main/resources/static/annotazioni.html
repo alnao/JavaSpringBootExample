@@ -137,122 +137,12 @@
         <!-- Content Sections -->
         <div class="container-fluid p-4">
             
-            <!-- Dashboard Annotazioni Section -->
-            <div id="dashboard-section" class="content-section">
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <h2><i class="bi bi-speedometer2"></i> Dashboard Annotazioni</h2>
-                    </div>
-                </div>
-                
-                <div class="row mb-4">
-                    <div class="col-md-3 mb-3">
-                        <div class="card bg-primary text-white">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <h4 id="total-annotations">0</h4>
-                                        <p class="mb-0">Totale Annotazioni</p>
-                                    </div>
-                                    <div class="align-self-center">
-                                        <i class="bi bi-journal-text fs-1"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-3 mb-3">
-                        <div class="card bg-success text-white">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <h4 id="public-annotations">0</h4>
-                                        <p class="mb-0">Annotazioni Pubbliche</p>
-                                    </div>
-                                    <div class="align-self-center">
-                                        <i class="bi bi-globe fs-1"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-3 mb-3">
-                        <div class="card bg-info text-white">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <h4 id="my-annotations">0</h4>
-                                        <p class="mb-0">Le Mie Annotazioni</p>
-                                    </div>
-                                    <div class="align-self-center">
-                                        <i class="bi bi-person-check fs-1"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-3 mb-3">
-                        <div class="card bg-warning text-dark">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <h4 id="categories-count">0</h4>
-                                        <p class="mb-0">Categorie</p>
-                                    </div>
-                                    <div class="align-self-center">
-                                        <i class="bi bi-tags fs-1"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row mb-4">
-                    <div class="col-12 d-flex justify-content-center gap-3">
-                        <button class="btn btn-primary btn-lg" onclick="showSection('crea')">
-                            <i class="bi bi-plus-circle"></i> Crea Annotazione
-                        </button>
-                        <button class="btn btn-outline-primary btn-lg" onclick="showSection('annotazioni')">
-                            <i class="bi bi-list-ul"></i> Vedi Tutte
-                        </button>
-                        <button class="btn btn-outline-success btn-lg" onclick="showSection('pubbliche')">
-                            <i class="bi bi-globe"></i> Pubbliche
-                        </button>
-                        <button class="btn btn-outline-info btn-lg" onclick="showSection('cerca')">
-                            <i class="bi bi-search"></i> Cerca
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Annotazioni Recenti</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="recent-annotations" class="table-responsive">
-                                    <!-- Le annotazioni recenti verranno caricate qui -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Tutte le Annotazioni Section -->
-            <div id="annotazioni-section" class="content-section" style="display: none;">
+            <div id="annotazioni-section" class="content-section">
                 <div class="row mb-4">
                     <div class="col-12 d-flex justify-content-between align-items-center">
                         <h2><i class="bi bi-list-ul"></i> Tutte le Annotazioni</h2>
                         <div>
-                            <button class="btn btn-outline-secondary me-2" onclick="showSection('dashboard')">
-                                <i class="bi bi-arrow-left"></i> Dashboard
-                            </button>
                             <button class="btn btn-primary" onclick="showSection('crea')">
                                 <i class="bi bi-plus"></i> Nuova Annotazione
                             </button>
@@ -261,20 +151,32 @@
                 </div>
                 
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
                             <input type="text" class="form-control" id="search-annotations" placeholder="Cerca annotazioni...">
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <select class="form-select" id="filter-category">
                             <option value="">Tutte le categorie</option>
                         </select>
                     </div>
                     <div class="col-md-3">
+                        <select class="form-select" id="filter-stato">
+                            <option value="">Tutti gli stati</option>
+                            <option value="INSERITA">Inserita</option>
+                            <option value="MODIFICATA">Modificata</option>
+                            <option value="CONFERMATA">Confermata</option>
+                            <option value="RIFIUTATA">Rifiutata</option>
+                            <option value="PUBBLICATA">Pubblicata</option>
+                            <option value="BANNATA">Bannata</option>
+                            <option value="ERRORE">Errore</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <select class="form-select" id="filter-priority">
-                            <option value="">Tutte le priorità</option>
+                            <option value="">Priorità</option>
                             <option value="1">Bassa</option>
                             <option value="2">Media</option>
                             <option value="3">Alta</option>
@@ -292,8 +194,8 @@
                 <div class="row mb-4">
                     <div class="col-12 d-flex justify-content-between align-items-center">
                         <h2><i class="bi bi-plus-circle"></i> Crea Nuova Annotazione</h2>
-                        <button class="btn btn-outline-secondary" onclick="showSection('dashboard')">
-                            <i class="bi bi-arrow-left"></i> Torna alla Dashboard
+                        <button class="btn btn-outline-secondary" onclick="showSection('annotazioni')">
+                            <i class="bi bi-arrow-left"></i> Torna alle Annotazioni
                         </button>
                     </div>
                 </div>
@@ -368,8 +270,8 @@
                 <div class="row mb-4">
                     <div class="col-12 d-flex justify-content-between align-items-center">
                         <h2><i class="bi bi-globe"></i> Annotazioni Pubbliche</h2>
-                        <button class="btn btn-outline-secondary" onclick="showSection('dashboard')">
-                            <i class="bi bi-arrow-left"></i> Dashboard
+                        <button class="btn btn-outline-secondary" onclick="showSection('annotazioni')">
+                            <i class="bi bi-arrow-left"></i> Torna alle Annotazioni
                         </button>
                     </div>
                 </div>
@@ -384,8 +286,8 @@
                 <div class="row mb-4">
                     <div class="col-12 d-flex justify-content-between align-items-center">
                         <h2><i class="bi bi-search"></i> Cerca Annotazioni</h2>
-                        <button class="btn btn-outline-secondary" onclick="showSection('dashboard')">
-                            <i class="bi bi-arrow-left"></i> Dashboard
+                        <button class="btn btn-outline-secondary" onclick="showSection('annotazioni')">
+                            <i class="bi bi-arrow-left"></i> Torna alle Annotazioni
                         </button>
                     </div>
                 </div>

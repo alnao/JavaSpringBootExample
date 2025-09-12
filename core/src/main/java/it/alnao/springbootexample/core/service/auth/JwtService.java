@@ -36,6 +36,11 @@ public interface JwtService {
     String getUserIdFromToken(String token);
     
     /**
+     * Estrae il role dell'utente dal token JWT.
+     */
+    String getRoleFromToken(String token);
+    
+    /**
      * Verifica se un token è scaduto.
      */
     boolean isTokenExpired(String token);

@@ -78,6 +78,7 @@ public class AnnotazioneMapper {
             response.setTags(annotazioneCompleta.getMetadata().getTags());
             response.setPubblica(annotazioneCompleta.getMetadata().getPubblica());
             response.setPriorita(annotazioneCompleta.getMetadata().getPriorita());
+            response.setStato(annotazioneCompleta.getMetadata().getStato());
         }
         
         return response;

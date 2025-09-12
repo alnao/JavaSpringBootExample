@@ -1,19 +1,34 @@
 package it.alnao.springbootexample.core.portService;
 
-import it.alnao.springbootexample.core.domain.Annotazione;
+import it.alnao.springbootexample.core.domain.auth.User;
+import it.alnao.springbootexample.core.domain.auth.UserRole;
+import it.alnao.springbootexample.core.domain.StatoAnnotazione;
+import it.alnao.springbootexample.core.domain.TransizioneStato;
 import it.alnao.springbootexample.core.service.AnnotazioneService;
+import it.alnao.springbootexample.core.service.AnnotazioneStoricoStatiService;
+import it.alnao.springbootexample.core.service.ValidatoreTransizioniStatoService;
+import it.alnao.springbootexample.core.service.auth.UserService;
 import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class AnnotazioniPortServiceImpl implements AnnotazioniPortService {
+    
     @Autowired
     private AnnotazioneService annotazioneService;
+    
+    @Autowired
+    private UserService userService;
+    
+    @Autowired
+    private ValidatoreTransizioniStatoService validatoreTransizioniStatoService;
+    
+    @Autowired
+    private AnnotazioneStoricoStatiService annotazioneStoricoStatiService;
 
         public AnnotazioneCompleta creaAnnotazione(AnnotazioneCompleta annotazione, String utente) {
             AnnotazioneCompleta annotazioneCompleta = annotazioneService.creaAnnotazione(
@@ -37,13 +52,20 @@ public class AnnotazioniPortServiceImpl implements AnnotazioniPortService {
         }
 
     public AnnotazioneCompleta aggiornaAnnotazione(AnnotazioneCompleta annotazione, String utente) {
+        // 1. Recupera il ruolo dell'utente
+        User user = userService.findByUsername(utente).orElseThrow(() -> new IllegalArgumentException("Utente non trovato: " + utente));
+        UserRole ruoloUtente = user.getRole();
+        // 2. Verifica se il ruolo abilita a fare quel cambio stato
+        validatoreTransizioniStatoService.validaTransizione(StatoAnnotazione.INSERITA, StatoAnnotazione.MODIFICATA, ruoloUtente);
+        // 3. Recupera l'annotazione attuale per ottenere la versione
         UUID id = annotazione.getId();
-        AnnotazioneCompleta annotazioneAggiornata = annotazioneService.aggiornaAnnotazione(
+        annotazioneService.aggiornaAnnotazione(
                 id,
                 annotazione.getAnnotazione().getValoreNota(),
                 annotazione.getMetadata().getDescrizione(),
                 utente
         );
+        // 4. Aggiorna i metadati se presenti
         if (annotazione.getMetadata().getCategoria() != null) {
             annotazioneService.impostaCategoria(id, annotazione.getMetadata().getCategoria(), utente);
         }
@@ -56,7 +78,45 @@ public class AnnotazioniPortServiceImpl implements AnnotazioniPortService {
         if (annotazione.getMetadata().getPriorita() != null) {
             annotazioneService.impostaPriorita(id, annotazione.getMetadata().getPriorita(), utente);
         }
+        // 5. Aggiorna lo stato
+        cambiaStato(id, StatoAnnotazione.INSERITA, StatoAnnotazione.MODIFICATA, utente);
         return annotazioneService.trovaPerID(id).orElse(null);
+    }
+
+    @Override
+    public AnnotazioneCompleta cambiaStato(UUID id, StatoAnnotazione vecchioStato, StatoAnnotazione nuovoStato, String utente) {
+        // 1. Recupera il ruolo dell'utente
+        User user = userService.findByUsername(utente)
+                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato: " + utente));
+        UserRole ruoloUtente = user.getRole();
+
+        // 2. Verifica se il ruolo abilita a fare quel cambio stato
+        validatoreTransizioniStatoService.validaTransizione(vecchioStato, nuovoStato, ruoloUtente);
+
+        // 3. Recupera l'annotazione attuale per ottenere la versione
+        Optional<AnnotazioneCompleta> annotazioneOpt = annotazioneService.trovaPerID(id);
+        if (annotazioneOpt.isEmpty()) {
+            throw new IllegalArgumentException("Annotazione non trovata con ID: " + id);
+        }
+        
+        AnnotazioneCompleta annotazioneAttuale = annotazioneOpt.get();
+        String versione = annotazioneAttuale.getAnnotazione().getVersioneNota();
+
+        // 3. Inserisce riga nel AnnotazioneStoricoStati
+        String notaOperazione = String.format("Cambio stato da %s a %s effettuato da %s", 
+                                            vecchioStato.getValue(), nuovoStato.getValue(), utente);
+        
+        annotazioneStoricoStatiService.inserisciCambioStato(
+            id.toString(), 
+            versione, 
+            nuovoStato.getValue(), 
+            vecchioStato.getValue(), 
+            utente, 
+            notaOperazione
+        );
+
+        // 4. Update nella Metadati con il metodo cambiaStato
+        return annotazioneService.cambiaStato(id, nuovoStato.getValue(), utente);
     }
 
     public List<AnnotazioneCompleta> trovaTutte() {
@@ -87,7 +147,16 @@ public class AnnotazioniPortServiceImpl implements AnnotazioniPortService {
         return annotazioneService.trovaPubbliche();
     }
 
+    public List<AnnotazioneCompleta> trovaPerStato(StatoAnnotazione stato) {
+        return annotazioneService.trovaPerStato(stato);
+    }
+
     public long contaAnnotazioni() {
         return annotazioneService.contaAnnotazioni();
+    }
+
+    @Override
+    public List<TransizioneStato> listaCambiamentiStati() {
+        return validatoreTransizioniStatoService.getTutteLeTransizioni();
     }
 }

@@ -19,12 +19,14 @@ public class AnnotazioneMetadata {
     private String tags;
     private Boolean pubblica;
     private Integer priorita;
+    private String stato; 
     
     public AnnotazioneMetadata() {
         this.dataInserimento = LocalDateTime.now();
         this.dataUltimaModifica = LocalDateTime.now();
         this.pubblica = false;
         this.priorita = 1;
+        this.stato = StatoAnnotazione.INSERITA.getValue(); // Default value updated
     }
     
     public AnnotazioneMetadata(UUID id, String versioneNota, String utenteCreazione, String descrizione) {
@@ -37,6 +39,12 @@ public class AnnotazioneMetadata {
     }
     
     // Getters and Setters
+    public String getStato() {
+        return stato;
+    }
+    public void setStato(String stato) {
+        this.stato = stato;
+    }
     public UUID getId() {
         return id;
     }
@@ -132,18 +140,19 @@ public class AnnotazioneMetadata {
     
     @Override
     public String toString() {
-    return "AnnotazioneMetadata{" +
-        "id=" + id +
-        ", versioneNota='" + versioneNota + '\'' +
-        ", utenteCreazione='" + utenteCreazione + '\'' +
-        ", dataInserimento=" + dataInserimento +
-        ", dataUltimaModifica=" + dataUltimaModifica +
-        ", utenteUltimaModifica='" + utenteUltimaModifica + '\'' +
-        ", descrizione='" + descrizione + '\'' +
-        ", categoria='" + categoria + '\'' +
-        ", tags='" + tags + '\'' +
-        ", pubblica=" + pubblica +
-        ", priorita=" + priorita +
-        '}';
+        return "AnnotazioneMetadata{" +
+            "id=" + id +
+            ", versioneNota='" + versioneNota + '\'' +
+            ", utenteCreazione='" + utenteCreazione + '\'' +
+            ", dataInserimento=" + dataInserimento +
+            ", dataUltimaModifica=" + dataUltimaModifica +
+            ", utenteUltimaModifica='" + utenteUltimaModifica + '\'' +
+            ", descrizione='" + descrizione + '\'' +
+            ", categoria='" + categoria + '\'' +
+            ", tags='" + tags + '\'' +
+            ", pubblica=" + pubblica +
+            ", priorita=" + priorita +
+            ", stato='" + stato + '\'' +
+            '}';
     }
 }

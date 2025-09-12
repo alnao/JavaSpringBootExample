@@ -52,7 +52,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         Collection<GrantedAuthority> authorities = new ArrayList<>();
         
         // Aggiungi il ruolo utente
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+        authorities.add(new SimpleGrantedAuthority("" + user.getRole().name())); //ex "ROLE_" +
         
         logger.info("Authorities per utente {}: {}", user.getUsername(), authorities);
         

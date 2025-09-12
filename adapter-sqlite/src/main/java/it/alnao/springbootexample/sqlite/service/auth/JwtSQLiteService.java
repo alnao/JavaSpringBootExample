@@ -39,21 +39,20 @@ public class JwtSQLiteService implements JwtService {
     @Override
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("username", user.getUsername());
-        claims.put("id", user.getId());
-        claims.put("roles", user.getRole());
-        return createToken(claims, user.getUsername());
-
+        claims.put("userId", user.getId());
+        claims.put("role", user.getRole().getRoleName());
+        claims.put("accountType", user.getAccountType().name());
+        return createToken(claims, user.getUsername() != null ? user.getUsername() : user.getEmail());
     }
 
 	private String createToken(Map<String, Object> claims, String subject) {
 		Date now = new Date();
 		Date expiryDate = new Date(now.getTime() + expirationSeconds * 1000);
 		return Jwts.builder()
-				.setClaims(claims)
-				.setSubject(subject)
-				.setIssuedAt(now)
-				.setExpiration(expiryDate)
+				.claims(claims)
+				.subject(subject)
+				.issuedAt(now)
+				.expiration(expiryDate)
 				.signWith(getSecretKey())
 				.compact();
 	}
@@ -102,7 +101,12 @@ public class JwtSQLiteService implements JwtService {
 	}
 	@Override
 	public String getUserIdFromToken(String token) {
-		return getClaimFromToken(token, claims -> claims.get("id", String.class));
+		return getClaimFromToken(token, claims -> claims.get("userId", String.class));
+	}
+
+	@Override
+	public String getRoleFromToken(String token) {
+		return getClaimFromToken(token, claims -> claims.get("role", String.class));
 	}
 
 	@Override

@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCategories();
     
     // Mostra la dashboard di default
-    showSection('dashboard');
+    showSection('annotazioni');
     
     // Configura gli event listeners
     setupAnnotationsEventListeners();
@@ -62,7 +62,7 @@ function loadUserData() {
 async function loadStats() {
     try {
         // Carica le statistiche dalla dashboard
-        await loadAnnotationsDashboard();
+        //await loadAnnotationsDashboard();
     } catch (error) {
         console.error('Errore nel caricamento delle statistiche:', error);
     }
@@ -102,6 +102,11 @@ function setupAnnotationsEventListeners() {
     const priorityFilter = document.getElementById('filter-priority');
     if (priorityFilter) {
         priorityFilter.addEventListener('change', filterAnnotations);
+    }
+    
+    const statoFilter = document.getElementById('filter-stato');
+    if (statoFilter) {
+        statoFilter.addEventListener('change', filterAnnotations);
     }
     
     // Ricerca globale
@@ -230,7 +235,7 @@ async function loadAnnotationsDashboard() {
         
     } catch (error) {
         console.error('Errore nel caricamento della dashboard annotazioni:', error);
-        showAlert('Errore nel caricamento della dashboard', 'danger');
+        //showAlert('Errore nel caricamento della dashboard', 'danger');
     }
 }
 
@@ -338,6 +343,8 @@ function displayAnnotations(annotations, container = document.getElementById('an
     annotations.forEach(annotation => {
         const priorityClass = getPriorityClass(annotation.priorita);
         const priorityText = getPriorityText(annotation.priorita);
+        const statoClass = getStatoClass(annotation.stato);
+        const statoText = getStatoText(annotation.stato);
         const version = annotation.versioneNota || '1.0';
         html += `
             <div class="col-md-6 col-lg-4 mb-4">
@@ -354,6 +361,7 @@ function displayAnnotations(annotations, container = document.getElementById('an
                             ${escapeHtml(annotation.valoreNota)}
                         </div>
                         <div class="mb-2">
+                            ${annotation.stato ? `<span class="badge ${statoClass} me-1"><i class="bi bi-flag"></i> ${statoText}</span>` : ''}
                             ${annotation.categoria ? `<span class="badge bg-secondary me-1">${escapeHtml(annotation.categoria)}</span>` : ''}
                             ${annotation.pubblica ? '<span class="badge bg-success me-1"><i class="bi bi-globe"></i> Pubblica</span>' : ''}
                             ${annotation.tags ? annotation.tags.split(',').map(tag => `<span class="badge bg-outline-secondary me-1">${escapeHtml(tag.trim())}</span>`).join('') : ''}
@@ -373,7 +381,9 @@ function displayAnnotations(annotations, container = document.getElementById('an
                             <button class="btn btn-outline-primary btn-sm" onclick="viewAnnotation('${annotation.id}')">
                                 <i class="bi bi-eye"></i> Visualizza
                             </button>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="editAnnotation('${annotation.id}')">
+                            <button class="btn btn-outline-secondary btn-sm" 
+                                    onclick="editAnnotation('${annotation.id}')"
+                                    ${annotation.stato && !['INSERITA', 'MODIFICATA'].includes(annotation.stato) ? 'disabled title="Modifica non consentita per annotazioni in stato ' + annotation.stato + '"' : ''}>
                                 <i class="bi bi-pencil"></i> Modifica
                             </button>
                             <button class="btn btn-outline-danger btn-sm" onclick="confirmDeleteAnnotation('${annotation.id}')">
@@ -411,6 +421,7 @@ function filterAnnotations() {
     const searchText = document.getElementById('search-annotations')?.value?.toLowerCase() || '';
     const categoryFilter = document.getElementById('filter-category')?.value || '';
     const priorityFilter = document.getElementById('filter-priority')?.value || '';
+    const statoFilter = document.getElementById('filter-stato')?.value || '';
     
     const filtered = allAnnotations.filter(annotation => {
         const matchesSearch = !searchText || 
@@ -419,8 +430,9 @@ function filterAnnotations() {
         
         const matchesCategory = !categoryFilter || annotation.categoria === categoryFilter;
         const matchesPriority = !priorityFilter || annotation.priorita.toString() === priorityFilter;
+        const matchesStato = !statoFilter || annotation.stato === statoFilter;
         
-        return matchesSearch && matchesCategory && matchesPriority;
+        return matchesSearch && matchesCategory && matchesPriority && matchesStato;
     });
     
     displayAnnotations(filtered);
@@ -580,6 +592,33 @@ function getPriorityText(priority) {
     }
 }
 
+// Funzioni helper per gestire gli stati delle annotazioni
+function getStatoClass(stato) {
+    switch(stato) {
+        case 'INSERITA': return 'bg-light text-dark';
+        case 'MODIFICATA': return 'bg-info';
+        case 'CONFERMATA': return 'bg-primary';
+        case 'RIFIUTATA': return 'bg-warning text-dark';
+        case 'PUBBLICATA': return 'bg-success';
+        case 'BANNATA': return 'bg-danger';
+        case 'ERRORE': return 'bg-dark';
+        default: return 'bg-secondary';
+    }
+}
+
+function getStatoText(stato) {
+    switch(stato) {
+        case 'INSERITA': return 'Inserita';
+        case 'MODIFICATA': return 'Modificata';
+        case 'CONFERMATA': return 'Confermata';
+        case 'RIFIUTATA': return 'Rifiutata';
+        case 'PUBBLICATA': return 'Pubblicata';
+        case 'BANNATA': return 'Bannata';
+        case 'ERRORE': return 'Errore';
+        default: return 'Non definito';
+    }
+}
+
 function showAlert(message, type = 'info') {
     // Rimuovi alert precedenti
     const existingAlert = document.querySelector('.alert');
@@ -642,10 +681,19 @@ async function showAnnotationDetails(id) {
                             </div>
                             <div class="row mt-2">
                                 <div class="col-md-6">
-                                    <strong>Creato da:</strong> ${escapeHtml(annotation.utenteCreazione)}
+                                    <strong>Stato:</strong> 
+                                    <span class="badge ${getStatoClass(annotation.stato)}">${getStatoText(annotation.stato)}</span>
                                 </div>
                                 <div class="col-md-6">
                                     <strong>Pubblica:</strong> ${annotation.pubblica ? 'Sì' : 'No'}
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <strong>Creato da:</strong> ${escapeHtml(annotation.utenteCreazione)}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Versione:</strong> ${annotation.versioneNota || '1.0'}
                                 </div>
                             </div>
                             ${annotation.utenteUltimaModifica && annotation.utenteUltimaModifica !== annotation.utenteCreazione ? 

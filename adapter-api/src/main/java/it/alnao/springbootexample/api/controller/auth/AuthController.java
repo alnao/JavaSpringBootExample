@@ -80,7 +80,7 @@ public class AuthController {
             logger.info("POST /api/auth/login - Ultimo login aggiornato per username: {}", request.getUsername());
             
             JwtResponse response = new JwtResponse(token, user.getUsername(), user.getEmail(), 
-                                                 user.getAccountType(), 86400L); // 24 ore
+                                                 user.getAccountType(), user.getRole().getRoleName(), 86400L); // 24 ore
             
             logger.info("POST /api/auth/login - Login completato con successo per username: {}", request.getUsername());
             return ResponseEntity.ok(response);

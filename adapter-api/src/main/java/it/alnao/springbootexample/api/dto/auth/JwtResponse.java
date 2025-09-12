@@ -12,6 +12,7 @@ public class JwtResponse {
     private String username;
     private String email;
     private AccountType accountType;
+    private String role;
     private List<String> linkedProviders;
     private String tokenType = "Bearer";
     private long expiresIn;
@@ -25,11 +26,12 @@ public class JwtResponse {
         this.accountType = accountType;
     }
 
-    public JwtResponse(String token, String username, String email, AccountType accountType, long expiresIn) {
+    public JwtResponse(String token, String username, String email, AccountType accountType, String role, long expiresIn) {
         this.token = token;
         this.username = username;
         this.email = email;
         this.accountType = accountType;
+        this.role = role;
         this.expiresIn = expiresIn;
     }
 
@@ -66,6 +68,14 @@ public class JwtResponse {
         this.accountType = accountType;
     }
 
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
     public List<String> getLinkedProviders() {
         return linkedProviders;
     }
@@ -96,6 +106,7 @@ public class JwtResponse {
                 "username='" + username + '\'' +
                 ", email='" + email + '\'' +
                 ", accountType=" + accountType +
+                ", role='" + role + '\'' +
                 ", tokenType='" + tokenType + '\'' +
                 ", expiresIn=" + expiresIn +
                 '}';

@@ -7,6 +7,7 @@ set -e
 DYNAMO_ENDPOINT=${DYNAMO_ENDPOINT:-http://dynamodb:8000}
 DYNAMODB_ANNOTAZIONI_TABLE_NAME=${DYNAMODB_ANNOTAZIONI_TABLE_NAME:-annotazioni}
 DYNAMODB_STORICO_ANNOTAZIONI_TABLE_NAME=${DYNAMODB_STORICO_ANNOTAZIONI_TABLE_NAME:-annotazioni_storico}
+DYNAMODB_STORICO_STATI_TABLE_NAME=${DYNAMODB_STORICO_STATI_TABLE_NAME:-annotazioni_storicoStati}
 REGION=${AWS_REGION:-eu-central-1}
 AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-dummy}
 AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-dummy}
@@ -37,6 +38,22 @@ aws dynamodb create-table \
   --attribute-definitions AttributeName=id,AttributeType=S \
   --key-schema AttributeName=id,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST \
+  --endpoint-url "$DYNAMO_ENDPOINT" \
+  --region "$REGION" || echo "Tabella già esistente o errore ignorato."
+
+echo "Creo tabella $DYNAMODB_STORICO_STATI_TABLE_NAME su $DYNAMO_ENDPOINT nella regione $REGION..."
+
+aws dynamodb create-table \
+  --table-name "$DYNAMODB_STORICO_STATI_TABLE_NAME" \
+  --attribute-definitions \
+    AttributeName=idOperazione,AttributeType=S \
+    AttributeName=idAnnotazione,AttributeType=S \
+    AttributeName=dataModifica,AttributeType=S \
+  --key-schema AttributeName=idOperazione,KeyType=HASH \
+  --global-secondary-indexes \
+    IndexName=idAnnotazione-index,KeySchema=[{AttributeName=idAnnotazione,KeyType=HASH},{AttributeName=dataModifica,KeyType=RANGE}],Projection={ProjectionType=ALL},ProvisionedThroughput={ReadCapacityUnits=5,WriteCapacityUnits=5} \
+  --billing-mode PROVISIONED \
+  --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
   --endpoint-url "$DYNAMO_ENDPOINT" \
   --region "$REGION" || echo "Tabella già esistente o errore ignorato."
 

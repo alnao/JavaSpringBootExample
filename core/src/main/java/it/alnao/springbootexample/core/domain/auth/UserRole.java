@@ -6,7 +6,8 @@ package it.alnao.springbootexample.core.domain.auth;
 public enum UserRole {
     USER("Utente normale"),
     ADMIN("Amministratore"),
-    MODERATOR("Moderatore");
+    MODERATOR("Moderatore"),
+    SYSTEM("Sistema automatico");
 
     private final String description;
 
@@ -19,6 +20,6 @@ public enum UserRole {
     }
 
     public String getRoleName() {
-        return "ROLE_" + this.name();
+        return this.name(); //ex "ROLE_" + 
     }
 }
