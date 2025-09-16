@@ -181,9 +181,9 @@ function showSection(sectionName) {
     });
     
     // Rimuove la classe active da tutti i link
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-    });
+    //document.querySelectorAll('.nav-link').forEach(link => {
+    //    link.classList.remove('active');
+    //});
     
     // Mostra la sezione selezionata
     const targetSection = document.getElementById(sectionName + '-section');
@@ -599,9 +599,11 @@ function getStatoClass(stato) {
         case 'MODIFICATA': return 'bg-info';
         case 'CONFERMATA': return 'bg-primary';
         case 'RIFIUTATA': return 'bg-warning text-dark';
-        case 'PUBBLICATA': return 'bg-success';
+        case 'DAINVIARE': return 'bg-success';
+        case 'INVIATA': return 'bg-success';
         case 'BANNATA': return 'bg-danger';
         case 'ERRORE': return 'bg-dark';
+        case 'SCADUTA': return 'bg-danger';
         default: return 'bg-secondary';
     }
 }
@@ -612,9 +614,11 @@ function getStatoText(stato) {
         case 'MODIFICATA': return 'Modificata';
         case 'CONFERMATA': return 'Confermata';
         case 'RIFIUTATA': return 'Rifiutata';
-        case 'PUBBLICATA': return 'Pubblicata';
+        case 'DAINVIARE': return 'DaInviare';
+        case 'INVIATA': return 'Inviata';
         case 'BANNATA': return 'Bannata';
         case 'ERRORE': return 'Errore';
+        case 'SCADUTA': return 'Scaduta';
         default: return 'Non definito';
     }
 }

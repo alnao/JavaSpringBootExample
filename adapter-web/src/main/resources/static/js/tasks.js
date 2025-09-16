@@ -14,9 +14,11 @@ const STATE_COLORS = {
     'MODIFICATA': 'bg-warning',
     'CONFERMATA': 'bg-success',
     'RIFIUTATA': 'bg-danger',
-    'PUBBLICATA': 'bg-primary',
+    'DAINVIARE': 'bg-primary',
+    'INVIATA': 'bg-primary',
     'BANNATA': 'bg-dark',
-    'ERRORE': 'bg-danger'
+    'ERRORE': 'bg-danger',
+    'SCADUTA': 'bg-danger'
 };
 
 // Mapping delle icone per gli stati
@@ -25,9 +27,11 @@ const STATE_ICONS = {
     'MODIFICATA': 'bi-pencil-square',
     'CONFERMATA': 'bi-check-circle',
     'RIFIUTATA': 'bi-x-circle',
-    'PUBBLICATA': 'bi-globe',
+    'DAINVIARE': 'bi-globe',
+    'INVIATA': 'bi-globe',
     'BANNATA': 'bi-ban',
-    'ERRORE': 'bi-exclamation-triangle'
+    'ERRORE': 'bi-exclamation-triangle',
+    'SCADUTA': 'bi-clock-history'
 };
 
 // Inizializzazione della pagina
@@ -222,7 +226,7 @@ function createAnnotationRow(annotation) {
                 ${annotation.descrizione || 'N/A'}
             </div>
         </td>
-        <td>
+        <td class="hide">
             <small>${annotation.utenteCreazione || 'N/A'}</small>
         </td>
         <td>
@@ -315,7 +319,7 @@ function createActionButtons(annotation, possibleTransitions) {
         return '<small class="text-muted">Nessuna azione disponibile</small>';
     }
     
-    let buttonsHtml = '<div class="btn-group-vertical gap-1">';
+    let buttonsHtml = '<div class="btn-group gap-1">';
     
     possibleTransitions.forEach(transition => {
         const buttonColor = getButtonColorForState(transition.statoArrivo);
@@ -341,9 +345,11 @@ function getButtonColorForState(state) {
         'MODIFICATA': 'warning',
         'CONFERMATA': 'success',
         'RIFIUTATA': 'danger',
-        'PUBBLICATA': 'primary',
+        'DAINVIARE': 'primary',
+        'INVIATA': 'primary',
         'BANNATA': 'dark',
-        'ERRORE': 'danger'
+        'ERRORE': 'danger',
+        'SCADUTA': 'danger'
     };
     return colors[state] || 'secondary';
 }

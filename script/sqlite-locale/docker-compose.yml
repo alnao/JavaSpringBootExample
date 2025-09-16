@@ -16,6 +16,7 @@ services:
       - SPRING_PROFILES_ACTIVE=sqlite
       - DATABASE_URL=jdbc:sqlite:/tmp/database.sqlite
       - SERVER_PORT=8080
+      - APP_CREATE_USERS_ENABLED=true  # Abilita la creazione degli utenti di default
     networks:
       - sqlite-network
     restart: unless-stopped

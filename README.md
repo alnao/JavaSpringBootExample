@@ -494,6 +494,22 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
 
 ## 📦 Versione SQLite per Replit
 Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessarie al corretto funzionamento del servizio, studiato per funzionare anche nel cloud Replit.
+- La versione che usa SqLite ha una classe che crea tre utenti di prova partendo dai dati dell'application YAML, è presente proprietà per disattivare questa funzionalità. Il componente è stato creato per velocizzare gli sviluppi e i test, questo componente va rimosso in un sistema di produzione. In alternatica è sempre possibile creare gli utenti con le API:
+    ```
+    curl -X POST http://localhost:8082/api/auth/register \
+      -H "Content-Type: application/json" \
+      -d '{
+        "username": "alnao",
+        "password": "$2b$12$hFoVfPak5m77PJD0cIIe8u1Yo5out7B.h8PWvwfbaloys/ndX9Zpi",
+        "email": "alnao@example.com"
+      }'
+    curl -X POST http://localhost:8082/api/auth/login \
+      -H "Content-Type: application/json" \
+      -d '{
+        "username": "admin",
+        "password": "xxxxxxxxxxxxxxxxxxx"
+      }'
+    ```
 - Utilizzado SQLite come unico database per tutte le funzionalità (annotazioni, utenti, storico) non ha nessuna dipendenza da servizi esterni: è possibile eseguire tutto in locale, ideale per prove locali o test. Previsto un profilo Spring Boot specifico `sqlite`. I comandi per eseguire il microservizio in locale con questo profilo sono:
   ```
   mvn clean package
@@ -508,22 +524,7 @@ Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessar
   ./start-all.sh
   ```
   - L'applicazione web sarà disponibile su [http://localhost:8082](http://localhost:8082)
-  - Interfaccia di gestione SQLite su [http://localhost:8084](http://localhost:8084). All'inizio il database è vuoto quindi non c'è memmeno un utente, si può inserire da interfaccia web oppure chiamare l'API:
-    ```
-    curl -X POST http://localhost:8082/api/auth/register \
-      -H "Content-Type: application/json" \
-      -d '{
-        "username": "alnao",
-        "password": "$2b$12$hFoVfPak5m77PJD0cIIe8u1Yo5out7B.h8PWvwfbaloys/ndX9Zpi",
-        "email": "alnao@example.com"
-      }'
-    curl -X POST http://localhost:8082/api/auth/login \
-      -H "Content-Type: application/json" \
-      -d '{
-        "username": "admin",
-        "password": "password123"
-      }'
-    ```
+  - Interfaccia di gestione SQLite su [http://localhost:8084](http://localhost:8084)
   - Fermare l'esecuzione
     ```
     cd script/replit-locale
@@ -539,7 +540,7 @@ Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessar
     ```
     https://xxx-xxx-xxx.worf.replit.dev
     ```
-  - Utilizzando postman/curl è possibile creare un utente con cui collegarsi, per esempio:
+  - Se la creazione degli utenti è disabilitata, è possibile creare un utente di prova con postaman/curl, per esempio:
     ```
     curl -X POST https://xxx-xxx-xxx.worf.replit.dev/api/auth/register \
       -H "Content-Type: application/json" \
@@ -759,6 +760,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - ✅ 📦 Creazione adapter con implementazione con SQLite come unica base dati
     - ✅ ☁️ Sviluppo script per esecuzione profilo sqlite in sistema Replit
     - ✅ ⚙️ Sviluppo script per esecuzione profilo sqlite in sistema AWS-EC2 con Docker senza RDS e Dynamo
+    - ✅ 🧿 Script per creazione di tre profili in ogni ambiente per adapter sqlite
   - ✅ 🤖 Gestione dell'applicazione in *gestione annotazioni* e test applicazione web di esempio
     - ✅ 🛠️ Test applicazione web di esempio anche su AWS
     - ✅ 🔧 Modifica nome adapter "app" e "port" in "application" e "core"
@@ -768,19 +770,13 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - ✅ 🧮 Nuova tabella StoricoStati, sviluppo service e port per la gestione dello storico
   - ✅ 🕸️ Modifica service per cambio stato che modifica il metadata e non il valore più la tabella storico
   - ✅ 🧩 Service per modificar lo stato con salvataggio nella tabella StoricoStati
-  - 🚧 🧿 Script per creazione di tre profili in ogni ambiente 
   - ✅ 🧑‍🔬 Inserimento di una nuova annotazione in stato INSERITA
-  - 🚧 🛰️ Gestione delle annotazioni quando son in CONFERMATA 
-  - 🚧 🛡️ Gestione delle annotazioni in stato RIFIUTATA o BANNATA
+  - ✅ 🛰️ Gestione dello stato DAINVIARE come ultimo stato possibile da API/Web.
   - 🚧 🧱 Verifica che utenti non possano fare operazioni il cui ruolo non lo prevede
-  - 🚧 🧬 Gestione delle annotazioni instato PUBBLICATA
-  - 🚧 🧭 Quando una annotazione è in stato PUBBLICATA solo ADMIN può rimetterla in RIFIUTATA
-  - 🚧 🧑‍🤝‍🧑 Elenco task: utenti USER vedono le annotazioni RIFIUTATE con la possiblità di cambiarle in INSERITA
-  - 🚧 🗃️ Elenco task: utenti MODERATOR vedono le annotazioni INSERITA con la possibiltà di rifiutarle o confermarle
-  - 🚧 🏁 Elenco task: utenti ADMIN vedono le annotazioni CONFERMATA con la possiblità di pubblicarle
 - ✅ 🐳 Build e deploy su DockerHub della versione *OnPrem*
   - ✅ 🐳 configurazione di docker-compose con MongoDb e Postgresql
   - ✅ ☸️ Esecuzione su Kubernetes/Minikube locale con yaml dedicati
+- 🚧 🏁 Test finale di tutti i punti precedenti e rilascio della versione 1.0.0
 - ✅ ☁️ Esecuzione con docker-compose della versione AWS su sistema locale con Mysql e DynamoDB 
   - ✅ 🐳 Deploy su AWS usando EC2 per eseguire il container docker, script scritto in AWS-CLI per il provisioning delle risorse necessarie (Aurora-RDS-Mysql e DynamoDB ) e la creazione della EC2 con lancio del docker con `user_data`
   - ✅ 🐳 Deploy su AWS usando ECS, Fargate e repository ECR (senza DockerHub), script scritto in AWS-CLI per il provisioning delle risorse necessarie (Aurora-RDS-Mysql e DynamoDB ) e lancio del task su ECS. Non previsto sistema di scaling up e/o bilanciatore ALB.
@@ -790,18 +786,23 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
 - ✅ 🔒 Autenticazione e autorizzazione (Spring Security) e token Jwt
   - ✅ 👥 introduzione sistema di verifica degli utenti e validazione richieste con tabella utenti
   - ✅ 📝 Gestione multiutente e modifica annotazioni con utente diverso dal creatore, test nell'applicazione web
-  - 🚧 🛠️ Valutazione di creazione `adapter-security` o posizionamento pacakge specifico attualmente nel port
+  - ✅ 🛡️ Centralità dei service JwtService e UserService nel core senza `adapter-security`
   - 🚧 🔐 OAuth2/OIDC Provider: Integrazione con provider esterni (Google, Microsoft, GitHub) + SSO enterprise
-  - 🚧 👥 Sostema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento
+  - 🚧 👥 Sistema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento
+  - 🚧 🧑‍🤝‍🧑 Gestione modifica annotazione con lock
 - 🚧 ⚙️ Evoluzione adapter con integrazione con altri sistemi
-  - 🚧 🔄 Export/Import annotazioni (JSON, CSV): creazione `adapter-etl` per l'import e l'export di tutte le versione
-  - 🚧 📚 Export/Import annotazioni (Kafka): creazione service che permetta di inviare notifiche via coda (kafka o sqs)
-  - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere
-- 🚧 ⚡ Redis Caching Layer: Cache multi-livello (L1: in-memory, L2: Redis) con invalidation strategies e cache warming
-  - 🚧 📊 Read Replicas: Separazione read/write con eventual consistency e load balancing intelligente
-  - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
+  - 🚧 🧬 Gestione delle annotazioni in stato INVIATA
+  - 🚧 📚 Import/Export annotazioni: creazione service che permetta di ricevere notifiche via coda (kafka o sqs) con creazione `adapter-kafka` e che con frequenza invii delle annotazioni concluse con cambio di stato
+  - 🚧 🔄 Export annotazioni (JSON e/o CSV): creazione `adapter-xxx` per l'export di tutte le annotazioni con cambio di stato dopo averle esporatte
+  - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie notifiche
+    - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
+  - 🚧 🧭 Sistema che gestisce la scadenza di una annotazione con spring-batch che elabora tutte le annotazioni rifiutate o scadute, con nuovo stato scadute.
   - 🚧 💾 Backup & Disaster Recovery: Cross-region backup, point-in-time recovery, RTO/RPO compliance
-- 🚧 🔒 API Rate Limiting: Rate limiting intelligente con burst allowance, IP whitelisting, geographic restrictions
+- 🚧 🏁 Test finale di tutti i punti precedenti e rilascio della versione 2.0.0
+- 🚧 🗃️ Sistema di caching con redis
+  - 🚧 ⚡ Redis Caching Layer: Cache multi-livello (L1: in-memory, L2: Redis) con invalidation strategies e cache warming
+  - 🚧 📊 Read Replicas: Separazione read/write con eventual consistency e load balancing intelligente
+  - 🚧 🔒 API Rate Limiting: Rate limiting intelligente con burst allowance, IP whitelisting, geographic restrictions
 - 🚧 🔍 Elasticsearch Integration: Ricerca full-text avanzata con highlighting, auto-complete, ricerca semantica
 - 🚧 🏗️ GitOps Workflow: ArgoCD/Flux per deployment automatici, configuration drift detection
 - 🚧 🧪 Testing Pyramid: Unit + Integration + E2E + Performance + Security testing automatizzati

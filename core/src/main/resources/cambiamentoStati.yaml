@@ -30,15 +30,15 @@ transizioni:
     ruoloRichiesto: "MODERATOR"
     descrizione: "Moderatore può confermare annotazione modificata"
 
-  - statoPartenza: "INSERITA"
-    statoArrivo: "RIFIUTATA"
-    ruoloRichiesto: "MODERATOR"
-    descrizione: "Moderatore può rifiutare annotazione"
+  #- statoPartenza: "INSERITA"
+  #  statoArrivo: "RIFIUTATA"
+  #  ruoloRichiesto: "MODERATOR"
+  #  descrizione: "Moderatore può rifiutare annotazione"
 
-  - statoPartenza: "MODIFICATA"
-    statoArrivo: "RIFIUTATA"
-    ruoloRichiesto: "MODERATOR"
-    descrizione: "Moderatore può rifiutare annotazione modificata"
+  #- statoPartenza: "MODIFICATA"
+  #  statoArrivo: "RIFIUTATA"
+  #  ruoloRichiesto: "MODERATOR"
+  #  descrizione: "Moderatore può rifiutare annotazione modificata"
 
   - statoPartenza: "INSERITA"
     statoArrivo: "BANNATA"
@@ -52,14 +52,24 @@ transizioni:
 
   # Transizioni per ADMIN
   - statoPartenza: "CONFERMATA"
-    statoArrivo: "PUBBLICATA"
+    statoArrivo: "RIFIUTATA"
     ruoloRichiesto: "ADMIN"
-    descrizione: "Admin può pubblicare annotazione confermata"
+    descrizione: "Admin può rifiutare annotazione confermata"
 
-  - statoPartenza: "PUBBLICATA"
+  - statoPartenza: "CONFERMATA"
+    statoArrivo: "DAINVIARE"
+    ruoloRichiesto: "ADMIN"
+    descrizione: "Admin può inviare annotazione confermata"
+
+  - statoPartenza: "DAINVIARE"
+    statoArrivo: "RIFIUTATA"
+    ruoloRichiesto: "ADMIN"
+    descrizione: "Admin può rifiutare annotazione da inviare"
+
+  - statoPartenza: "DAINVIARE"
     statoArrivo: "BANNATA"
     ruoloRichiesto: "ADMIN"
-    descrizione: "Admin può bannare annotazione pubblicata"
+    descrizione: "Admin può bannare annotazione da inviare"
 
   # Transizioni per ADMIN
   - statoPartenza: "RIFIUTATA"
@@ -72,18 +82,23 @@ transizioni:
     ruoloRichiesto: "ADMIN"
     descrizione: "Admin può riportare annotazione bannata a inserita"
 
-  # Transizioni per SYSTEM
-  - statoPartenza: "INSERITA"
-    statoArrivo: "ERRORE"
-    ruoloRichiesto: "ADMIN"
-    descrizione: "Sistema può marcare annotazione in errore"
-
-  - statoPartenza: "MODIFICATA"
-    statoArrivo: "ERRORE"
-    ruoloRichiesto: "ADMIN"
-    descrizione: "Sistema può marcare annotazione in errore"
-
-  - statoPartenza: "ERRORE"
+  - statoPartenza: "SCADUTA"
     statoArrivo: "INSERITA"
     ruoloRichiesto: "ADMIN"
-    descrizione: "Sistema può ripristinare annotazione da errore"
+    descrizione: "Admin può riportare annotazione scaduta a inserita"
+
+  # Transizioni per SYSTEM
+  #- statoPartenza: "INSERITA"
+  #  statoArrivo: "ERRORE"
+  #  ruoloRichiesto: "ADMIN"
+  #  descrizione: "Sistema può marcare annotazione in errore"
+
+  #- statoPartenza: "MODIFICATA"
+  #  statoArrivo: "ERRORE"
+  #  ruoloRichiesto: "ADMIN"
+  #  descrizione: "Sistema può marcare annotazione in errore"
+
+  #- statoPartenza: "ERRORE"
+  #  statoArrivo: "INSERITA"
+  #  ruoloRichiesto: "ADMIN"
+  #  descrizione: "Sistema può ripristinare annotazione da errore"

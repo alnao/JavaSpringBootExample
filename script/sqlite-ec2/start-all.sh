@@ -10,6 +10,8 @@ EC2_INSTANCE_TYPE="t3.medium"
 EC2_COUNT=1
 VPC_ID=$(aws ec2 describe-vpcs --region $REGION --filters Name=isDefault,Values=true --query 'Vpcs[0].VpcId' --output text)
 
+echo "Avvio stack gestione annotazioni AWS con profilo sqlite (EC2 Docker) nella regione $REGION"
+
 # 1. Crea Security Group
 SG_NAME="gestioneannotazioni-sqlite-ec2-sg"
 SG_ID=$(aws ec2 create-security-group --group-name $SG_NAME --description "gestioneannotazioni-sqlite-ec2 SG" --vpc-id $VPC_ID --region $REGION --output text)
@@ -54,10 +56,11 @@ sudo docker run -d --name gestioneannotazioni \
   -e SPRING_PROFILES_ACTIVE=sqlite \
   -e SERVER_PORT=8082 \
   -e SPRING_DATASOURCE_URL=jdbc:sqlite:/data/database.sqlite \
+  -e APP_CREATE_USERS_ENABLED=true \
   -v sqlite-data:/data \
   alnao/gestioneannotazioni:latest
 
-cho "Container avviato: gestioneannotazioni (http://<EC2_IP>:8082)"
+echo "Container avviato: gestioneannotazioni (http://$PUBLIC_IP:8082)"
 
 EOF
 )

@@ -267,6 +267,24 @@ logging:
     org.springframework.web: DEBUG
     org.hibernate.SQL: DEBUG
 
+app:
+  init:
+    users:
+      enabled: ${APP_CREATE_USERS_ENABLED:true} # Abilita o disabilita l'inizializzazione degli utenti di default
+      default-users:
+        - username: admin
+          email: admin@example.com
+          password: admin
+          role: ADMIN
+        - username: moderatore
+          email: moderatore@example.com
+          password: cattivo
+          role: MODERATOR
+        - username: alnao
+          email: alnao@example.com
+          password: bellissimo
+          role: USER
+
 ---
 # Profilo Development
 spring:
@@ -284,3 +302,4 @@ spring:
     level:
       it.alnao.springbootexample: DEBUG
       org.springframework.web: DEBUG
+

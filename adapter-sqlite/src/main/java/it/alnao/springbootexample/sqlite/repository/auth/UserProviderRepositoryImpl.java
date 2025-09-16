@@ -1,9 +1,9 @@
-package it.alnao.springbootexample.sqlite.service.auth;
+package it.alnao.springbootexample.sqlite.repository.auth;
 
 import it.alnao.springbootexample.core.domain.auth.UserProvider;
 import it.alnao.springbootexample.core.repository.auth.UserProviderRepository;
 import it.alnao.springbootexample.sqlite.entity.auth.UserProviderSQLiteEntity;
-import it.alnao.springbootexample.sqlite.repository.auth.UserProviderSQLiteRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Profile("sqlite")
-public class UserProviderSQLiteAdapterService implements UserProviderRepository {
+public class UserProviderRepositoryImpl implements UserProviderRepository {
     @Autowired
     private UserProviderSQLiteRepository userProviderSQLiteRepository;
 

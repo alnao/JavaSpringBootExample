@@ -1,0 +1,14 @@
+enabled: true
+defaultUsers: #SnakeYAML non converte automaticamente i nomi con trattino (default-users) in camelCase (defaultUsers) come fa Spring Boot.
+  - username: admin
+    email: admin@example.com
+    password: admin
+    role: ADMIN
+  - username: moderatore
+    email: moderatore@example.com
+    password: cattivo
+    role: MODERATOR
+  - username: alnao
+    email: alnao@example.com
+    password: bellissimo
+    role: USER
