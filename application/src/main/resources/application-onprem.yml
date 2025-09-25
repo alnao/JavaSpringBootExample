@@ -1,0 +1,55 @@
+# Configurazione profilo onprem - PostgreSQL + MongoDB + Kafka
+spring:
+  # Configurazione database PostgreSQL
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/gestione_annotazioni}
+    username: ${POSTGRES_USERNAME:gestione_annotazioni_user}
+    password: ${POSTGRES_PASSWORD:gestione_annotazioni_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+  
+  # Configurazione JPA per PostgreSQL
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        '[format_sql]': true
+        '[physical_naming_strategy]': it.alnao.springbootexample.core.config.CustomPhysicalNamingStrategy
+        jdbc:
+          '[time_zone]': UTC
+  
+  # Configurazione MongoDB
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/gestione_annotazioni}
+      auto-index-creation: true
+
+  # Configurazione Kafka
+  kafka:
+    bootstrap-servers: "${KAFKA_BROKER_URL:localhost:9092}"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+    consumer:
+      bootstrap-servers: "${KAFKA_BROKER_URL:localhost:9092}"
+      group-id: annotazioni-consumer-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+
+# Configurazione export annotazioni via Kafka
+gestione-annotazioni:
+  export-annotazioni:
+    enabled: true
+    cron-expression: "0 */5 * * * *"  # ogni 5 minuti
+    kafka:
+      broker-url: "${KAFKA_BROKER_URL:localhost:9092}"
+      topic-name: "${KAFKA_TOPIC_NAME:annotazioni-export}"

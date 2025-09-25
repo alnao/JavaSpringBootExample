@@ -45,6 +45,7 @@
         <module>adapter-aws</module>
         <module>adapter-onprem</module>
         <module>adapter-sqlite</module>
+        <module>adapter-kafka</module>
         <module>application</module>
         <module>core</module>
     </modules>

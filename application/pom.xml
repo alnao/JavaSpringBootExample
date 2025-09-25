@@ -50,6 +50,12 @@
             <artifactId>adapter-sqlite</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>it.alnao.springbootexample</groupId>
+            <artifactId>adapter-kafka</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+        </dependency>
         <!-- TEST -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -91,6 +97,12 @@
                 <dependency>
                     <groupId>it.alnao.springbootexample</groupId>
                     <artifactId>adapter-onprem</artifactId>
+                    <optional>false</optional>
+                </dependency>
+                <dependency>
+                    <groupId>it.alnao.springbootexample</groupId>
+                    <artifactId>adapter-kafka</artifactId>
+                    <version>${project.version}</version>
                     <optional>false</optional>
                 </dependency>
             </dependencies>

@@ -27,6 +27,14 @@ POSTGRES_DB=$(kubectl get pod -l app=postgres -o jsonpath="{.items[0].metadata.n
 kubectl cp script/init-database/init-postgres.sql $POSTGRES_DB:/init-postgres.sql
 kubectl exec -it $POSTGRES_DB -- psql -U demo -d gestioneannotazioni -f /init-postgres.sql
 
+# Avvio Zookeeper, Kafka e Kafka UI
+echo "[INFO] Avvio Zookeeper, Kafka e Kafka UI..."
+kubectl apply -f script/minikube-onprem/zookeeper-deployment.yaml
+kubectl wait --for=condition=Ready pod -l app=zookeeper --timeout=120s
+kubectl apply -f script/minikube-onprem/kafka-deployment.yaml
+kubectl wait --for=condition=Ready pod -l app=kafka --timeout=120s
+kubectl apply -f script/minikube-onprem/kafka-ui-deployment.yaml
+
 # Avvio il backend
 echo "[INFO] Avvio backend gestioneannotazioni (2 repliche)..."
 kubectl apply -f script/minikube-onprem/gestioneannotazioni-deployment.yaml

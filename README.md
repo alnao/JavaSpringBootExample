@@ -1,6 +1,6 @@
 # Sistema di Gestione annotazioni
 
-Progetto realizzato da < AlNao /> come esempio pratico con Java Spring Boot: consente di creare, modificare e visualizzare annotazioni e task in modo semplice e intuitivo.
+Progetto realizzato da < AlNao /> come esempio pratico con Java Spring Boot: consente di creare, modificare e visualizzare annotazioni, utenti con privilegi da moderatore possono confermare la annotazione e amministratori possono confermare e *inviare* annotazioni a sistemi esterni.
 
 La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’architettura esagonale (Hexagonal Architecture), con pieno supporto al deployment sia in ambienti on-premise che su cloud AWS. Il progetto è pensato per essere agnostico rispetto al cloud provider, al DBMS utilizzato e ai sistemi di interfaccia: puoi adattarlo facilmente a diversi ambienti, database e frontend.
 
@@ -32,6 +32,7 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
   ├── 📁 adapter-api           # REST API Controllers
   ├── 📁 adapter-web           # Risorse statiche e mini-sito di prova
   ├── 📁 adapter-aws           # Implementazione AWS (DynamoDB + MySQL/Aurora)
+  ├── 📁 adapter-kafka         # Componenti per la gestione delle code Kafka (ricezione e invio delle annotazioni)
   ├── 📁 adapter-onprem        # Implementazione On-Premise (MongoDB + PostgreSQL)
   ├── 📁 adapter-sqlite        # Implementazione SQLite (con solo il database SQLite locale)
   └── 📁 application           # Applicazione principale Spring Boot
@@ -40,6 +41,7 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
   - **Multi-ambiente**: Configurazioni dedicate per ambienti On-Premise e AWS Cloud, con profili Spring attivabili dinamicamente. Supporto per PostgreSQL, MySQL, MongoDB, DynamoDB
   - **Deploy flessibile**: Supporto per Docker, Docker Compose, Minikube/Kubernetes, AWS EC2, AWS ECS Fargate.
   - **Architettura esagonale**: Separazione netta tra business logic, API, e infrastruttura, con moduli dedicati per ogni adapter.
+  - **Gestione code**: Supporto per la gestione di code come Kafka/SQS per la ricezione e l'invio delle annotazioni
   - **REST API**: Endpoint completi per gestione dei dati. Tutti gli endpoint seguono le convenzioni REST, con metodi HTTP chiari (GET, POST, PUT, DELETE) e risposte in formato JSON. Tutte le operazioni sensibili sono protette da autenticazione JWT e, dove richiesto, da autorizzazione basata su ruolo.
   - **🔒 Autenticazione avanzata**: Gestione utenti, refresh token e JWT con configurazione esterna. 
     - *coming soon*: Integrazione con provider OAuth2 (Google, GitHub, Microsoft).
@@ -90,7 +92,7 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
     ```
     - l'applicazione web di esempio viene resa disponibile al endpoint
       ```
-      http://localhost:8081/
+      http://localhost:8082/
       ```
     - per rimuovere tutto 
       ```bash
@@ -110,6 +112,10 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
 
         node -c adapter-web/src/main/resources/static/js/annotazioni.js
         ```
+    - il monitor di kafka è disponibile al
+      ```
+      http://localhost:8085/
+      ```
 
 ## 📡 API Endpoints
 - Eseguendo il sistema in locale la base degli URL è `http://localhost:8080` (8081/8085 nel caso di esecuzione tramite docker-compose su Minikube o AWS)
@@ -325,11 +331,15 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
     docker pull alnao/gestioneannotazioni:latest
     ```
     L'immagine viene aggiornata con le ultime versioni *stabili*.
-- **Esecuzione rapida**:
+- **Esecuzione rapida** (della versione sqlite):
     ```bash
-    docker run --rm -p 8080:8080 alnao/gestioneannotazioni:latest
+    docker run --rm -p 8082:8082 \
+      -e SPRING_PROFILES_ACTIVE=sqlite \
+      -e SPRING_DATASOURCE_URL=jdbc:sqlite:/tmp/database.sqlite \
+      -e SERVER_PORT=8082 \
+      alnao/gestioneannotazioni:latest
     ```
-    L'applicazione sarà disponibile su [http://localhost:8080](http://localhost:8080) ma nel sistema devono esserci già installati e ben configuati MongoDb e Postgresql.
+    Nota: si può avviare il profilo *sqlite* per eseguire l'immagine senza altri servizi, oppure l'applicazione con il profilo *onprem* se nel sistema sono avviati anche i servizi MongoDb, Postgresql e Kafka come nel prossimo punto.
 - **Esecuzione completa** 🔌 Rete Docker condivisa, alternativa robusta ma senza docker-compose:
     Possibile eseguire tutto con docker (senza docker-compose):
     ```bash
@@ -344,7 +354,7 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
       -e MONGO_INITDB_ROOT_USERNAME=demo \
       -e MONGO_INITDB_ROOT_PASSWORD=demo \
       mongo:4.4
-    # Creazione document
+    # Creazione document dentro Mongo
     docker cp script/init-database/init-mongodb.js annotazioni-mongo:/init-mongodb.js
     docker exec -it annotazioni-mongo mongo -u demo -p demo --authenticationDatabase admin /init-mongodb.js
 
@@ -360,21 +370,56 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
     docker cp script/init-database/init-postgres.sql annotazioni-postgres:/init-postgres.sql
     docker exec -it annotazioni-postgres psql -U demo -d annotazioni -f /init-postgres.sql
 
+    # Esecuzione di Kafka e Zookeeper
+    docker run  --rm \
+      --network annotazioni-network \
+      --name annotazioni-zookeeper \
+      -e ZOOKEEPER_CLIENT_PORT=2181 \
+      -e ZOOKEEPER_TICK_TIME=2000 \
+      -p 2181:2181 \
+      confluentinc/cp-zookeeper:7.4.0
+
+    # Zookeeper
+    docker run  --rm \
+      --network annotazioni-network \
+      --name annotazioni-kafka \
+      -p 9092:9092 \
+      -e KAFKA_BROKER_ID=1 \
+      -e KAFKA_ZOOKEEPER_CONNECT=annotazioni-zookeeper:2181 \
+      -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://annotazioni-kafka:9092 \
+      -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 \
+      confluentinc/cp-kafka:7.4.0
+
+    # Kafka-ui
+    docker run  --rm -p 8085:8080 \
+      --name annotazioni-kafka-ui \
+      --network annotazioni-network \
+      -e KAFKA_CLUSTERS_0_NAME=gestioneannotazioni-cluster \
+      -e KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=annotazioni-kafka:9092 \
+      -e KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181 \
+      provectuslabs/kafka-ui:latest
+
     # Esecuzione servizio 
-    docker run --rm -p 8082:8080 --name annotazioni-app \
+    docker run  --rm -p 8082:8080 --name annotazioni-app \
       --network annotazioni-network \
       -e SPRING_DATASOURCE_URL=jdbc:postgresql://annotazioni-postgres:5432/annotazioni \
       -e SPRING_DATA_MONGODB_URI=mongodb://demo:demo@annotazioni-mongo:27017/annotazioni?authSource=admin \
       -e SPRING_DATASOURCE_USERNAME=demo \
       -e SPRING_DATASOURCE_PASSWORD=demo \
+      -e KAFKA_BROKER_URL=annotazioni-kafka:9092 \
       alnao/gestioneannotazioni:latest
+
+    # Applicazione disponibile al url
+    http://localhost:8082
+    # Kafka-ui disponibile al u rl
+    http://localhost:8085
 
     # Per vedere i container nella rete
     docker network inspect annotazioni-network
 
     # Per fermare tutto e rimuovere la rete
-    docker stop annotazioni-app annotazioni-mongo annotazioni-postgres
-    docker rm annotazioni-app annotazioni-mongo annotazioni-postgres
+    docker stop annotazioni-app annotazioni-mongo annotazioni-postgres annotazioni-kafka annotazioni-kafka-ui
+    docker rm annotazioni-app annotazioni-mongo annotazioni-postgres annotazioni-kafka annotazioni-kafka-ui
     docker network rm annotazioni-network
     docker network prune -f
     docker volume rm $(docker volume ls -q)
@@ -483,6 +528,7 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
       e visitando [http://localhost:30080](http://localhost:30080)
     - Oppure con *freelens* si può creare l'endpoint selezionado il service specifico.
 - Note:
+    - Anche kafka e il suo kafka-ui è disponibile come ingress oppure usando freelens si crea l'endpoint
     - I dati di MongoDB e PostgreSQL sono persistenti grazie ai PVC di Kubernetes, a meno di usare lo script di `stop-all.sh` che rimuove anche i volumi persistenti.
     - Viene usata l'immagine `alnao/gestioneannotazioni:latest` su dockerHub e non una immagine creata in sistema locale.
     - Per rimuovere tutto lo script da lanciare è
@@ -490,7 +536,6 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
       ./script/minikube-onprem/stop-all.sh
       minikube delete
       ```
-
 
 ## 📦 Versione SQLite per Replit
 Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessarie al corretto funzionamento del servizio, studiato per funzionare anche nel cloud Replit.
@@ -791,9 +836,10 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - 🚧 👥 Sistema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento
   - 🚧 🧑‍🤝‍🧑 Gestione modifica annotazione con lock
 - 🚧 ⚙️ Evoluzione adapter con integrazione con altri sistemi
-  - 🚧 🧬 Gestione delle annotazioni in stato INVIATA
-  - 🚧 📚 Import/Export annotazioni: creazione service che permetta di ricevere notifiche via coda (kafka o sqs) con creazione `adapter-kafka` e che con frequenza invii delle annotazioni concluse con cambio di stato
-  - 🚧 🔄 Export annotazioni (JSON e/o CSV): creazione `adapter-xxx` per l'export di tutte le annotazioni con cambio di stato dopo averle esporatte
+  - ✅ 🧬 Gestione delle annotazioni in stato INVIATA
+  - ✅ 📚 Export annotazioni: creazione service che permetta di inviare notifiche via coda (kafka o sqs) con creazione `adapter-kafka` e che con frequenza invii delle annotazioni concluse con cambio di stato
+  - 🚧 ☁️ Configurazione del servizio SQS nell'adapter AWS e test nelle versioni EC2, ECS e EKS
+  - 🚧 🔄 Import annotazioni (JSON e/o CSV): creazione `adapter-xxx` per l'import di annotazioni con cambio di stato dopo averle importate
   - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie notifiche
     - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
   - 🚧 🧭 Sistema che gestisce la scadenza di una annotazione con spring-batch che elabora tutte le annotazioni rifiutate o scadute, con nuovo stato scadute.

@@ -1,7 +1,7 @@
 package it.alnao.springbootexample.sqlite.entity;
 
+import it.alnao.springbootexample.core.domain.Annotazione;
 import jakarta.persistence.*;
-import org.hibernate.annotations.UuidGenerator;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -21,6 +21,15 @@ public class AnnotazioneSQLiteEntity {
     private LocalDateTime dataUltimaModifica;
 
     public AnnotazioneSQLiteEntity() {}
+    
+    public AnnotazioneSQLiteEntity(Annotazione annotazione) {
+        this.id = annotazione.getId().toString();
+        this.valoreNota = annotazione.getValoreNota();
+        this.versioneNota = annotazione.getVersioneNota();
+        this.dataInserimento = LocalDateTime.now();
+        this.dataUltimaModifica = LocalDateTime.now();
+    }
+    
     public AnnotazioneSQLiteEntity(UUID id, String valoreNota, String versioneNota) {
         this.id = id.toString();
         this.valoreNota = valoreNota;
@@ -28,6 +37,11 @@ public class AnnotazioneSQLiteEntity {
         this.dataInserimento = LocalDateTime.now();
         this.dataUltimaModifica = LocalDateTime.now();
     }
+    
+    public Annotazione toDomain() {
+        return new Annotazione(UUID.fromString(this.id), this.versioneNota, this.valoreNota);
+    }
+    
     // Getters e Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }

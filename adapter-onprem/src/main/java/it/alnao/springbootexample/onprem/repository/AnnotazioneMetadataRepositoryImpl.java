@@ -84,7 +84,7 @@ public class AnnotazioneMetadataRepositoryImpl implements AnnotazioneMetadataRep
 
     @Override
     public List<AnnotazioneMetadata> findByStato(StatoAnnotazione stato) {
-        return jpaRepository.findByStato(stato)
+        return jpaRepository.findByStato(stato.name())
                 .stream()
                 .map(entity -> this.toDomain(entity))
                 .collect(Collectors.toList());

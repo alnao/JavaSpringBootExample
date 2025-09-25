@@ -1,0 +1,72 @@
+# Configurazione profilo sqlite - SQLite + tabella export locale
+spring:
+  # Configurazione database SQLite
+  datasource:
+    url: "${SQLITE_DATABASE_URL:jdbc:sqlite:./data/gestione_annotazioni.db}"
+    driver-class-name: org.sqlite.JDBC
+    # SQLite non supporta username/password
+  
+  # Configurazione JPA per SQLite
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+        '[format_sql]': true
+        '[physical_naming_strategy]': it.alnao.springbootexample.core.config.CustomPhysicalNamingStrategy
+        jdbc:
+          '[time_zone]': UTC
+    packages-to-scan:
+      - it.alnao.springbootexample.sqlite.entity
+      - it.alnao.springbootexample.sqlite.entity.auth
+
+  # Disabilita MongoDB per il profilo sqlite
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+
+  # Inizializzazione SQL
+  sql:
+    init:
+      mode: always
+
+
+
+# Logging specifico per SQLite
+logging:
+  level:
+    '[it.alnao.springbootexample]': DEBUG
+    '[org.springframework.web]': DEBUG
+    '[org.hibernate.SQL]': DEBUG
+
+# Configurazione utenti di default per SQLite
+app:
+  init:
+    users:
+      enabled: ${APP_CREATE_USERS_ENABLED:true}
+      default-users:
+        - username: admin
+          email: admin@example.com
+          password: admin
+          role: ADMIN
+        - username: moderatore
+          email: moderatore@example.com
+          password: cattivo
+          role: MODERATOR
+        - username: alnao
+          email: alnao@example.com
+          password: bellissimo
+          role: USER
+
+# Configurazione export annotazioni via tabella locale
+gestione-annotazioni:
+  export-annotazioni:
+    enabled: true
+    cron-expression: "0 */5 * * * *"   # ogni 5 minuti
+    sqlite:
+      table-name: "annotazioni_inviate"

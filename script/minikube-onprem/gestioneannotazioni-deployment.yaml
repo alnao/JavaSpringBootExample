@@ -24,6 +24,8 @@ spec:
               value: demo
             - name: SPRING_DATA_MONGODB_URI
               value: mongodb://demo:demo@mongo:27017/gestioneannotazioni_db?authSource=admin
+            - name: KAFKA_BROKER_URL
+              value: kafka:9092
           ports:
             - containerPort: 8080
 ---

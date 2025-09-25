@@ -19,4 +19,9 @@ echo "[INFO] Rimuovo PersistentVolumeClaim (PVC) per MongoDB e PostgreSQL..."
 kubectl delete -f script/minikube-onprem/mongo-pvc.yaml || true
 kubectl delete -f script/minikube-onprem/postgres-pvc.yaml || true
 
+echo "[INFO] Rimuovo Kafka UI, Kafka e Zookeeper..."
+kubectl delete -f script/minikube-onprem/kafka-ui-deployment.yaml || true
+kubectl delete -f script/minikube-onprem/kafka-deployment.yaml || true
+kubectl delete -f script/minikube-onprem/zookeeper-deployment.yaml || true
+
 echo "[INFO] Tutti i servizi e le risorse sono stati rimossi."

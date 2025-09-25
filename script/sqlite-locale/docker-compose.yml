@@ -14,7 +14,7 @@ services:
       - sqlite-data:/app/data
     environment:
       - SPRING_PROFILES_ACTIVE=sqlite
-      - DATABASE_URL=jdbc:sqlite:/tmp/database.sqlite
+      - SQLITE_DATABASE_URL=jdbc:sqlite:/app/data/database.sqlite
       - SERVER_PORT=8080
       - APP_CREATE_USERS_ENABLED=true  # Abilita la creazione degli utenti di default
     networks:
@@ -29,7 +29,7 @@ services:
       - "8084:8080"
     volumes:
       - sqlite-data:/data
-    command: sqlite_web -H 0.0.0.0 -p 8080 /tmp/database.sqlite
+    command: sqlite_web -H 0.0.0.0 -p 8080 /data/database.sqlite
     networks:
       - sqlite-network
     depends_on:

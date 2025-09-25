@@ -3,6 +3,7 @@ package it.alnao.springbootexample.app;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * Applicazione principale Spring Boot per il sistema di gestione Annotazioni
  */
@@ -10,11 +11,13 @@ import org.springframework.context.annotation.ComponentScan;
     org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration.class,
     org.springframework.boot.actuate.autoconfigure.metrics.SystemMetricsAutoConfiguration.class
 })
+@EnableScheduling
 @ComponentScan(basePackages = {
     "it.alnao.springbootexample.api",
     "it.alnao.springbootexample.aws",
     "it.alnao.springbootexample.onprem",
     "it.alnao.springbootexample.sqlite",
+    "it.alnao.springbootexample.kafka",
     "it.alnao.springbootexample.core"
 })
 public class GestioneAnnotazioniApplication {

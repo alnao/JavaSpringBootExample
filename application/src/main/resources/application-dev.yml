@@ -1,0 +1,38 @@
+# Configurazione profilo dev - Development
+spring:
+  # Configurazione logging dettagliata per development
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        '[format_sql]': true
+        # Logging SQL dettagliato
+        '[show_sql]': true
+        '[use_sql_comments]': true
+        '[type]': trace
+
+# Logging dettagliato per development
+logging:
+  level:
+    '[it.alnao.springbootexample]': DEBUG
+    '[org.springframework.web]': DEBUG
+    '[org.springframework.security]': DEBUG
+    '[org.hibernate.SQL]': DEBUG
+    '[org.hibernate.type.descriptor.sql.BasicBinder]': TRACE
+
+# Configurazione Actuator esposta per development
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+
+# Configurazione export annotazioni per development (frequenza alta)
+gestione-annotazioni:
+  export-annotazioni:
+    enabled: true
+    cron-expression: "0 */5 * * * *"   # ogni 5 minuti per test rapidi

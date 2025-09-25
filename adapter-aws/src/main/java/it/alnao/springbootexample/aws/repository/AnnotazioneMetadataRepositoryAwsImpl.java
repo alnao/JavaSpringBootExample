@@ -76,7 +76,7 @@ public class AnnotazioneMetadataRepositoryAwsImpl implements AnnotazioneMetadata
 
     @Override
     public List<AnnotazioneMetadata> findByStato(StatoAnnotazione stato) {
-        return mysqlRepository.findByStato(stato)
+        return mysqlRepository.findByStato(stato.name())
                 .stream()
                 .map(entity -> this.toDomain(entity))
                 .collect(Collectors.toList());
