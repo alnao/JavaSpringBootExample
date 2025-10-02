@@ -50,8 +50,17 @@ aws dynamodb create-table \
     AttributeName=idAnnotazione,AttributeType=S \
     AttributeName=dataModifica,AttributeType=S \
   --key-schema AttributeName=idOperazione,KeyType=HASH \
-  --global-secondary-indexes \
-    IndexName=idAnnotazione-index,KeySchema=[{AttributeName=idAnnotazione,KeyType=HASH},{AttributeName=dataModifica,KeyType=RANGE}],Projection={ProjectionType=ALL},ProvisionedThroughput={ReadCapacityUnits=5,WriteCapacityUnits=5} \
+  --global-secondary-indexes '[
+    {
+      "IndexName": "idAnnotazione-index",
+      "KeySchema": [
+        {"AttributeName":"idAnnotazione","KeyType":"HASH"},
+        {"AttributeName":"dataModifica","KeyType":"RANGE"}
+      ],
+      "Projection": {"ProjectionType":"ALL"},
+      "ProvisionedThroughput": {"ReadCapacityUnits":5,"WriteCapacityUnits":5}
+    }
+  ]' \
   --billing-mode PROVISIONED \
   --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
   --endpoint-url "$DYNAMO_ENDPOINT" \

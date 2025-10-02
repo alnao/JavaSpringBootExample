@@ -1,6 +1,8 @@
 package it.alnao.springbootexample.aws.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import it.alnao.springbootexample.aws.config.AwsProperties;
 import it.alnao.springbootexample.core.config.AnnotazioneInvioProperties;
 import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
@@ -29,18 +31,21 @@ public class SqsAnnotazioneInvioService implements AnnotazioneInvioService {
     private final AnnotazioneMetadataRepository metadataRepository;
     private final AnnotazioneRepository annotazioneRepository;
     private final SqsClient sqsClient;
-    private final AnnotazioneInvioProperties properties;
+    private final AnnotazioneInvioProperties annotazioneInvioProperties;
+    private final AwsProperties awsProperties;
     private final ObjectMapper objectMapper;
     
     public SqsAnnotazioneInvioService(AnnotazioneMetadataRepository metadataRepository,
                                     AnnotazioneRepository annotazioneRepository,
                                     SqsClient sqsClient,
-                                    AnnotazioneInvioProperties properties,
+                                    AnnotazioneInvioProperties annotazioneInvioProperties,
+                                    AwsProperties awsProperties,
                                     ObjectMapper objectMapper) {
         this.metadataRepository = metadataRepository;
         this.annotazioneRepository = annotazioneRepository;
         this.sqsClient = sqsClient;
-        this.properties = properties;
+        this.annotazioneInvioProperties = annotazioneInvioProperties;
+        this.awsProperties = awsProperties;
         this.objectMapper = objectMapper;
     }
     
@@ -67,10 +72,13 @@ public class SqsAnnotazioneInvioService implements AnnotazioneInvioService {
                 
                 // Crea il messaggio SQS
                 SendMessageRequest request = SendMessageRequest.builder()
-                        .queueUrl(properties.getSqs().getQueueUrl())
+                        .queueUrl(awsProperties.getSqs().getQueueUrl())
                         .messageBody(messageJson)
-                        .messageGroupId("annotazioni-invio")
-                        .messageDeduplicationId(metadata.getId().toString())
+                        // Opzione 1: Rimuovi i parametri FIFO (Consigliata)
+                        //.messageGroupId("annotazioni-invio")
+                        //.messageDeduplicationId(metadata.getId().toString())
+                        // oppuere configurare la coda come FIFO nel file di setup di LocalStack:
+                        //  --attributes FifoQueue=true,ContentBasedDeduplication=true"
                         .build();
                 
                 // Invia a SQS
@@ -98,6 +106,6 @@ public class SqsAnnotazioneInvioService implements AnnotazioneInvioService {
     
     @Override
     public boolean isEnabled() {
-        return properties.isEnabled() && properties.getSqs().getQueueUrl() != null;
+        return annotazioneInvioProperties.isEnabled() && awsProperties.getSqs().getQueueUrl() != null;
     }
 }

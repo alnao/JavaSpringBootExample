@@ -51,4 +51,4 @@ cni-plugins-linux-amd64-*
 
 # dynamodb_data 
 **/dynamodb_data
-**/dynamodb-data
+**/localstack_data

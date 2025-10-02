@@ -37,20 +37,63 @@ services:
     volumes:
       - ./dynamodb_data:/home/dynamodblocal/data
 
+  localstack: #per SQS in locale!
+    image: localstack/localstack:3
+    container_name: gestioneannotazioni-localstack
+    ports:
+      - "4566:4566"  # endpoint unico per tutti i servizi AWS locali
+    environment:
+      - SERVICES=sqs
+      - DEFAULT_REGION=eu-central-1
+    networks:
+      - aws-onprem-network
+    volumes:
+      - ./localstack_data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localstack:4566/_localstack/health"] #ex http://localhost:4566/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    # awslocal sqs create-queue --queue-name annotazioni
+    # docker exec -it gestioneannotazioni-localstack awslocal sqs list-queues
+  init-sqs: #questo crea la coda SQS in Localstack
+    image: amazon/aws-cli
+    container_name: gestioneannotazioni-init-sqs
+    entrypoint: ["/bin/sh", "-c", "until curl -sf http://localstack:4566/_localstack/health; do echo 'Waiting for LocalStack...'; sleep 3; done; aws sqs create-queue --queue-name annotazioni --endpoint-url=http://localstack:4566 --region=eu-central-1"]
+    environment:
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+      - AWS_DEFAULT_REGION=eu-central-1
+    depends_on:
+      localstack:
+        condition: service_healthy
+    networks:
+      - aws-onprem-network
+    restart: "no"
+
   # Applicazione Spring Boot profilo AWS
   app:
     image: alnao/gestioneannotazioni:latest
     container_name: gestioneannotazioni-app-aws
     environment:
       SPRING_PROFILES_ACTIVE: aws
+      SERVER_PORT: 8085
+      # Database MySQL/RDS
       AWS_RDS_URL: jdbc:mysql://mysql:3306/gestioneannotazioni
       AWS_RDS_USERNAME: gestioneannotazioni_user
       AWS_RDS_PASSWORD: gestioneannotazioni_pass
+      # Credenziali AWS (CORRETTE per AWS SDK v2)
+      AWS_ACCESS_KEY_ID: dummy
+      AWS_SECRET_ACCESS_KEY: dummy
       AWS_REGION: eu-central-1
-      AWS_ACCESS_KEY: dummy
-      AWS_SECRET_KEY: dummy
+      # DynamoDB
       DYNAMODB_ENDPOINT: http://dynamodb:8000
-      SERVER_PORT: 8085
+      DYNAMODB_ANNOTAZIONI_TABLE_NAME: annotazioni
+      # SQS LocalStack
+      SQS_ENDPOINT: http://localstack:4566
+      SQS_QUEUE_URL: http://localstack:4566/000000000000/annotazioni
+      SQS_REGION: eu-central-1
     ports:
       - "8085:8085"
     depends_on:

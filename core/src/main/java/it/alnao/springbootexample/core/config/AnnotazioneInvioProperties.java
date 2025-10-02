@@ -10,7 +10,6 @@ public class AnnotazioneInvioProperties {
     private boolean enabled = false;
     private String cronExpression = "0 */5 * * * *"; // ogni 5 minuti di default
     private Kafka kafka = new Kafka();
-    private Sqs sqs = new Sqs();
     private Sqlite sqlite = new Sqlite();
     
     public static class Kafka {
@@ -22,17 +21,6 @@ public class AnnotazioneInvioProperties {
         public void setBrokerUrl(String brokerUrl) { this.brokerUrl = brokerUrl; }
         public String getTopicName() { return topicName; }
         public void setTopicName(String topicName) { this.topicName = topicName; }
-    }
-    
-    public static class Sqs {
-        private String queueUrl;
-        private String region = "eu-west-1";
-        
-        // getters and setters
-        public String getQueueUrl() { return queueUrl; }
-        public void setQueueUrl(String queueUrl) { this.queueUrl = queueUrl; }
-        public String getRegion() { return region; }
-        public void setRegion(String region) { this.region = region; }
     }
     
     public static class Sqlite {
@@ -50,8 +38,6 @@ public class AnnotazioneInvioProperties {
     public void setCronExpression(String cronExpression) { this.cronExpression = cronExpression; }
     public Kafka getKafka() { return kafka; }
     public void setKafka(Kafka kafka) { this.kafka = kafka; }
-    public Sqs getSqs() { return sqs; }
-    public void setSqs(Sqs sqs) { this.sqs = sqs; }
     public Sqlite getSqlite() { return sqlite; }
     public void setSqlite(Sqlite sqlite) { this.sqlite = sqlite; }
 }

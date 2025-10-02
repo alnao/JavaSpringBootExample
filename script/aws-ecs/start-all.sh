@@ -28,6 +28,9 @@ AURORA_ENGINE="aurora-mysql"
 AURORA_ENGINE_VER="5.7.mysql_aurora.2.11.4"
 AURORA_INSTANCE_CLASS="db.t3.medium"
 
+SQS_QUEUE_NAME="gestioneannotazioni-annotazioni"
+SQS_QUEUE_URL="https://sqs.$AWS_REGION.amazonaws.com/000000000000/$SQS_QUEUE_NAME"
+
 VPC_ID="" # lasciato vuoto per usare la default VPC
 SUBNETS="" # verrà popolato dallo script
 SECURITY_GROUP_ID="" # verrà creato
@@ -52,6 +55,9 @@ echo "[1b/7] Creazione IAM Role per ECS Task..."
 TASK_ROLE_NAME="gestioneannotazioni-ecs-task-role"
 TASK_ROLE_ARN=""
 POLICY_ARN="arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+RDS_POLICY_ARN="arn:aws:iam::aws:policy/AmazonRDSFullAccess"
+SQS_POLICY_ARN="arn:aws:iam::aws:policy/AmazonSQSFullAccess"
+
 if ! aws iam get-role --role-name $TASK_ROLE_NAME --region $AWS_REGION > /dev/null 2>&1; then
   TASK_ROLE_ARN=$(aws iam create-role \
     --role-name $TASK_ROLE_NAME \
@@ -59,6 +65,8 @@ if ! aws iam get-role --role-name $TASK_ROLE_NAME --region $AWS_REGION > /dev/nu
     --region $AWS_REGION \
     --query 'Role.Arn' --output text)
   aws iam attach-role-policy --role-name $TASK_ROLE_NAME --policy-arn $POLICY_ARN --region $AWS_REGION
+  aws iam attach-role-policy --role-name $TASK_ROLE_NAME --policy-arn $RDS_POLICY_ARN --region $AWS_REGION
+  aws iam attach-role-policy --role-name $TASK_ROLE_NAME --policy-arn $SQS_POLICY_ARN --region $AWS_REGION
 else
   TASK_ROLE_ARN=$(aws iam get-role --role-name $TASK_ROLE_NAME --region $AWS_REGION --query 'Role.Arn' --output text)
   echo "IAM Role già esistente: $TASK_ROLE_ARN"
@@ -70,6 +78,8 @@ EXEC_ROLE_NAME="gestioneannotazioni-ecs-execution-role"
 EXEC_ROLE_ARN=""
 EXEC_POLICY_ARN="arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 LOGS_POLICY_ARN="arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+SQS_POLICY_ARN="arn:aws:iam::aws:policy/AmazonSQSFullAccess"
+
 if ! aws iam get-role --role-name $EXEC_ROLE_NAME --region $AWS_REGION > /dev/null 2>&1; then
   EXEC_ROLE_ARN=$(aws iam create-role \
     --role-name $EXEC_ROLE_NAME \
@@ -78,6 +88,7 @@ if ! aws iam get-role --role-name $EXEC_ROLE_NAME --region $AWS_REGION > /dev/nu
     --query 'Role.Arn' --output text)
   aws iam attach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn $EXEC_POLICY_ARN --region $AWS_REGION
   aws iam attach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn $LOGS_POLICY_ARN --region $AWS_REGION
+  aws iam attach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn $SQS_POLICY_ARN --region $AWS_REGION
 else
   EXEC_ROLE_ARN=$(aws iam get-role --role-name $EXEC_ROLE_NAME --region $AWS_REGION --query 'Role.Arn' --output text)
   echo "IAM Execution Role già esistente: $EXEC_ROLE_ARN"
@@ -214,6 +225,55 @@ if ! aws dynamodb describe-table --table-name $DYNAMODB_TABLE2 --region $AWS_REG
 else
   echo "Tabella DynamoDB $DYNAMODB_TABLE2 già esistente."
 fi
+# Crea tabella annotazioni_storicoStati con GSI
+if ! aws dynamodb describe-table --table-name annotazioni_storicoStati --region $AWS_REGION > /dev/null 2>&1; then
+  aws dynamodb create-table \
+    --table-name annotazioni_storicoStati \
+    --attribute-definitions \
+      AttributeName=idOperazione,AttributeType=S \
+      AttributeName=idAnnotazione,AttributeType=S \
+      AttributeName=dataModifica,AttributeType=S \
+    --key-schema AttributeName=idOperazione,KeyType=HASH \
+    --global-secondary-indexes '[
+      {
+        "IndexName": "idAnnotazione-index",
+        "KeySchema": [
+          {"AttributeName":"idAnnotazione","KeyType":"HASH"},
+          {"AttributeName":"dataModifica","KeyType":"RANGE"}
+        ],
+        "Projection": {"ProjectionType":"ALL"},
+        "ProvisionedThroughput": {"ReadCapacityUnits":5,"WriteCapacityUnits":5}
+      }
+    ]' \
+    --billing-mode PROVISIONED \
+    --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
+    --region "$AWS_REGION" || echo "Tabella storicoStati già esistente o errore ignorato."
+else
+  echo "Tabella DynamoDB annotazioni_storicoStati già esistente."
+fi
+
+# 4. Crea coda SQS con tag
+echo "Creazione coda SQS: $SQS_QUEUE_NAME"
+SQS_QUEUE_URL=$(aws sqs create-queue \
+  --queue-name $SQS_QUEUE_NAME \
+  --region $AWS_REGION \
+  --query 'QueueUrl' --output text 2>/dev/null) || {
+  echo "Tentativo di recuperare coda esistente..."
+  SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region $AWS_REGION --query 'QueueUrl' --output text 2>/dev/null) || {
+    echo "ERRORE: Impossibile creare o trovare la coda SQS"
+    exit 1
+  }
+}
+# Aggiungi tag alla coda (separatamente)
+if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
+  echo "Aggiunta tag alla coda SQS..."
+  aws sqs tag-queue \
+    --queue-url "$SQS_QUEUE_URL" \
+    --tags "Name=gestioneannotazioni-app,gestioneannotazioni-app=true" \
+    --region $AWS_REGION 2>/dev/null || echo "Errore nell'aggiunta tag SQS (ignorato)"
+fi
+echo "SQS Queue URL: $SQS_QUEUE_URL"
 
 # === 5. Creazione cluster ECS ===
 echo "[5/7] Creazione ECS Cluster..."
@@ -271,7 +331,8 @@ cat > ./script/aws-ecs/task-def.json <<EOF
         { "name": "RDS_PORT", "value": "3306" },
         { "name": "RDS_DATABASE", "value": "$AURORA_DB_NAME" },
         { "name": "RDS_USERNAME", "value": "$AURORA_MASTER_USER" },
-        { "name": "RDS_PASSWORD", "value": "$AURORA_MASTER_PASS" }
+        { "name": "RDS_PASSWORD", "value": "$AURORA_MASTER_PASS" },
+        { "name": "SQS_QUEUE_URL", "value": "$SQS_QUEUE_URL" }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",

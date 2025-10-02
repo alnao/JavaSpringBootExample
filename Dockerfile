@@ -21,6 +21,7 @@ COPY adapter-aws/pom.xml adapter-aws/
 COPY adapter-onprem/pom.xml adapter-onprem/
 COPY adapter-sqlite/pom.xml adapter-sqlite/
 COPY adapter-kafka/pom.xml adapter-kafka/
+COPY adapter-azure/pom.xml adapter-azure/
 COPY application/pom.xml application/
 
 # Download delle dipendenze (layer cache optimization)

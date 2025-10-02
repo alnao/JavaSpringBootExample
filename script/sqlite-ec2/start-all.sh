@@ -3,6 +3,9 @@
 # Richiede AWS CLI configurato ma non usa RDS nè DynamoDB, solo EC2 con Docker e SQLite
 
 set -e
+# Disabilita paginazione aws cli
+export AWS_PAGER=""
+
 # Parametri
 REGION="eu-central-1"
 PARAM_KEY_NAME="gestioneannotazioni-sqlite-ec2-key"
@@ -14,7 +17,10 @@ echo "Avvio stack gestione annotazioni AWS con profilo sqlite (EC2 Docker) nella
 
 # 1. Crea Security Group
 SG_NAME="gestioneannotazioni-sqlite-ec2-sg"
-SG_ID=$(aws ec2 create-security-group --group-name $SG_NAME --description "gestioneannotazioni-sqlite-ec2 SG" --vpc-id $VPC_ID --region $REGION --output text)
+SG_ID=$(aws ec2 create-security-group --group-name $SG_NAME --description "gestioneannotazioni SG" --vpc-id $VPC_ID --region $REGION --query 'GroupId' --output text 2>/dev/null) || {
+  echo "Security Group già esistente, recupero l'ID..."
+  SG_ID=$(aws ec2 describe-security-groups --group-names $SG_NAME --region $REGION --query 'SecurityGroups[0].GroupId' --output text)
+}
 aws ec2 create-tags --resources $SG_ID --tags Key=Name,Value=gestioneannotazioni-sqlite-ec2-app Key=gestioneannotazioni-sqlite-ec2-app,Value=true --region $REGION
 # Apre porte per app (8082), adminer (8084)
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8082 --cidr 0.0.0.0/0 --region $REGION

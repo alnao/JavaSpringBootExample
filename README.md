@@ -606,7 +606,7 @@ Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessar
     ```
     https://replit.com/@alnao84/JavaSpringBootExample
     ```
-- Versione per AWS: è stata sviluppata anche uno script per eseguire il microservizio in una istanza EC2 con il profilo sqlite con docker e senza bisogno di RDS, Dynamo e ECS. 
+- Versione **Sqlite** su **AWS-EC2**: è stata sviluppata anche uno script per eseguire il microservizio in una istanza EC2 con il profilo sqlite con docker e senza bisogno di RDS, Dynamo e ECS. 
   - Script di creazione dello stack (Key, SecurityGroup e avvio istanza EC2):
     ```
     ./script/sqlite-ec2/start-all.sh 
@@ -643,7 +643,18 @@ Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, 
   docker-compose -f script/aws-onprem/docker-compose.yml up -d
   ```
   - lo stack crea anche tabelle su Dynamo e database/tabelle su MySql locale
-  - presenta anche uno script `./script/aws-onprem/start-all.sh`
+  - lo stack crea anche la coda SQS tramite immagine `localstack`, per everificare lo stato dei messaggi nella coda è possibile eseguire i comandi
+    ```bash
+    # Lista dalle code disponibili
+    docker exec -it gestioneannotazioni-localstack awslocal sqs list-queues --region=eu-central-1
+    # Crea la coda se non esiste
+    docker exec -it gestioneannotazioni-localstack awslocal sqs create-queue --queue-name annotazioni --region=eu-central-1
+    # Lista dei messaggi
+    docker exec -it gestioneannotazioni-localstack awslocal sqs receive-message --queue-url http://localhost:4566/000000000000/annotazioni --region=eu-central-1
+    # Verifica delle variabili di ambiente 
+    docker exec -it gestioneannotazioni-app-aws env | grep AWS
+    ```
+  - presenta anche uno script `./script/aws-onprem/start-all.sh` che esegue il docker compose
 - Servizi disponibili:
   - **Frontend**:        [http://localhost:8085](http://localhost:8085)
   - **Backend API**:     [http://localhost:8085/api/annotazioni](http://localhost:8085/api/annotazioni)
@@ -677,6 +688,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
     Lo script esegue in sequenza:
     - Creazione VPC, Security Group, KeyPair, IAM Role
     - Provisioning Aurora MySQL (RDS) e DynamoDB
+    - Creazione della coda SQS utilizzata per l'invio/export delle annotazioni
     - Upload e lancio script di inizializzazione SQL su Aurora (init-mysql.sql)
     - Creazione e configurazione istanza EC2 (Amazon Linux 2)
     - Deploy automatico del jar Spring Boot e avvio con profilo `aws`
@@ -690,6 +702,16 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
       sudo cat /var/log/cloud-init-output.log
       sudo tail /var/log/cloud-init-output.log --follow
       ```
+    - Comando AWS-CLI per la lettura dei messaggi nelle code SQS
+      ```
+      SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
+      SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
+      aws sqs receive-message \
+        --queue-url "$SQS_QUEUE_URL" \
+        --region eu-central-1 \
+        --attribute-names All \
+        --message-attribute-names All
+      ```
   - Pulizia/cleanup:
     Rimozione di tutte le risorse create (EC2, RDS, DynamoDB, Security Group, KeyPair, ecc):
     ```bash
@@ -697,7 +719,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
     ```
     - Attenzione: questo script elimina tutti i dati nei database, se necessario effettuare un backup prima di eseguire lo script, l'operazione di cancellazione è irreversibile.
 - Note
-  - Il provisioning è idempotente: puoi rilanciare lo script senza duplicare risorse
+  - La creazione e il de-provisioning è idempotente: è possibile rilanciare gli script senza duplicare le risorse
   - Tutte le risorse sono taggate per facile identificazione e cleanup
   - L'infrastruttura AWS prevede dei costi, si riassume un breve preventivo:
     - Aurora: circa da 2,4 USD/giorno a 72 USD/mese
@@ -733,6 +755,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     2. **IAM Roles**: Creazione Task Role (accesso Aurora/DynamoDB) e Execution Role (logging CloudWatch)
     3. **Networking**: Creazione Security Groups con regole per HTTP (8080), Aurora (3306), HTTPS/SSH
     4. **Aurora MySQL**: Provisioning cluster RDS con inizializzazione database e tabelle
+    5. **SQS**: Creazione coda SQS per *l'invio* delle annotazioni confermate
     5. **DynamoDB**: Creazione tabelle `annotazioni` e `annotazioni_storico` con attributi ottimizzati
     6. **ECS Deployment**: Creazione cluster, task definition, service con Fargate e auto-scaling
     7. **CloudWatch Logs**: Configurazione logging applicativo con retention automatica
@@ -755,14 +778,24 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     - Endpoint API: `http://<TASK_PUBLIC_IP>:8080/api/annotazioni`
     - Swagger UI: `http://<TASK_PUBLIC_IP>:8080/swagger-ui.html`
     - Health Check: `http://<TASK_PUBLIC_IP>:8080/actuator/health`
+  - Comando AWS-CLI per la lettura dei messaggi nelle code SQS
+    ```
+    SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
+    SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
+    aws sqs receive-message \
+      --queue-url "$SQS_QUEUE_URL" \
+      --region eu-central-1 \
+      --attribute-names All \
+      --message-attribute-names All
+    ```    
   - Monitoring e logs:
     ```bash
     # Verifica stato servizio ECS
-    aws ecs describe-services --cluster annotazioni-cluster --services annotazioni-service
+    aws ecs describe-services --cluster gestioneannotazioni-cluster --services gestioneannotazioni-service
     # Visualizza logs applicazione
     aws logs tail /ecs/annotazioni --follow
     # Lista task attivi
-    aws ecs list-tasks --cluster annotazioni-cluster
+    aws ecs list-tasks --cluster gestioneannotazioni-cluster
     ```
 
   - Pulizia/cleanup:
@@ -770,12 +803,13 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     ```bash
     ./script/aws-ecs/stop-all.sh
     ```
-    - **Attenzione**: questo script elimina tutti i dati nei database in modo irreversibile. Effettuare backup se necessario prima dell'esecuzione
+    - **Attenzione**: questo script elimina tutti i dati nei database in modo irreversibile. Effettuare backup se necessario prima dell'esecuzione.
+    - **Attenzione**: controllare sempre al termine dello script di cleanup, *a volte non cancella tutto*, è possibile eseguirlo più volte per essere sicuri che vengano eliminate tutte le risorse.
 
 - Note tecniche:
   - Il provisioning è idempotente: esecuzione multipla sicura senza duplicazioni
   - Tutte le risorse sono taggate per identificazione e gestione costi
-  - Service ECS configurato con health check automatici e restart su failure
+  - Service ECS configurato con health check automatici e restart in caso di failure
   - Task definition ottimizzata per Fargate con 1 vCPU e 2GB RAM
   - Networking configurato per accesso pubblico sicuro con Security Groups specifici
   - Aurora endpoint automaticamente rilevato e configurato nel container
@@ -821,30 +855,35 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
 - ✅ 🐳 Build e deploy su DockerHub della versione *OnPrem*
   - ✅ 🐳 configurazione di docker-compose con MongoDb e Postgresql
   - ✅ ☸️ Esecuzione su Kubernetes/Minikube locale con yaml dedicati
-- 🚧 🏁 Test finale di tutti i punti precedenti e rilascio della versione 1.0.0
 - ✅ ☁️ Esecuzione con docker-compose della versione AWS su sistema locale con Mysql e DynamoDB 
   - ✅ 🐳 Deploy su AWS usando EC2 per eseguire il container docker, script scritto in AWS-CLI per il provisioning delle risorse necessarie (Aurora-RDS-Mysql e DynamoDB ) e la creazione della EC2 con lancio del docker con `user_data`
   - ✅ 🐳 Deploy su AWS usando ECS, Fargate e repository ECR (senza DockerHub), script scritto in AWS-CLI per il provisioning delle risorse necessarie (Aurora-RDS-Mysql e DynamoDB ) e lancio del task su ECS. Non previsto sistema di scaling up e/o bilanciatore ALB.
-  - 🚧 🐳 Deploy su AWS su EKS
-  - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts
-  - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
 - ✅ 🔒 Autenticazione e autorizzazione (Spring Security) e token Jwt
   - ✅ 👥 introduzione sistema di verifica degli utenti e validazione richieste con tabella utenti
   - ✅ 📝 Gestione multiutente e modifica annotazioni con utente diverso dal creatore, test nell'applicazione web
   - ✅ 🛡️ Centralità dei service JwtService e UserService nel core senza `adapter-security`
-  - 🚧 🔐 OAuth2/OIDC Provider: Integrazione con provider esterni (Google, Microsoft, GitHub) + SSO enterprise
   - 🚧 👥 Sistema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento
   - 🚧 🧑‍🤝‍🧑 Gestione modifica annotazione con lock
-- 🚧 ⚙️ Evoluzione adapter con integrazione con altri sistemi
+- ✅ ⚙️ Evoluzione adapter con integrazione con altri sistemi
   - ✅ 🧬 Gestione delle annotazioni in stato INVIATA
   - ✅ 📚 Export annotazioni: creazione service che permetta di inviare notifiche via coda (kafka o sqs) con creazione `adapter-kafka` e che con frequenza invii delle annotazioni concluse con cambio di stato
-  - 🚧 ☁️ Configurazione del servizio SQS nell'adapter AWS e test nelle versioni EC2, ECS e EKS
-  - 🚧 🔄 Import annotazioni (JSON e/o CSV): creazione `adapter-xxx` per l'import di annotazioni con cambio di stato dopo averle importate
+  - ✅ ☁️ Configurazione del servizio SQS nell'adapter AWS e test nelle versioni EC2 e ECS
+- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.1.0
+- 🚧 ☁️ Integrazione con Azure
+  - ✅ Creazione del adapter Azure e inizio sviluppi
+  - 🚧 Prima esecuzione in locale adapter azure
+  - 🚧 Scrittura degli script deploy su Azure
+- 🚧 ☁️ Esecuzione su Cloud
+  - 🚧 🐳 Deploy su AWS su EKS
+  - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts
+  - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
+  - 🚧 🔄 Import annotazioni (JSON e/o CSV): creazione service per l'import di annotazioni con cambio di stato dopo averle importate con implementazioni su tutti gli adapter
   - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie notifiche
     - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
   - 🚧 🧭 Sistema che gestisce la scadenza di una annotazione con spring-batch che elabora tutte le annotazioni rifiutate o scadute, con nuovo stato scadute.
   - 🚧 💾 Backup & Disaster Recovery: Cross-region backup, point-in-time recovery, RTO/RPO compliance
-- 🚧 🏁 Test finale di tutti i punti precedenti e rilascio della versione 2.0.0
+  - 🚧 🔐 OAuth2/OIDC Provider: Integrazione con provider esterni (Google, Microsoft, GitHub) + SSO enterprise
+- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.2.0
 - 🚧 🗃️ Sistema di caching con redis
   - 🚧 ⚡ Redis Caching Layer: Cache multi-livello (L1: in-memory, L2: Redis) con invalidation strategies e cache warming
   - 🚧 📊 Read Replicas: Separazione read/write con eventual consistency e load balancing intelligente

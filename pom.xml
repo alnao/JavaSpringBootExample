@@ -46,6 +46,7 @@
         <module>adapter-onprem</module>
         <module>adapter-sqlite</module>
         <module>adapter-kafka</module>
+        <module>adapter-azure</module>
         <module>application</module>
         <module>core</module>
     </modules>
@@ -83,7 +84,11 @@
                 <artifactId>adapter-onprem</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>it.alnao.springbootexample</groupId>
+                <artifactId>adapter-azure</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <!-- AWS SDK BOM -->
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>

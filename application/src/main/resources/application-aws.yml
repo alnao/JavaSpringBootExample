@@ -30,28 +30,18 @@ spring:
 # Configurazione DynamoDB
 aws:
   region: ${AWS_REGION:eu-west-1}
-  access-key: ${AWS_ACCESS_KEY:}
-  secret-key: ${AWS_SECRET_KEY:}
+  access-key: ${AWS_ACCESS_KEY_ID:}
+  secret-key: ${AWS_SECRET_ACCESS_KEY:}
   dynamodb:
     annotazioni-table-name: ${DYNAMODB_ANNOTAZIONI_TABLE_NAME:annotazioni}
     endpoint: ${DYNAMODB_ENDPOINT:}
+  sqs:
+    endpoint: ${SQS_ENDPOINT:}
+    queue-url: ${SQS_QUEUE_URL:}
 
 # Configurazione export annotazioni via SQS
 gestione-annotazioni:
   export-annotazioni:
     enabled: true
     cron-expression: "0 */5 * * * *"  # ogni 5 minuti
-    sqs:
-      queue-url: "${AWS_SQS_QUEUE_URL:https://sqs.eu-west-1.amazonaws.com/123456789/annotazioni-queue.fifo}"
-      region: "${AWS_REGION:eu-west-1}"
 
-# Configurazione AWS aggiuntiva
-cloud:
-  aws:
-    region:
-      static: "${AWS_REGION:eu-west-1}"
-    credentials:
-      access-key: "${AWS_ACCESS_KEY_ID:}"
-      secret-key: "${AWS_SECRET_ACCESS_KEY:}"
-    stack:
-      auto: false

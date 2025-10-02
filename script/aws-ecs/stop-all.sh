@@ -15,12 +15,14 @@ TASK_FAMILY="gestioneannotazioni-task"
 CONTAINER_NAME="gestioneannotazioni"
 DYNAMODB_TABLE="annotazioni"
 DYNAMODB_TABLE2="annotazioni_storico"
+DYNAMODB_TABLE3="annotazioni_storicoStati"
 AURORA_CLUSTER_ID="gestioneannotazioni-aurora-cluster"
 AURORA_INSTANCE_ID="gestioneannotazioni-aurora-instance"
 SECURITY_GROUP_NAME="gestioneannotazioni-sg"
 TASK_ROLE_NAME="gestioneannotazioni-ecs-task-role"
 EXEC_ROLE_NAME="gestioneannotazioni-ecs-execution-role"
 LOG_GROUP_NAME="/ecs/gestioneannotazioni-app"
+SQS_QUEUE_NAME="gestioneannotazioni-annotazioni"
 
 # 1. Elimina servizio ECS
 aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --desired-count 0 --region $AWS_REGION || true
@@ -40,6 +42,17 @@ aws ecs delete-cluster --cluster $CLUSTER_NAME --region $AWS_REGION || true
 # 4. Elimina DynamoDB tables
 aws dynamodb delete-table --table-name $DYNAMODB_TABLE --region $AWS_REGION || true
 aws dynamodb delete-table --table-name $DYNAMODB_TABLE2 --region $AWS_REGION || true
+aws dynamodb delete-table --table-name $DYNAMODB_TABLE3 --region $AWS_REGION || true
+
+# 4. Rimuovi coda SQS
+echo "Rimozione coda SQS..."
+SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region $AWS_REGION --query 'QueueUrl' --output text 2>/dev/null) || echo "Coda SQS non trovata"
+if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
+  echo "Eliminazione coda SQS: $SQS_QUEUE_URL"
+  aws sqs delete-queue --queue-url "$SQS_QUEUE_URL" --region $AWS_REGION || echo "Errore nella rimozione coda SQS"
+else
+  echo "Coda SQS $SQS_QUEUE_NAME non esistente"
+fi
 
 # 5. Elimina Aurora instance e cluster
 aws rds delete-db-instance --db-instance-identifier $AURORA_INSTANCE_ID --skip-final-snapshot --region $AWS_REGION || true
@@ -58,10 +71,13 @@ fi
 aws ecr delete-repository --repository-name $ECR_REPO_NAME --force --region $AWS_REGION || true
 
 # 8. Elimina IAM Role
+aws iam detach-role-policy --role-name $TASK_ROLE_NAME --policy-arn arn:aws:iam::aws:policy/AmazonRDSFullAccess --region $AWS_REGION || true
+aws iam detach-role-policy --role-name $TASK_ROLE_NAME --policy-arn arn:aws:iam::aws:policy/AmazonSQSFullAccess --region $AWS_REGION || true
 aws iam detach-role-policy --role-name $TASK_ROLE_NAME --policy-arn arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess --region $AWS_REGION || true
 aws iam delete-role --role-name $TASK_ROLE_NAME --region $AWS_REGION || true
 aws iam detach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy --region $AWS_REGION || true
 aws iam detach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn arn:aws:iam::aws:policy/CloudWatchLogsFullAccess --region $AWS_REGION || true
+aws iam detach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn arn:aws:iam::aws:policy/AmazonSQSFullAccess --region $AWS_REGION || true
 aws iam delete-role --role-name $EXEC_ROLE_NAME --region $AWS_REGION || true
 
 # 9. Elimina CloudWatch Log Group

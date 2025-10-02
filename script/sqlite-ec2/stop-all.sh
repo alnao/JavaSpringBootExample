@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
+# Disabilita paginazione aws cli
+export AWS_PAGER=""
 
+# Parametri
 REGION="eu-central-1"
 SG_NAME="gestioneannotazioni-sqlite-ec2-sg"
 PARAM_KEY_NAME="gestioneannotazioni-sqlite-ec2-key"

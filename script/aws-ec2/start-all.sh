@@ -4,7 +4,6 @@
 # Richiede AWS CLI configurato e permessi admin
 
 set -e
-
 # Disabilita paginazione aws cli
 export AWS_PAGER=""
 
@@ -14,6 +13,8 @@ DB_INSTANCE_CLASS="${DB_INSTANCE_CLASS:-db.t3.medium}"
 EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-t3.medium}"
 EC2_COUNT="${EC2_COUNT:-1}"
 VPC_ID=$(aws ec2 describe-vpcs --region $REGION --filters Name=isDefault,Values=true --query 'Vpcs[0].VpcId' --output text)
+SQS_QUEUE_NAME="gestioneannotazioni-annotazioni"
+SQS_QUEUE_URL="https://sqs.$REGION.amazonaws.com/000000000000/$SQS_QUEUE_NAME"
 
 # 0. Crea IAM Role e Instance Profile se non esistono
 ROLE_NAME="gestioneannotazioni-ec2-role"
@@ -22,12 +23,14 @@ POLICY_ARN="arn:aws:iam::aws:policy/AmazonRDSFullAccess"
 #ex AmazonRDSReadOnlyAccess
 POLICY_ARN2="arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
 POLICY_ARN3="arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+POLICY_ARN4="arn:aws:iam::aws:policy/AmazonSQSFullAccess"
 
 if ! aws iam get-role --role-name $ROLE_NAME --region $REGION &>/dev/null; then
   aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}' --region $REGION
   aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn $POLICY_ARN --region $REGION
   aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn $POLICY_ARN2 --region $REGION
   aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn $POLICY_ARN3 --region $REGION
+  aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn $POLICY_ARN4 --region $REGION
 fi
 if ! aws iam get-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME --region $REGION &>/dev/null; then
   aws iam create-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME --region $REGION
@@ -37,18 +40,23 @@ fi
 
 # 1. Crea Security Group con tag
 SG_NAME="gestioneannotazioni-sg"
-SG_ID=$(aws ec2 create-security-group --group-name $SG_NAME --description "gestioneannotazioni SG" --vpc-id $VPC_ID --region $REGION --output text)
+SG_ID=$(aws ec2 create-security-group --group-name $SG_NAME --description "gestioneannotazioni SG" --vpc-id $VPC_ID --region $REGION --query 'GroupId' --output text 2>/dev/null) || {
+  echo "Security Group già esistente, recupero l'ID..."
+  SG_ID=$(aws ec2 describe-security-groups --group-names $SG_NAME --region $REGION --query 'SecurityGroups[0].GroupId' --output text)
+}
+echo "Security Group ID: $SG_ID"
 aws ec2 create-tags --resources $SG_ID --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true --region $REGION
+
 # Apre porte per MySQL (3306), app (8080), adminer (8086), dynamodb-admin (8087)
-aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 3306 --cidr 0.0.0.0/0 --region $REGION
-aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8080 --cidr 0.0.0.0/0 --region $REGION
-aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8086 --cidr 0.0.0.0/0 --region $REGION
-aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8087 --cidr 0.0.0.0/0 --region $REGION
+aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 3306 --cidr 0.0.0.0/0 --region $REGION 2>/dev/null || echo "Regola porta 3306 già esistente"
+aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8080 --cidr 0.0.0.0/0 --region $REGION 2>/dev/null || echo "Regola porta 8080 già esistente"
+aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8086 --cidr 0.0.0.0/0 --region $REGION 2>/dev/null || echo "Regola porta 8086 già esistente"
+aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8087 --cidr 0.0.0.0/0 --region $REGION 2>/dev/null || echo "Regola porta 8087 già esistente"
 
 # Ottieni IP pubblico chiamante per SSH
 MY_IP=$(curl -s https://checkip.amazonaws.com | tr -d '\n')
 # Apre porta SSH solo per l'IP chiamante
-aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 22 --cidr $MY_IP/32 --region $REGION
+aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 22 --cidr $MY_IP/32 --region $REGION 2>/dev/null || echo "Regola SSH per $MY_IP già esistente"
 
 # 2. Crea Aurora MySQL con tag
 DB_CLUSTER_ID="gestioneannotazioni-cluster"
@@ -63,7 +71,9 @@ aws rds create-db-cluster \
   --master-user-password $DB_PASS \
   --vpc-security-group-ids $SG_ID \
   --region $REGION \
-  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
+  2>/dev/null || echo "Cluster Aurora già esistente"
+  
 aws rds create-db-instance \
   --db-instance-identifier $DB_INSTANCE_ID \
   --db-cluster-identifier $DB_CLUSTER_ID \
@@ -71,7 +81,8 @@ aws rds create-db-instance \
   --db-instance-class $DB_INSTANCE_CLASS \
   --region $REGION \
   --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
-  --publicly-accessible
+  --publicly-accessible \
+  2>/dev/null || echo "Istanza Aurora già esistente"
 
 # Attendi che Aurora sia disponibile prima di recuperare l'endpoint
 echo "Attendo che Aurora cluster sia disponibile..."
@@ -116,12 +127,64 @@ aws dynamodb create-table \
   --region $REGION \
   --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true || echo "Tabella DynamoDB storico già esistente o errore ignorato."
 
+aws dynamodb create-table \
+  --table-name annotazioni_storicoStati \
+  --attribute-definitions \
+    AttributeName=idOperazione,AttributeType=S \
+    AttributeName=idAnnotazione,AttributeType=S \
+    AttributeName=dataModifica,AttributeType=S \
+  --key-schema AttributeName=idOperazione,KeyType=HASH \
+  --global-secondary-indexes '[
+    {
+      "IndexName": "idAnnotazione-index",
+      "KeySchema": [
+        {"AttributeName":"idAnnotazione","KeyType":"HASH"},
+        {"AttributeName":"dataModifica","KeyType":"RANGE"}
+      ],
+      "Projection": {"ProjectionType":"ALL"},
+      "ProvisionedThroughput": {"ReadCapacityUnits":5,"WriteCapacityUnits":5}
+    }
+  ]' \
+  --billing-mode PROVISIONED \
+  --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+  --region "$REGION" || echo "Tabella storicoStati già esistente o errore ignorato."
+
+
+# 4. Crea coda SQS con tag
+echo "Creazione coda SQS: $SQS_QUEUE_NAME"
+SQS_QUEUE_URL=$(aws sqs create-queue \
+  --queue-name $SQS_QUEUE_NAME \
+  --region $REGION \
+  --query 'QueueUrl' --output text 2>/dev/null) || {
+  echo "Tentativo di recuperare coda esistente..."
+  SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region $REGION --query 'QueueUrl' --output text 2>/dev/null) || {
+    echo "ERRORE: Impossibile creare o trovare la coda SQS"
+    exit 1
+  }
+}
+# Aggiungi tag alla coda (separatamente)
+if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
+  echo "Aggiunta tag alla coda SQS..."
+  aws sqs tag-queue \
+    --queue-url "$SQS_QUEUE_URL" \
+    --tags "Name=gestioneannotazioni-app,gestioneannotazioni-app=true" \
+    --region $REGION 2>/dev/null || echo "Errore nell'aggiunta tag SQS (ignorato)"
+fi
+echo "SQS Queue URL: $SQS_QUEUE_URL"
+
 # 4. Crea key pair parametrica
-aws ec2 create-key-pair --key-name $PARAM_KEY_NAME --region $REGION --query 'KeyMaterial' --output text > $PARAM_KEY_NAME.pem
+aws ec2 create-key-pair --key-name $PARAM_KEY_NAME --region $REGION --query 'KeyMaterial' --output text > $PARAM_KEY_NAME.pem 2>/dev/null || {
+  echo "Key pair $PARAM_KEY_NAME già esistente su AWS"
+  if [ ! -f "$PARAM_KEY_NAME.pem" ]; then
+    echo "ERRORE: File della chiave privata $PARAM_KEY_NAME.pem non trovato localmente. Non posso procedere senza la chiave privata."
+    exit 1
+  fi
+  echo "Usando file della chiave privata esistente $PARAM_KEY_NAME.pem"
+}
 chmod 400 $PARAM_KEY_NAME.pem
 
 #  AURORA_ENDPOINT=$(aws rds describe-db-clusters --db-cluster-identifier $DB_CLUSTER_ID --region $REGION --query 'DBClusters[0].Endpoint' --output text)
-echo "Eseguo EC2 con endpoint AURORA_ENDPOINT=$AURORA_ENDPOINT"
+echo "Eseguo EC2 con endpoint AURORA_ENDPOINT=$AURORA_ENDPOINT e SQS_QUEUE_URL=$SQS_QUEUE_URL"
 
 # 5. Crea EC2 con tag e user_data per avvio Docker
 AMI_ID=$(aws ec2 describe-images --owners amazon --filters "Name=name,Values=amzn2-ami-hvm-2.0.*-x86_64-gp2" --region $REGION --query 'Images | sort_by(@, &CreationDate)[-1].ImageId' --output text)
@@ -138,11 +201,13 @@ DB_USER="${DB_USER}"
 DB_PASS="${DB_PASS}"
 DB_NAME="${DB_NAME}"
 REGION="${REGION}"
+SQS_QUEUE_URL="${SQS_QUEUE_URL}"
 echo "Host=\$AURORA_HOST"
 echo "User=\$DB_USER"
 echo "Pass=\$DB_PASS"
 echo "Dbname=\$DB_NAME"
 echo "Region=\$REGION"
+echo "SQS_QUEUE_URL=\$SQS_QUEUE_URL"
 
 # Test connessione diretta (Aurora dovrebbe essere gia pronto)
 for i in {1..3}; do
@@ -159,7 +224,7 @@ cat <<'EOSQL' > /tmp/init-mysql.sql
 $(cat ./script/init-database/init-mysql.sql)
 EOSQL
 
-mysql -h "\$AURORA_HOST" -u"\$DB_USER" -p"\$DB_PASS" < /tmp/init-mysql.sql
+mysql -h "\$AURORA_HOST" -u"\$DB_USER" -p"\$DB_PASS" < /tmp/init-mysql.sql  2>/dev/null || echo "Errore nell'inizializzazione del database (ignorato)"
 
 for i in {1..3}; do
   echo "[EC2 user_data] Avvio microservizio (tentativo \${i})..."
@@ -172,7 +237,9 @@ for i in {1..3}; do
     -e DYNAMODB_ANNOTAZIONI_TABLE_NAME=annotazioni \
     -e AWS_ACCESS_KEY_ID= \
     -e AWS_SECRET_ACCESS_KEY= \
+    -e SQS_QUEUE_URL=\$SQS_QUEUE_URL \
     alnao/gestioneannotazioni:latest
+  echo "Attendo 10 secondi per il lancio del container..."
   sleep 10
   if sudo docker ps | grep alnao/gestioneannotazioni; then
     echo "Microservizio avviato con successo."
@@ -185,9 +252,9 @@ EOF
 )
 
 echo "Usando AMI_ID=$AMI_ID"
-echo "-----------"
-echo $USER_DATA
-echo "-----------"
+#echo "-----------"
+#echo $USER_DATA
+#echo "-----------"
 echo "Avvio EC2..."
 
 INSTANCE_ID=$(aws ec2 run-instances \
@@ -207,7 +274,15 @@ aws ec2 wait instance-running --instance-ids $INSTANCE_ID --region $REGION
 PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --region $REGION --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
 
 echo "Stack avviato! EC2 IP: $PUBLIC_IP"
-echo "Aurora MySQL, DynamoDB e Security Group creati. Tutte le risorse taggate gestioneannotazioni-app."
+echo "Aurora MySQL: $AURORA_ENDPOINT"
+echo "SQS Queue: $SQS_QUEUE_URL" 
+echo "DynamoDB: annotazioni, annotazioni_storico, annotazioni_storicoStati"
+echo "Applicazione disponibile su: http://$PUBLIC_IP:8080"
+echo ""
+echo "Per collegarsi via SSH:"
+echo "ssh -i $PARAM_KEY_NAME.pem ec2-user@$PUBLIC_IP"
+echo ""
+echo "Tutte le risorse sono taggate con 'gestioneannotazioni-app' per facile identificazione e cleanup."
 
 # Vecchia versione con copia file SQL via SCP e SSH per esecuzione sostituito dallo script in user_data
 # Copia il file init-mysql.sql sulla EC2
