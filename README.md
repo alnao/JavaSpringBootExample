@@ -851,7 +851,8 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - ✅ 🧩 Service per modificar lo stato con salvataggio nella tabella StoricoStati
   - ✅ 🧑‍🔬 Inserimento di una nuova annotazione in stato INSERITA
   - ✅ 🛰️ Gestione dello stato DAINVIARE come ultimo stato possibile da API/Web.
-  - 🚧 🧱 Verifica che utenti non possano fare operazioni il cui ruolo non lo prevede
+  - ✅ 🧱 Verifica che utenti non possano fare operazioni il cui ruolo non lo prevede
+    - Test Eseguito: chiamata transazione `http://localhost:8082/api/annotazioni/xxx-xxx-xxx-xxx-xxx/stato` con PATCH method `{vecchioStato: "CONFERMATA", nuovoStato: "MODIFICATA", utente: "admin"}` e ritornato errore 403 e nei log si vede il messaggio `Transizione non permessa: Transizione non permessa: da CONFERMATA a MODIFICATA per ruolo ADMIN`
 - ✅ 🐳 Build e deploy su DockerHub della versione *OnPrem*
   - ✅ 🐳 configurazione di docker-compose con MongoDb e Postgresql
   - ✅ ☸️ Esecuzione su Kubernetes/Minikube locale con yaml dedicati
@@ -862,21 +863,25 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - ✅ 👥 introduzione sistema di verifica degli utenti e validazione richieste con tabella utenti
   - ✅ 📝 Gestione multiutente e modifica annotazioni con utente diverso dal creatore, test nell'applicazione web
   - ✅ 🛡️ Centralità dei service JwtService e UserService nel core senza `adapter-security`
-  - 🚧 👥 Sistema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento
-  - 🚧 🧑‍🤝‍🧑 Gestione modifica annotazione con lock
 - ✅ ⚙️ Evoluzione adapter con integrazione con altri sistemi
   - ✅ 🧬 Gestione delle annotazioni in stato INVIATA
   - ✅ 📚 Export annotazioni: creazione service che permetta di inviare notifiche via coda (kafka o sqs) con creazione `adapter-kafka` e che con frequenza invii delle annotazioni concluse con cambio di stato
   - ✅ ☁️ Configurazione del servizio SQS nell'adapter AWS e test nelle versioni EC2 e ECS
-- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.1.0
+- ✅ 🏁 Test finale di tutti i punti precedenti e tag della versione 0.0.1 e inizio versione 0.0.2
+  🚧 📡 Rilascio immagine 0.0.1 su DockerHub
 - 🚧 ☁️ Integrazione con Azure
-  - ✅ Creazione del adapter Azure e inizio sviluppi
-  - 🚧 Prima esecuzione in locale adapter azure
-  - 🚧 Scrittura degli script deploy su Azure
+  - ✅ ⚙️ Creazione del adapter Azure e inizio sviluppi
+  - 🚧 🎯 Prima esecuzione in locale adapter azure
+  - 🚧 🛠️ Scrittura degli script deploy su Azure
+  - 🚧 ☁️ Rilascio in ambiente Azure con VM 
 - 🚧 ☁️ Esecuzione su Cloud
-  - 🚧 🐳 Deploy su AWS su EKS
+  - 🚧 ☸️ Deploy su AWS su EKS
+  - 🚧 ☸️ Deploy su Azure su AKS
   - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts
   - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
+- 🚧 🗃️ Sistema evoluto di gestione annotazioni
+  - 🚧 👥 Sistema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento
+  - 🚧 🧑‍🤝‍🧑 Gestione modifica annotazione con lock
   - 🚧 🔄 Import annotazioni (JSON e/o CSV): creazione service per l'import di annotazioni con cambio di stato dopo averle importate con implementazioni su tutti gli adapter
   - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie notifiche
     - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
