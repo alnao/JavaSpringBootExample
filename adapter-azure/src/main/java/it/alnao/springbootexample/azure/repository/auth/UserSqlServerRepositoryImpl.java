@@ -17,7 +17,10 @@ import java.util.stream.Collectors;
 @Repository
 @Primary
 @Profile("azure")
-public class UserSqlServerRepositoryImpl implements UserRepository {
+public class UserSqlServerRepositoryImpl implements it.alnao.springbootexample.core.repository.auth.UserRepository {
+    @Autowired
+    private UserSqlServerJpaRepository userJpaRepository;
+
     @Override
     public List<User> findByEnabled(boolean enabled) {
         return userJpaRepository.findAll().stream()
@@ -78,8 +81,6 @@ public class UserSqlServerRepositoryImpl implements UserRepository {
                 .filter(user -> email.equals(user.getEmail()) && accountType.equals(user.getAccountType()))
                 .findFirst();
     }
-    @Autowired
-    private UserSqlServerRepository userJpaRepository;
 
     @Override
     public long countByAccountType(it.alnao.springbootexample.core.domain.auth.AccountType accountType) {

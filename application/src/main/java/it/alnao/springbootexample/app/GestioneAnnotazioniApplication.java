@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ComponentScan(basePackages = {
     "it.alnao.springbootexample.api",
     "it.alnao.springbootexample.aws",
+    "it.alnao.springbootexample.azure",
     "it.alnao.springbootexample.onprem",
     "it.alnao.springbootexample.sqlite",
     "it.alnao.springbootexample.kafka",

@@ -17,7 +17,7 @@ cd "$PROJECT_ROOT"
 
 # Build del progetto se necessario
 echo "🔨 Build del progetto..."
-#if [ ! -f "application/target/application-1.0.0.jar" ]; then
+#if [ ! -f "application/target/application-*.jar" ]; then
 #    echo "   JAR non trovato, eseguo build..."
     #mvn clean package -DskipTests
     mvn clean package -P sqlite -DskipTests

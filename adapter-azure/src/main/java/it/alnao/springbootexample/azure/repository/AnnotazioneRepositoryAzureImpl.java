@@ -4,8 +4,10 @@ import it.alnao.springbootexample.azure.entity.AnnotazioneCosmosEntity;
 import it.alnao.springbootexample.core.domain.Annotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.ArrayList;
 
 @Repository
+@Primary
 @Profile("azure")
 public class AnnotazioneRepositoryAzureImpl implements AnnotazioneRepository {
     @Autowired
@@ -24,6 +27,7 @@ public class AnnotazioneRepositoryAzureImpl implements AnnotazioneRepository {
     public Annotazione save(Annotazione annotazione) {
         AnnotazioneCosmosEntity entity = toEntity(annotazione);
         AnnotazioneCosmosEntity saved = cosmosRepository.save(entity);
+
         return toDomain(saved);
     }
 

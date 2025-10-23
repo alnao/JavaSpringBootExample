@@ -1,0 +1,1 @@
+org.springframework.context.ApplicationContextInitializer=it.alnao.springbootexample.azure.config.SslDisablerInitializer

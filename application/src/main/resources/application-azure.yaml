@@ -1,22 +1,66 @@
 spring:
-  profiles:
-    active: azure
-  cloud:
-    azure:
-      cosmos:
-        endpoint: ${YOUR_COSMOS_ENDPOINT:localhost}
-        key: ${YOUR_COSMOS_KEY:localKey}
-        database: ${YOUR_COSMOS_DATABASE:localDatabase}
-        populate-query-metrics: true
-  datasource:
-    url: jdbc:sqlserver://${YOUR_SQLSERVER_HOST:localhost}:1433;databaseName=${YOUR_DB:localDB};encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
-    username: ${YOUR_SQLSERVER_USER:localUser}
-    password: ${YOUR_SQLSERVER_PASSWORD:localPassword}
+#  profiles:
+#    active: azure
+
+# NOTA: questo serve per permettere di ridefinire dei bean già esistenti in altri contesti (es. test)
+# per evitare l'errore "BeanDefinitionOverrideException: Invalid bean definition with name 'xxx' defined in class path resource [yyy]: Cannot register bean definition [Generic bean: class [zzz]; ...] for bean 'xxx': There is already [Generic bean: class [aaa]; ...] bound."
+# The bean 'cosmosConfig', defined in class path resource [it/alnao/springbootexample/azure/config/CosmosConfig.class], could not be registered. A bean with that name has already been defined in URL [jar:nested:/app/app.jar/!BOOT-INF/lib/adapter-azure-0.0.2.jar!/it/alnao/springbootexample/azure/config/CosmosConfig.class] and overriding is disabled.
+  main:
+    allow-bean-definition-overriding: true
+# guardare file adapter-azure/src/main/resources/META-INF/spring.factories
+# org.springframework.context.ApplicationContextInitializer=\
+# it.alnao.springbootexample.azure.config.SslDisablerInitializer
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.cosmos.CosmosAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.cosmos.AzureCosmosAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.context.AzureTokenCredentialAutoConfiguration
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+  datasource: 
+    url: jdbc:sqlserver://${MSSQL_SQLSERVER_HOST:localhost}:${MSSQL_SQLSERVER_PORT:1433};databaseName=${MSSQL_SQLSERVER_DATABASE:localDB};encrypt=${MSSQL_SQLSERVER_ENCRYPT:true};${MSSQL_SQLSERVER_TRUST_SERVER_CERTIFICATE:false};hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+    username: ${MSSQL_SPRING_DATASOURCE_USERNAME:sa}
+    password: ${MSSQL_SPRING_DATASOURCE_PASSWORD:localPassword}
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
   jpa:
+    packages-to-scan: 
+      - it.alnao.springbootexample.azure.entity
+      - it.alnao.springbootexample.azure.entity.auth
     hibernate:
       ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.SQLServerDialect
+
+  # Configurazione Spring Cloud Azure
+  cloud:
+    azure:
+      credential:
+        managed-identity-enabled: ${SPRING_CLOUD_AZURE_CREDENTIAL_MANAGED_IDENTITY_ENABLED:false}
+
+
+gestione-annotazioni:
+  export-annotazioni:
+    enabled: ${ANNOTAZIONE_INVIO_ENABLED:false} # disabilitato in locale per evitare errori se non c'è EventHubs
+azure:
+  #eventhubs: #see AnnotazioneInvioServiceAzureImpl.java #non si può fare a meno di questa sezione anche se non usata direttamente
+  #  connection-string: ${AZURE_EVENTHUBS_CONNECTION_STRING:localConnectionString}
+  #  name: ${AZURE_EVENTHUBS_NAME:localEventHubName}
+    
+  cosmos: 
+    # in locale see https://learn.microsoft.com/en-us/azure/cosmos-db/emulator 
+    uri: ${AZURE_COSMOS_URI:https://localhost:8081}
+    key: ${AZURE_COSMOS_KEY:localKey}
+    database: ${AZURE_COSMOS_DATABASE:localDatabase}
+    populate-query-metrics: true
+    disable-ssl-verification: ${AZURE_COSMOS_DISABLE_SSL_VERIFICATION:false}
+    enabled: true
+    # ConditionalOnProperty(value = "azure.cosmos.enabled", havingValue = "true", matchIfMissing = true)
+
+# Configurazione Spring Cloud Azure Cosmos
+#spring.cloud.azure:
+#  cosmos:
+#    endpoint: ${AZURE_COSMOS_URI:https://localhost:8081}
+#    key: ${AZURE_COSMOS_KEY:localKey}
+#    database: ${AZURE_COSMOS_DATABASE:localDatabase}

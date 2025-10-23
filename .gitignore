@@ -7,6 +7,9 @@ gestioneannotazioni-sqlite-ec2-key.pem
 application/data/
 application/data/gestione_annotazioni.db
 
+.env-azure-dbremoti-cosmos-runlocale
+.env-azure-dbremoti-mongo-runlocale
+
 .vscode
 .vscode/settings.json
 

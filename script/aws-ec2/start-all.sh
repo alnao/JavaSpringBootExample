@@ -224,7 +224,7 @@ cat <<'EOSQL' > /tmp/init-mysql.sql
 $(cat ./script/init-database/init-mysql.sql)
 EOSQL
 
-mysql -h "\$AURORA_HOST" -u"\$DB_USER" -p"\$DB_PASS" < /tmp/init-mysql.sql  2>/dev/null || echo "Errore nell'inizializzazione del database (ignorato)"
+mysql -h "\$AURORA_HOST" -u"\$DB_USER" -p"\$DB_PASS" < /tmp/init-mysql.sql 
 
 for i in {1..3}; do
   echo "[EC2 user_data] Avvio microservizio (tentativo \${i})..."

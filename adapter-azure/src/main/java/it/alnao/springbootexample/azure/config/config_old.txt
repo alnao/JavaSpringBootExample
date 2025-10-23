@@ -1,0 +1,83 @@
+package it.alnao.springbootexample.azure.config;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
+import org.springframework.data.mapping.context.MappingContext;
+
+import com.azure.spring.data.cosmos.core.CosmosTemplate;
+import com.azure.spring.data.cosmos.core.convert.MappingCosmosConverter;
+import com.azure.spring.data.cosmos.core.mapping.CosmosPersistentEntity;
+import com.azure.spring.data.cosmos.core.mapping.CosmosPersistentProperty;
+import com.azure.cosmos.CosmosClient;
+import com.azure.cosmos.CosmosClientBuilder;
+import com.azure.cosmos.GatewayConnectionConfig;
+import com.azure.spring.data.cosmos.Constants;
+import com.azure.spring.data.cosmos.config.AbstractCosmosConfiguration;
+import com.azure.spring.data.cosmos.config.CosmosConfig;
+import com.azure.spring.data.cosmos.repository.config.EnableCosmosRepositories;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@Configuration
+@Profile("azure")
+@EnableCosmosRepositories(basePackages = "it.alnao.springbootexample.azure.repository")
+public class AzureCosmosConfiguration extends AbstractCosmosConfiguration {
+
+    private final AzureProperties azureProperties;
+
+    public AzureCosmosConfiguration(AzureProperties azureProperties) {
+        this.azureProperties = azureProperties;
+    }
+
+    @Bean
+    @Primary
+    @ConditionalOnProperty(value = "azure.cosmos.enabled", havingValue = "true", matchIfMissing = true)
+    public CosmosClientBuilder cosmosClientBuilder() {
+        GatewayConnectionConfig gatewayConfig = new GatewayConnectionConfig()
+            .setMaxConnectionPoolSize(1000)
+            .setIdleConnectionTimeout(java.time.Duration.ofSeconds(60));
+        
+        return new CosmosClientBuilder()
+                .endpoint(azureProperties.getCosmos().getUri())
+                .key(azureProperties.getCosmos().getKey())
+                .gatewayMode(gatewayConfig)
+                .connectionSharingAcrossClientsEnabled(true)
+                .contentResponseOnWriteEnabled(true)
+                .clientTelemetryEnabled(false);
+    }
+
+    @Bean
+    @Primary
+    public CosmosClient cosmosClient(CosmosClientBuilder cosmosClientBuilder) {
+        return cosmosClientBuilder.buildClient();
+    }
+
+    @Bean
+    @Primary
+    public CosmosConfig cosmosConfig() {
+        return CosmosConfig.builder()
+                .enableQueryMetrics(azureProperties.getCosmos().getDatabase() != null)
+                .build();
+    }
+    /*
+    @Bean
+    @Primary
+    public CosmosTemplate cosmosTemplate(CosmosClient cosmosClient, CosmosConfig cosmosConfig) {
+        //crea MappingCosmosConverter
+        MappingCosmosConverter mappingCosmosConverter = new MappingCosmosConverter(
+                mappingContext,
+                objectMapper
+        );
+
+        return new CosmosTemplate(cosmosClient, azureProperties.getCosmos().getDatabase(), cosmosConfig, mappingCosmosConverter, null);
+    }*/
+
+    @Override
+    protected String getDatabaseName() {
+        return azureProperties.getCosmos().getDatabase();
+    }
+
+}

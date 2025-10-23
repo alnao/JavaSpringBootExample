@@ -5,10 +5,12 @@
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <version>0.0.2</version>
+
     <parent>
         <groupId>it.alnao.springbootexample</groupId>
         <artifactId>springbootexample-parent</artifactId>
-        <version>1.0.0</version>
+        <version>0.0.2</version>
     </parent>
 
     <artifactId>adapter-web</artifactId>

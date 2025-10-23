@@ -24,12 +24,19 @@ spring:
       - it.alnao.springbootexample.sqlite.entity
       - it.alnao.springbootexample.sqlite.entity.auth
 
-  # Disabilita MongoDB per il profilo sqlite
+  # Disabilita MongoDB per il profilo sqlite e disabilita azure per profilo sqlite
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
       - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
-
+      - org.springframework.boot.autoconfigure.cosmos.CosmosAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.cosmos.AzureCosmosAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.context.AzureContextAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.context.AzureTokenCredentialAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.kafka.AzureEventHubsKafkaOAuth2AutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.AzureGlobalPropertiesAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.storage.AzureStorageBlobAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.storage.AzureStorageQueueAutoConfiguration
   # Inizializzazione SQL
   sql:
     init:

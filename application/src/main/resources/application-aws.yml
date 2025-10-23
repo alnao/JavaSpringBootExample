@@ -21,11 +21,19 @@ spring:
         '[format_sql]': true
         '[physical_naming_strategy]': it.alnao.springbootexample.core.config.CustomPhysicalNamingStrategy
 
-  # Disabilita MongoDB per il profilo aws
+  # Disabilita MongoDB per il profilo aws e disabilita azure per profilo aws
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
       - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.cosmos.CosmosAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.cosmos.AzureCosmosAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.context.AzureContextAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.context.AzureTokenCredentialAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.kafka.AzureEventHubsKafkaOAuth2AutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.AzureGlobalPropertiesAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.storage.AzureStorageBlobAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.storage.AzureStorageQueueAutoConfiguration
 
 # Configurazione DynamoDB
 aws:

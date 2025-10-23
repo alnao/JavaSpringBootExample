@@ -6,7 +6,9 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user")
+@Table(name = "[users]")  // MODIFICATO: Aggiunto [] per quotare il nome riservato
+//@AllArgsConstructor
+//@Builder
 public class UserSqlServerEntity {
     @Id
     private String id;
@@ -37,7 +39,6 @@ public class UserSqlServerEntity {
     private LocalDateTime updatedAt;
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
-    // Getters e setters ...
 
     public static UserSqlServerEntity fromDomain(it.alnao.springbootexample.core.domain.auth.User user) {
         UserSqlServerEntity entity = new UserSqlServerEntity();

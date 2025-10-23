@@ -1,6 +1,9 @@
 package it.alnao.springbootexample.azure.repository;
 
 import it.alnao.springbootexample.azure.entity.AnnotazioneMetadataSqlServerEntity;
+
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -8,6 +11,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
+@Primary
+@Profile("azure")
 public interface AnnotazioneMetadataSqlServerRepository extends JpaRepository<AnnotazioneMetadataSqlServerEntity, String> {
     List<AnnotazioneMetadataSqlServerEntity> findByDescrizioneContainingIgnoreCase(String descrizione);
     List<AnnotazioneMetadataSqlServerEntity> findByCategoria(String categoria);

@@ -1,0 +1,263 @@
+version: '3.8'
+
+services:
+  # PostgreSQL per i dati relazionali
+  postgres:
+    image: postgres:15
+    container_name: gestioneannotazioni-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: GestioneAnnotazioni123!
+      POSTGRES_DB: gestioneannotazioni
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../script/init-database/init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - azure-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gestioneannotazioni || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Azure CosmosDB Emulator (MongoDB API)
+  cosmosdb: #see https://learn.microsoft.com/en-us/azure/cosmos-db/emulator
+    #image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    #command:
+    #  - "/CosmosDB.Emulator.exe"
+    #  - "/EnableMongoDbEndpoint"
+    #  - "/NoFirewall"
+    #  - "/Consistency=Strong"
+    #  - "/EnableDataExplorer"
+    #image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:mongodb
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+    #command: ["./CosmosDB.Emulator.exe", "/EnableMongoDbEndpoint=4.0"] #solo per il vnext-preview
+    container_name: gestioneannotazioni-cosmosdb
+    environment:
+      AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 10
+      AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: 'true'
+      AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE: "0.0.0.0"
+      #AZURE_COSMOS_EMULATOR_ENABLE_MONGODB_ENDPOINT: '4.0'
+      AZURE_COSMOS_EMULATOR_ENABLE_MONGODB_ENDPOINT: "true"
+    ports:
+      - "8081:8081"   # CosmosDB Emulator API
+      - "10251:10251" # CosmosDB Emulator Data Explorer
+      - "10252:10252" # CosmosDB Emulator MongoDB API
+      - "10253:10253" # CosmosDB Emulator Table API
+      - "10254:10254" # CosmosDB Emulator Cassandra API
+      - "10255:10255" # CosmosDB Emulator Gremlin API
+    volumes:
+      - cosmosdb_data:/tmp/cosmos
+    networks:
+      - azure-network
+    healthcheck:
+      # CORREZIONE: health check più semplice
+      test: ["CMD-SHELL", "curl -k https://127.0.0.1:8081/ -w '%{http_code}' -o /dev/null -s | grep -E '(200|401|403)' || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # Inizializzatore MongoDB per CosmosDB
+  cosmosdb-init:
+    image: mongo:7.0
+    container_name: gestioneannotazioni-cosmosdb-init
+    depends_on:
+      cosmosdb:
+        condition: service_healthy
+    volumes:
+      - ./script/init-database/init-mongodb.js:/init.js:ro
+    networks:
+      - azure-network
+    command: >
+      sh -c "
+      echo 'Waiting for CosmosDB to be ready...';
+      sleep 10;
+      echo 'Executing MongoDB initialization script...';
+      mongosh 'mongodb://localhost:C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==@cosmosdb:10252/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@localhost@' /init.js || echo 'Init script failed';
+      echo 'Initialization completed';
+      "
+    restart: "no"
+
+  # Microservizio Gestione Annotazioni
+  app:
+    image: alnao/gestioneannotazioni:latest
+    container_name: gestioneannotazioni-app-azure
+    depends_on:
+      postgres:
+        condition: service_healthy
+      cosmosdb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      JAVA_OPTS: >-
+        -Xms256m -Xmx512m
+        -Dio.netty.handler.ssl.noOpenSsl=true
+        -Djavax.net.ssl.trustStoreType=JKS
+        -Djavax.net.ssl.trustStore=
+        -Djavax.net.ssl.trustStorePassword=
+        -Dcom.azure.cosmos.implementation.ignoreInvalidSSL=true
+      
+      SPRING_PROFILES_ACTIVE: onprem #giusto che sia aws al posto di azure perchè usa mongo(su cosmos)+postgres e non cosmos+sqlserver
+
+      # PostgreSQL
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/gestioneannotazioni
+      POSTGRES_DB: gestioneannotazioni
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: GestioneAnnotazioni123!
+
+      # CosmosDB (Mongo API)
+      #AZURE_COSMOS_URI: mongodb://cosmosdb:10250
+      #AZURE_COSMOS_KEY: ''
+      #AZURE_COSMOS_DATABASE: gestioneannotazioni
+      #MONGODB_URI: mongodb://cosmosdb:10252/gestioneannotazioni?tls=true&replicaSet=globaldb&retryWrites=false
+      MONGODB_URI: mongodb://localhost:C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==@cosmosdb:10252/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@localhost@
+
+
+      # Server
+      SERVER_PORT: 8080
+
+      # Logging
+      LOGGING_LEVEL_IT_ALNAO: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: DEBUG
+
+      KAFKA_BROKER_URL: kafka:29092
+    ports:
+      - "8085:8080"
+    networks:
+      - azure-network
+    healthcheck:
+      test: curl -f http://localhost:8080/actuator/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Zookeeper per Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: gestioneannotazioni-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - azure-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - kafka_data:/var/lib/zookeeper/data
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: gestioneannotazioni-kafka
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    networks:
+      - azure-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:29092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Kafka UI per gestione Kafka
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: gestioneannotazioni-kafka-ui
+    environment:
+      KAFKA_CLUSTERS_0_NAME: gestioneannotazioni-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    ports:
+      - "8087:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - azure-network
+
+  # Adminer per PostgreSQL
+  adminer-postgres:
+    image: adminer:4.8.1
+    container_name: gestioneannotazioni-adminer-postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: galkaev
+    ports:
+      - "8086:8080"
+    networks:
+      - azure-network
+
+  # Azure Storage Explorer (Azurite)
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: gestioneannotazioni-azurite
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose
+    ports:
+      - "10003:10000"
+      - "10001:10001"
+      - "10002:10002"
+    volumes:
+      - azurite_data:/data
+    networks:
+      - azure-network
+
+  # Debug Shell
+  debug:
+    image: debian:bookworm-slim
+    container_name: gestioneannotazioni-debug-shell
+    command: tail -f /dev/null
+    networks:
+      - azure-network
+    tty: true
+    stdin_open: true
+    entrypoint: ["/bin/sh", "-c", "apt update && apt install -y curl iputils-ping && tail -f /dev/null"]
+
+volumes:
+  postgres_data:
+    name: gestioneannotazioni-postgres-data
+    driver: local
+  cosmosdb_data:
+    name: gestioneannotazioni-cosmosdb-data
+    driver: local
+  azurite_data:
+    driver: local
+  kafka_data:
+    name: gestioneannotazioni-kafka-data
+    driver: local
+
+networks:
+  azure-network:
+    driver: bridge
+    name: gestioneannotazioni-azure-network

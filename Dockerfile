@@ -56,6 +56,21 @@ COPY --from=builder /workspace/application/target/application-*.jar app.jar
 # Cambia ownership
 RUN chown appuser:appuser /app/app.jar
 
+# Gestione certificato CosmosDB (opzionale)
+# Usa un wildcard per evitare errore se il file non esiste
+#COPY . /tmp/build-context/
+# Importa certificato nel truststore Java (solo se il file esiste)
+#USER root
+#RUN if [ -f /cosmos-certs/cosmosdb-cert.crt ]; then \
+#      echo '📋 Importing CosmosDB certificate...'; \
+#      cp /cosmos-certs/cosmosdb-cert.crt /usr/local/share/ca-certificates/ && \
+#      update-ca-certificates && \
+#      echo '✅ Certificate imported successfully'; \
+#    else \
+#      echo "⚠️ Certificato CosmosDB non trovato, passo saltato"; \
+#    fi
+#RUN rm -rf /tmp/build-context
+
 # Cambia utente
 USER appuser
 
@@ -69,6 +84,8 @@ ENV SPRING_PROFILES_ACTIVE=onprem
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+#ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
 
 # Comando di avvio
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

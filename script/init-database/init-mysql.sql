@@ -1,7 +1,7 @@
 -- Schema per MySQL (AWS)
 -- nota IMPORTANTE: in questo script NON mettere nessun carattere speciale e nemmeno lettere accentate
 -- perche usato dal  script/aws-ecs/start-all.sh che si arrabbia tantissimo se presenti lettere non ascii standard
--- nota: questo file usato da alcuni script docker-compose
+-- nota: questo file usato da alcuni script docker-compose e script/aws-ec2/start-all.sh
 -- nota: questo file usato anche da script/aws-ecs/run-ecs-mysql-insert.sh
 
 -- Creazione del database

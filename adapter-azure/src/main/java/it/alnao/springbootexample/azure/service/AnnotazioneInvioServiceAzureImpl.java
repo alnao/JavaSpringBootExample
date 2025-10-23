@@ -8,6 +8,7 @@ import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import it.alnao.springbootexample.core.service.AnnotazioneInvioService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,10 @@ import java.util.stream.Collectors;
 
 @Service
 @Profile("azure")
+@ConditionalOnProperty(value = "gestione-annotazioni.export-annotazioni.enabled", havingValue = "true")
+//@ConditionalOnProperty(value = "annotazione.invio.enabled", havingValue = "true", matchIfMissing = false)
+//nota questo è obbligatorio per evitare l'errore
+//Parameter 0 of constructor in it.alnao.springbootexample.core.scheduler.AnnotazioneInvioScheduler required a bean of type 'it.alnao.springbootexample.core.service.AnnotazioneInvioService' that could not be found.
 public class AnnotazioneInvioServiceAzureImpl implements AnnotazioneInvioService {
 
     private final AnnotazioneMetadataRepository metadataRepository;
@@ -26,7 +31,7 @@ public class AnnotazioneInvioServiceAzureImpl implements AnnotazioneInvioService
             AnnotazioneMetadataRepository metadataRepository,
             @Value("${azure.eventhubs.connection-string}") String connectionString,
             @Value("${azure.eventhubs.name}") String eventHubName,
-            @Value("${annotazione.invio.enabled:true}") boolean enabled) {
+            @Value("${gestione-annotazioni.export-annotazioni.enabled:false}") boolean enabled) {
         this.metadataRepository = metadataRepository;
         this.enabled = enabled;
         this.producerClient = new EventHubClientBuilder()

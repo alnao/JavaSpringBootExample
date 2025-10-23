@@ -16,7 +16,11 @@ spring:
   web:
     resources:
       static-locations: classpath:/static/
-
+  cloud:
+    azure:
+      credential:
+        type: none
+        
   security:
     oauth2:
       client:
@@ -43,6 +47,17 @@ spring:
             user-info-uri: https://graph.microsoft.com/v1.0/me
             user-name-attribute: id
 
+  # Escludi autoconfiguration Azure
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.cosmos.CosmosAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.cosmos.AzureCosmosAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.context.AzureContextAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.context.AzureTokenCredentialAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.kafka.AzureEventHubsKafkaOAuth2AutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.AzureGlobalPropertiesAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.storage.AzureStorageBlobAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.storage.AzureStorageQueueAutoConfiguration
 # Configurazione Actuator
 management:
   endpoints:

@@ -1,27 +1,48 @@
 # Sistema di Gestione annotazioni
 
-Progetto realizzato da < AlNao /> come esempio pratico con Java Spring Boot: consente di creare, modificare e visualizzare annotazioni, utenti con privilegi da moderatore possono confermare la annotazione e amministratori possono confermare e *inviare* annotazioni a sistemi esterni.
+  <p align="center">
+    <img src="https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=black"  height=60/>
+    <img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=for-the-badge&logo=SpringBoot&logoColor=white"  height=60/>
+  </p>
 
-La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’architettura esagonale (Hexagonal Architecture), con pieno supporto al deployment sia in ambienti on-premise che su cloud AWS. Il progetto è pensato per essere agnostico rispetto al cloud provider, al DBMS utilizzato e ai sistemi di interfaccia: puoi adattarlo facilmente a diversi ambienti, database e frontend.
+Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: consente di creare, modificare e visualizzare annotazioni, utenti con privilegi da moderatore possono confermare le annotazioni e utenti con privilegi da amministratori possono confermare e *inviare* annotazioni a sistemi esterni.
+
+
+La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’architettura esagonale ([Hexagonal Architecture](https://en.wikipedia.org/wiki/Hexagonal_architecture_(software))), con pieno supporto al deployment sia in ambienti on-premise che su cloud come AWS e Azure sfruttando Docker e Kubernetes.
+
+
+Il progetto è pensato per essere agnostico rispetto al cloud provider: sono sviluppate implementazioni per Replit, AWS e Azure. Il DBMS utilizzato dipende dal profilo selezionato:
+
+
+| Profilo | Infra/Cloud | DBMS Sql | DBMS No-Sql | Export Annotazioni |
+|--------|----------|-------------|-------------|-------------|
+| OnPrem | Kubernetes | Postgresql | Mongo | Kafka |
+| Sqlite | Replit | Sqlite | Sqlite | Sqlite | 
+| AWS | AWS | MySql | Dynamo | SQS | 
+| Azure | Azure | MsSql | Cosmos | *coming soon* |
 
 
 ## 📚 Indice rapido
 
 - 🛠️ [Struttura progetto](#️-struttura-progetto)
-- ⚙️ [Esecuzione](#-esecuzione)
-- 📡 [API Endpoints](#-api-endpoints)
-- 📊 [Monitoring con actuator](#-monitoring-con-actuator)
-- 📖 [Documentazione API con Swagger / OpenAPI](#-documentazione-api-con-swagger--openapi)
-- 📈 [Analisi qualità e coverage con SonarQube](#-analisi-qualità-e-coverage-con-sonarqube)
-- 🔒 [Sistema di autenticazione](#-Sistema-di-autenticazione)
-- 🐳 [Deploy e utilizzo con DockerHub](#-deploy-e-utilizzo-con-dockerhub)
-- 🐳 [Deploy completo con Docker Compose](#-deploy-completo-con-docker-compose)
-- ☸️ [Deploy su Minikube e Kubernetes locale)](#-deploy-su-minikube-kubernetes-locale)
-- 📦 [Versione SQLite per Replit](#-Versione-SQLite-per-Replit)
-- 🐳 [Deploy AWS-onprem](#-Deploy-AWS-onprem-MySQL-e-DynamoDB-Local)
-- 🚀 [Deploy su AWS EC2](#-Deploy-su-AWS-EC2)
-- 🐳 [Deploy su AWS ECS Fargate](#-deploy-su-aws-ecs-fargate)
+  - ⚙️ [Esecuzione locale](#-esecuzione-locale)
+  - 📡 [API Endpoints](#-api-endpoints)
+  - 📊 [Monitoring con actuator](#-monitoring-con-actuator)
+  - 📖 [Documentazione API con Swagger / OpenAPI](#-documentazione-api-con-swagger--openapi)
+  - 📈 [Analisi qualità e coverage con SonarQube](#-analisi-qualità-e-coverage-con-sonarqube)
+  - 🔒 [Sistema di autenticazione](#-Sistema-di-autenticazione)
+- 🐳 [Deploy ed esecuzione con DockerHub](#-deploy-ed-esecuzione-con-dockerhub)
+  - 🐳 [Esecuzione completa con Docker Compose (con Mongo e Postgresql)](#-Esecuzione-completa-con-Docker-Compose)
+  - ☸️ [Esecuzione su Minikube e Kubernetes locale](#-Esecuzione-su-Minikube-e-Kubernetes-locale)
+  - 📦 [Versione SQLite per Replit](#-Versione-SQLite-per-Replit)
+- ☁️ [Esecuzione del profilo AWS (con MySql e Dynamo)](#-Esecuzione-del-profilo-AWS-in-locale)
+  - 🚀 [Esecuzione su AWS EC2](#-Esecuzione-su-AWS-EC2)
+  - 🐳 [Esecuzione su AWS ECS Fargate](#-Esecuzione-su-aws-ecs-fargate)
+- ☁️ [Esecuzione profilo Azure (con CosmosDB e SqlServer)](#-Esecuzione-profilo-Azure-in-locale)
+  - 🚀 [Esecuzione su Azure con Cosmos e MsSql con run locale del servizio](#-Esecuzione-su-Azure-con-Cosmos-e-MsSql-con-run-locale-del-servizio)
+  - 🐳 [Esecuzione su Azure con CosmosMongo e Postgresql con run locale del servizio](#-Esecuzione-su-Azure-con-CosmosMongo-e-Postgresql-con-run-locale-del-servizio)
 - 📝 [Roadmap & todo-list](#-Roadmap-&-todo-list)
+  - ✅ [Test di non regressione](#-Test-di-non-regressione)
 
 
 ## 🛠️ Struttura progetto:
@@ -30,11 +51,12 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
   📦 progetto
   ├── 📁 core                  # Interfacce e domini (Hexagonal Core)
   ├── 📁 adapter-api           # REST API Controllers
-  ├── 📁 adapter-web           # Risorse statiche e mini-sito di prova
   ├── 📁 adapter-aws           # Implementazione AWS (DynamoDB + MySQL/Aurora)
-  ├── 📁 adapter-kafka         # Componenti per la gestione delle code Kafka (ricezione e invio delle annotazioni)
+  ├── 📁 adapter-azure         # Implementazione Azure (CosmosDB + SqlServer)
+  ├── 📁 adapter-kafka         # Componenti per la gestione delle code Kafka (ricezione e invio dati)
   ├── 📁 adapter-onprem        # Implementazione On-Premise (MongoDB + PostgreSQL)
   ├── 📁 adapter-sqlite        # Implementazione SQLite (con solo il database SQLite locale)
+  ├── 📁 adapter-web           # Risorse statiche e mini-sito di prova
   └── 📁 application           # Applicazione principale Spring Boot
   ```
 - **Caratteristiche**:
@@ -49,12 +71,15 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
   - Il profilo *SQLite* in locale: Java 17+, Maven 3.8+, PostgreSQL 13+, MongoDB 4.4+ con Docker opzionale
   - Il profilo *SQLite* in replit: profilo replit attivo e rilascio su progetto GitHub! *Può bastare il profilo gratuito*
   - Il profilo *On-Premise* semplice: Java 17+, Maven 3.8+, PostgreSQL 13+, MongoDB
-  - Il profilo *On-Premise* con docker: I precedenti con Docker & Docker-compose
-  - Il profilo *AWS* eseguito in locale: I precedenti con Docker & Docker-compose
-  - Il profilo *AWS* eseguito on cloud: AWS Account con accesso a RDS MySQL e DynamoDB. *Occhio ai costi perchè alcuni dei servizi usati prevede dei costi di esecuzione PayAsYouGo*
+  - Il profilo *On-Premise* con docker: Sistema docker installato 
+  - Il profilo *AWS* eseguito in locale: Sistema docker installato 
+  - Il profilo *AWS* eseguito on cloud: Account AWS con accesso a RDS MySQL e DynamoDB.
+    - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+  - Il profilo *Azure* eseguito in locale *non funziona perchè l'immagine Cosmos non funziona*
+  - Il profilo *Azure* eseguito on cluod: Account Azure con accesso a Cosmos e MsSql
+    - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
 
-
-## ⚙️ Esecuzione
+### ⚙️ Esecuzione locale
 - Build del progetto in ambiente di sviluppo
   ```bash
   # Build completo
@@ -65,7 +90,7 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
 - Esecuzione profilo SQLite in locale con database locale, senza bisogno di nessun server DBMS
   ```
   mvn clean package
-  java -jar application/target/application-1.0.0.jar \
+  java -jar application/target/application-*.jar \
     --spring.profiles.active=sqlite \
     --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
     --server.port=8082
@@ -77,14 +102,6 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
       "password": "$2b$12$hFoVfPak5m77PJD0cIIe8u1Yo5out7B.h8PWvwfbaloys/ndX9Zpi",
       "email": "admin@example.com"
     }'
-    ```
-- Esecuzione profilo On-Premise con esecuzione diretta del jar, nel sistema devono essere avviati i servizi DBMS (MongoDB + PostgreSQL)
-    ```bash
-    # Profilo on-premise di default
-    java -jar application/target/application-1.0.0.jar
-
-    # Oppure specificando il profilo
-    java -jar application/target/application-1.0.0.jar --spring.profiles.active=onprem
     ```
 - Esecuzione profilo On-Premise con il docker-compose che avvia anche i servizi DBMS
     ```bash
@@ -117,7 +134,7 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
       http://localhost:8085/
       ```
 
-## 📡 API Endpoints
+### 📡 API Endpoints
 - Eseguendo il sistema in locale la base degli URL è `http://localhost:8080` (8081/8085 nel caso di esecuzione tramite docker-compose su Minikube o AWS)
 - API di autenticazione gestite da AuthController:
     | Metodo | Endpoint | Descrizione |
@@ -167,7 +184,7 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
 
 
 
-## 📊 Monitoring con actuator
+### 📊 Monitoring con actuator
 L'applicazione espone endpoint Actuator per il monitoring:
 - Health: `http://localhost:8080/actuator/health`
 - Metrics: `http://localhost:8080/actuator/metrics`
@@ -194,7 +211,7 @@ management:
 ```
 
 
-## 📖 Documentazione API con Swagger / OpenAPI
+### 📖 Documentazione API con Swagger / OpenAPI
 L'applicazione espone la documentazione interattiva delle API REST tramite Swagger UI (OpenAPI 3):
 - **Swagger UI**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)  (o `/swagger-ui/index.html`)
   - In ambiente Docker Compose l'endpoint è [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
@@ -228,7 +245,7 @@ L'applicazione espone la documentazione interattiva delle API REST tramite Swagg
 
 
 
-## 📈 Analisi qualità e coverage con SonarQube
+### 📈 Analisi qualità e coverage con SonarQube
 L'applicazione supporta l'analisi statica del codice, la code coverage e la qualità tramite SonarQube. Ecco come avviare e utilizzare SonarQube in locale:
 
 - **Avvio SonarQube tramite Docker**:
@@ -314,7 +331,7 @@ curl -X POST http://localhost:8082/api/auth/login \
 ```
 
 
-## 🐳 Deploy e utilizzo con DockerHub
+## 🐳 Deploy ed esecuzione con DockerHub
 L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.docker.com/r/alnao/gestioneannotazioni) e può essere scaricata ed eseguita direttamente, senza necessità di build locale.
 - **Compilazione e push dell'immagine**
     ```bash
@@ -431,7 +448,7 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
     - Tutto questo enorme casino può essere evitato con docker-compose,minikube e kubernetes. Vedere le sezioni dedicate.
 
 
-## 🐳 Deploy completo con Docker Compose
+### 🐳 Esecuzione completa con Docker Compose
 
 Per semplificare l’avvio di tutti i servizi necessari (applicazione, PostgreSQL, MongoDB) puoi utilizzare `docker-compose`. Questo permette di gestire tutto con un solo comando, senza dover creare manualmente reti o container.
 
@@ -494,13 +511,13 @@ Per semplificare l’avvio di tutti i servizi necessari (applicazione, PostgreSQ
     docker rmi $(docker images -q)
     ```
 - **Note**:
-    - L’applicazione diventa disponibile su [http://localhost:8080](http://localhost:8080)
+    - L’applicazione diventa disponibile su [http://localhost:8082](http://localhost:8082)
     - Possibile personalizzare porte, variabili d’ambiente e configurazioni secondo le varie esigenze.
     - Per la produzione, necessario usare password sicure, sistemi di backup e sicurezza dei dati.
 
 
 
-## ☸️ Deploy su Minikube (Kubernetes locale)
+### ☸️ Esecuzione su Minikube e Kubernetes locale
 L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambiente Kubernetes locale, per simulare un cluster cloud-ready.
 - Prerequisiti: 
     - Minikube installato ([guida ufficiale](https://minikube.sigs.k8s.io/docs/start/))
@@ -508,8 +525,9 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
     - Freelens/OpenLens consigliato per la gestione dei pod, service e risorse
 - Avvio Minikube:
     ```bash
-    minikube start --memory=4096 --cpus=2
+    minikube start --memory=8096 --cpus=4
     ```
+    nota: sono tante risorse, forse si possono ridurre un po'!
 - Manifest già pronti:
     Nella cartella `script/minikube-onprem` trovi i manifest YAML già pronti per avviare tutta l'infrastruttura, presente script che esegue nella giusta sequenza gli script di `kubectl apply`, lo script da lanciare è:
     ```bash
@@ -558,7 +576,7 @@ Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessar
 - Utilizzado SQLite come unico database per tutte le funzionalità (annotazioni, utenti, storico) non ha nessuna dipendenza da servizi esterni: è possibile eseguire tutto in locale, ideale per prove locali o test. Previsto un profilo Spring Boot specifico `sqlite`. I comandi per eseguire il microservizio in locale con questo profilo sono:
   ```
   mvn clean package
-  java -jar application/target/application-1.0.0.jar \
+  java -jar application/target/application-*.jar \
     --spring.profiles.active=sqlite \
     --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
     --server.port=8082
@@ -631,12 +649,17 @@ Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessar
     ```
 
 
-## 🐳 Deploy AWS-onprem (MySQL e DynamoDB Local)
+## 🐳 Esecuzione del profilo AWS in locale
 
 Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, DynamoDB Admin UI, Spring Boot profilo AWS):
 - Prima di eseguire il comando di compose bisogna verficare che la versione dell'immagine su DockerHub sia aggiornata!
     ```bash
     ./script/push-image-docker-hub.sh
+    ```
+    oppure localmente
+    ```
+    mvn clean package -DskipTests
+    docker build -t alnao/gestioneannotazioni:latest .
     ```
 - Comando per la creazione dello stack nel docker locale
   ```bash
@@ -673,8 +696,9 @@ Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, 
   - presente anche uno script `./script/aws-onprem/stop-all.sh`
 
 
-## 🚀 Deploy su AWS EC2
+### 🚀 Esecuzione su AWS EC2
 Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con provisioning completamente automatizzato di tutte le risorse cloud necessarie (Aurora MySQL, DynamoDB, EC2, Security Group, IAM Role, KeyPair, ecc.) tramite script Bash e AWS CLI.
+- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
 - Prerequisiti:
   - AWS CLI installata e configurata (`aws configure`)
   - Credenziali AWS con permessi minimi per EC2, RDS, DynamoDB, IAM, VPC, KeyPair
@@ -735,9 +759,10 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
   | **Totale**       | **~3,6 USD**         | **~110 USD**        | **~3,7 USD**               | **~115 USD**             |
 
 
-## 🐳 Deploy su AWS ECS Fargate
+### 🐳 Esecuzione su AWS ECS Fargate
 Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con Fargate, utilizzando container serverless completamente gestiti da AWS. Il provisioning automatizzato include tutte le risorse cloud necessarie (Aurora MySQL, DynamoDB, ECR, ECS Cluster, Task Definition, Service, IAM Roles, Security Groups, ecc.) tramite script Bash e AWS CLI.
 
+- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
 - Prerequisiti:
   - AWS CLI installata e configurata (`aws configure`)
   - Docker installato per build e push delle immagini
@@ -832,6 +857,104 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   | **TOTALE + ALB + NAT** | **~5,6 USD** | **~169 USD** | **~6,6 USD** | **~202 USD** |
 
 
+## Esecuzione profilo Azure in locale
+
+Ho perso molte ore a capire come far funzionare CosmosDB in locale usando l'immagine ufficiale
+```
+mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:mongodb
+```
+ma alla fine ⚠️ **non funziona**. C'è una cartella `azure-onprem-non-funziona` dentro alla cartella `script` così come promemoria delle prove fatte e dei comandi eseguiti. Se in futuro la situazione cambierà sistemerò questo esempio.
+
+
+L’emulatore Linux in Docker è pensato solo per test container-to-container, e non supporta SDK dal host o a volte neanche da container separati se non dal container ufficiale che lo avvia. **CosmosDB Emulator Linux in Docker non implementa correttamente tutte le API richieste dagli SDK esterni.** Funziona solo con richieste dal container stesso o dalla rete interna Docker dove gira l’emulatore.
+
+
+Microsoft documenta che il Linux Emulator è destinato a test container-to-container, non per SDK dal host o container separati. Alcune porte interne (10250+) devono essere esposte e certificate corrette mappate, cosa che il container ufficiale Linux non fa completamente.
+
+
+⚠️ Limiti importanti
+- Python / Java / C# SDK esterni → non funzionano correttamente su Linux Emulator fuori dal container ufficiale.
+- curl funziona solo perché fa richieste HTTP molto semplici.
+- MongoDB endpoint funziona meglio perché l’emulatore implementa almeno un protocollo minimale Mongo compatibile, ma anche qui bisogna fare tutto container-to-container.
+- Non esistono workaround affidabili per usare l’SDK dal host Linux/macOS o da container separati senza problemi di TLS/JSON RPC.
+
+
+### 🚀 Esecuzione su Azure con Cosmos e MsSql con run locale del servizio
+Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server) ed esecuzione dell'applicazione Spring Boot in locale con Docker.
+- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+- 📋 **Prerequisiti**
+  - Azure CLI installato e autenticato (`az login`)
+  - Docker installato e in esecuzione
+  - Immagine Docker `alnao/gestioneannotazioni:latest`
+- Componenti creati dallo script
+  0. **Login**: per essere eseguito necessita della login eseguita con il comando `az login`
+  1. **Crea Resource Group** su Azure nella regione North Europe
+  2. **Provisiona CosmosDB** (tier Free) con database e container per annotazioni
+  3. **Provisiona SQL Server** (tier Basic) con database per metadati e autenticazione
+  4. **Configura Firewall** per accesso locale e servizi Azure
+  5. **Inizializza Database** con tabelle (`users`, `annotazione_metadata`, `storico_stati`) e utenti di test
+  6. **Avvia Container Docker** con configurazione automatica
+- ▶️ Esecuzione
+  ```bash
+  ./script/azure-dbremoti-cosmos-runlocale/start-all.sh
+  ```
+- Rimozione completa
+  ```bash
+  ./script/azure-dbremoti-cosmos-runlocale/stop-all.sh
+  ```
+- ⚠️ Note importanti
+  - CosmosDB Free Tier: Limitato a 1000 RU/s e 25GB storage. Solo 1 account Free per subscription.
+  - SQL Server Basic: 5 DTU e 2GB storage. Costo stimato: ~5€/mese.
+  - Firewall: Lo script configura l'accesso dal tuo IP. Aggiorna la regola se l'IP cambia.
+  - Password: Cambia P@ssw0rd123! con una password sicura prima di eseguire.
+  - Connection String: Salva le connection string restituite dai comandi 8 e 13 in modo sicuro.
+  - ⚠️ Costi: Anche con tier Free/Basic, SQL Server ha costi mensili. Monitorare sempre i costi ⚠️
+    | Risorsa | Tier/SKU | Costo Orario | Costo Giornaliero | Costo Settimanale | Costo Mensile |
+    |---------|----------|--------------|-------------------|-------------------|---------------|
+    | **Cosmos DB SQL API** | Free Tier (1000 RU/s, 25GB) | €0.00 | €0.00 | €0.00 | **€0.00** |
+    | **SQL Server Basic** | 5 DTU, 2GB | €0.0068 | €0.16 | €1.14 | **~€5.00** |
+    | **Storage** | 2GB incluso | €0.00 | €0.00 | €0.00 | €0.00 |
+    | **Egress Data** | <100GB/mese | ~€0.00 | ~€0.01 | ~€0.07 | **~€0.30** |
+    | **TOTALE 24/7** | | **€0.0068/h** | **€0.17/day** | **€1.21/week** | **~€5.30/mese** |
+
+
+### 🚀 Esecuzione su Azure con CosmosMongo e Postgresql con run locale del servizio
+Script bash per la creazione automatica di risorse Azure con profilo *onprem* (Cosmos con compatibilità Mongo e Postgresql) ed esecuzione dell'applicazione Spring Boot in locale con Docker.
+- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+- 📋 **Prerequisiti**
+  - Azure CLI installato e autenticato (`az login`)
+  - Docker installato e in esecuzione
+  - Immagine Docker `alnao/gestioneannotazioni:latest`
+- Componenti creati dallo script
+  0. **Login**: per essere eseguito necessita della login eseguita con il comando `az login`
+  1. **Crea Resource Group** su Azure nella regione North Europe
+  2. **Provisiona CosmosDB con compatibilità MongoDb** (tier Free) con database e container per annotazioni
+  3. **Provisiona Postgresql** con database per metadati e autenticazione
+  4. **Configura Firewall** per accesso locale e servizi Azure
+  5. **Inizializza Database** con tabelle (`users`, `annotazione_metadata`, `storico_stati`) e utenti di test
+  6. **Avvia Container Docker** con configurazione automatica
+- ▶️ Esecuzione
+  ```bash
+  ./script/azure-dbremoti-mongo-runlocale/start-all.sh
+  ```
+- Rimozione completa
+  ```bash
+  ./script/azure-dbremoti-mongo-runlocale/stop-all.sh
+  ```
+
+- ⚠️ Note importanti
+  - ⚠️ Costi: Anche con tier Free/Basic, i database hanno costi mensili. Monitorare sempre i costi ⚠️
+    | Risorsa | Tier/SKU | Costo Orario | Costo Giornaliero | Costo Settimanale | Costo Mensile |
+    |---------|----------|--------------|-------------------|-------------------|---------------|
+    | **Cosmos DB MongoDB API** | Free Tier (1000 RU/s, 25GB) | €0.00 | €0.00 | €0.00 | **€0.00** |
+    | **PostgreSQL Flexible** | Standard_B1ms | €0.0165 | €0.40 | €2.77 | **~€12.00** |
+    | **Storage PostgreSQL** | 32GB | €0.0048 | €0.12 | €0.81 | **~€3.50** |
+    | **Backup** | 32GB (7 giorni) | €0.0014 | €0.03 | €0.24 | **~€1.00** |
+    | **Egress Data** | <100GB/mese | ~€0.00 | ~€0.01 | ~€0.07 | **~€0.30** |
+    | **TOTALE 24/7** | | **€0.0227/h** | **€0.56/day** | **€3.89/week** | **~€16.80/mese** |
+
+
+
 ## 📝 Roadmap & todo-list
 - ✅ ⚙️ Creazione progetto con maven, creazione dei moduli adapter, adapter web con pagina web di esempio, test generale di esecuzione
   - ✅ 📝 Funzione di modifica annotazioni con registro con precedenti versioni delle note
@@ -868,50 +991,58 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - ✅ 📚 Export annotazioni: creazione service che permetta di inviare notifiche via coda (kafka o sqs) con creazione `adapter-kafka` e che con frequenza invii delle annotazioni concluse con cambio di stato
   - ✅ ☁️ Configurazione del servizio SQS nell'adapter AWS e test nelle versioni EC2 e ECS
 - ✅ 🏁 Test finale di tutti i punti precedenti e tag della versione 0.0.1 e inizio versione 0.0.2
-  🚧 📡 Rilascio immagine 0.0.1 su DockerHub
+  - ✅ 📡 Rilascio immagine 0.0.1 su DockerHub
+      ```bash
+      docker tag alnao/gestioneannotazioni:latest alnao/gestioneannotazioni:0.0.1
+      docker push alnao/gestioneannotazioni:0.0.1
+      ```
 - 🚧 ☁️ Integrazione con Azure
-  - ✅ ⚙️ Creazione del adapter Azure e inizio sviluppi
-  - 🚧 🎯 Prima esecuzione in locale adapter azure
-  - 🚧 🛠️ Scrittura degli script deploy su Azure
-  - 🚧 ☁️ Rilascio in ambiente Azure con VM 
-- 🚧 ☁️ Esecuzione su Cloud
-  - 🚧 ☸️ Deploy su AWS su EKS
-  - 🚧 ☸️ Deploy su Azure su AKS
+  - ✅ 🔩 Creazione del adapter Azure e sviluppo implementazioni per cosmos e ms-sql server.
+  - ✅ 🖥️ Prima esecuzione in locale adapter azure *che non funziona*
+  - ✅ ▶️ Script deploy su Azure della versione con cosmos e sqlserver con run in locale
+  - ✅ 🎯 Script deploy su Azure della versione con cosmos-mongodb e postgresql con run in locale
+  - 🚧 📝 Esportazione delle annotazioni su Azure in sistema code
+  - 🚧 🚀 Script deploy su Azure della versione con cosmos e sqlserver con run in virtuale azure
+  - 🚧 🎡 Script deploy su Azure della versione con cosmos-mongo e postgres con run in vistuale azure
+  - 🚧 🛠️ Script deploy su Azure con Azure Container Instances (ACI)
+  - 🚧 📦 Script deploy su Azure con Azure Container Apps
+- 🚧 ☸️ Esecuzione su Cloud in infrastruttura Kubernetes
+  - 🚧 🤖 Deploy su AWS su EKS
+  - 🚧 ⚙️ Deploy su Azure su AKS
   - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts
   - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
 - 🚧 🗃️ Sistema evoluto di gestione annotazioni
   - 🚧 👥 Sistema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento
   - 🚧 🧑‍🤝‍🧑 Gestione modifica annotazione con lock
+  - 🚧 🕸️ Gestione invio notifiche singolo se ci sono più istanze dell'applicazione in esecuzione (minikube)
   - 🚧 🔄 Import annotazioni (JSON e/o CSV): creazione service per l'import di annotazioni con cambio di stato dopo averle importate con implementazioni su tutti gli adapter
   - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie notifiche
     - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
   - 🚧 🧭 Sistema che gestisce la scadenza di una annotazione con spring-batch che elabora tutte le annotazioni rifiutate o scadute, con nuovo stato scadute.
   - 🚧 💾 Backup & Disaster Recovery: Cross-region backup, point-in-time recovery, RTO/RPO compliance
   - 🚧 🔐 OAuth2/OIDC Provider: Integrazione con provider esterni (Google, Microsoft, GitHub) + SSO enterprise
+  - 🚧 🏗️ GitOps Workflow: ArgoCD/Flux per deployment automatici, configuration drift detection
+  - 🚧 🧪 Testing Pyramid: Unit + Integration + E2E + Performance + Security testing automatizzati
+  - 🚧 📎 File Attachments: Supporto allegati (immagini, PDF, documenti) con preview e versioning
 - 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.2.0
 - 🚧 🗃️ Sistema di caching con redis
   - 🚧 ⚡ Redis Caching Layer: Cache multi-livello (L1: in-memory, L2: Redis) con invalidation strategies e cache warming
   - 🚧 📊 Read Replicas: Separazione read/write con eventual consistency e load balancing intelligente
   - 🚧 🔒 API Rate Limiting: Rate limiting intelligente con burst allowance, IP whitelisting, geographic restrictions
-- 🚧 🔍 Elasticsearch Integration: Ricerca full-text avanzata con highlighting, auto-complete, ricerca semantica
-- 🚧 🏗️ GitOps Workflow: ArgoCD/Flux per deployment automatici, configuration drift detection
-- 🚧 🧪 Testing Pyramid: Unit + Integration + E2E + Performance + Security testing automatizzati
-- 🚧 📦 Container Security: Vulnerability scanning (Trivy/Snyk), distroless images, rootless containers
-- 🚧 🎯 Feature Flags: LaunchDarkly/ConfigCat integration per feature toggling, A/B testing, gradual
-- 🚧 💬 Comment Threads: Sistema di commenti su singole annotazioni con threading e notifications
-- 🚧 📎 File Attachments: Supporto allegati (immagini, PDF, documenti) con preview e versioning
-- 🚧 📝 Templates & Forms: Template predefiniti per annotazioni (meeting notes, bug reports, ideas) con campi strutturati
-- 🚧 🔄 Annotation Workflows: Stati delle annotazioni (draft→review→approved→published) con approval process e notifiche
-- 🚧 ✅ Annotation-to-Task Conversion: Trasforma automaticamente annotazioni in todo items con parsing intelligente di date, persone, azioni
-- 🚧 📅 Smart Date Recognition: NLP per riconoscere date naturali ("domani", "la prossima settimana", "tra 3 giorni") e convertirle in deadline
-- 🚧 🔄 Recurring Tasks: Todo ricorrenti (giornalieri, settimanali, mensili) generati automaticamente da template di annotazioni
-- 🚧 ⏰ Time Boxing: Stima automatica del tempo necessario per task basata su annotazioni simili completate
-- 🚧 📈 Progress Tracking: Visualizzazione progresso con barre, percentuali, streak counters
-- 🚧 🔗 Task Dependencies: Link tra todo items per gestire sequenze e blocchi
-- 🚧 ⏰ Context-Aware Reminders: Promemoria basati su location, tempo, altre attività ("Ricorda quando arrivi in ufficio")
-- 🚧 Weekly Digest: Riassunto settimanale con achievement, todo completati, annotazioni più accedute
-- 🚧 🎤 Voice Notes: Registrazione audio con trascrizione automatica e timestamp
-- fantasie dell'IA
+  - 🚧 🔍 Elasticsearch Integration: Ricerca full-text avanzata con highlighting, auto-complete, ricerca semantica
+- Fantasie dell'IA
+  - 🚧 📦 Container Security: Vulnerability scanning (Trivy/Snyk), distroless images, rootless containers
+  - 🚧 🎯 Feature Flags: LaunchDarkly/ConfigCat integration per feature toggling, A/B testing, gradual
+  - 🚧 💬 Comment Threads: Sistema di commenti su singole annotazioni con threading e notifications
+  - 🚧 📝 Templates & Forms: Template predefiniti per annotazioni (meeting notes, bug reports, ideas) con campi strutturati
+  - 🚧 🔄 Annotation Workflows: Stati delle annotazioni (draft→review→approved→published) con approval process e notifiche
+  - 🚧 📅 Smart Date Recognition: NLP per riconoscere date naturali ("domani", "la prossima settimana", "tra 3 giorni") e convertirle in deadline
+  - 🚧 ⏰ Time Boxing: Stima automatica del tempo necessario per task basata su annotazioni simili completate
+  - 🚧 📈 Progress Tracking: Visualizzazione progresso con barre, percentuali, streak counters
+  - 🚧 🔗 Task Dependencies: Link tra annotazioni per gestire sequenze e blocchi
+  - 🚧 ⏰ Context-Aware Reminders: Promemoria basati su location, tempo, altre attività ("Ricorda quando arrivi in ufficio")
+  - 🚧 Weekly Digest: Riassunto settimanale con achievement, todo completati, annotazioni più accedute
+  - 🚧 🎤 Voice Notes: Registrazione audio con trascrizione automatica e timestamp
   - 🚧 📋 Recommendation Engine: Sistema di raccomandazioni basato su ML per suggerire annotazioni correlate, utenti simili, contenuti rilevanti
   - 🚧 🤖 AI-Powered Insights: Integrazione OpenAI/Bedrock per suggerimenti automatici di categorizzazione, sentiment analysis delle note, auto-completamento intelligente
   - 🚧 📱 Mobile-First PWA: Progressive Web App con offline-sync, push notifications, gesture navigation
@@ -926,6 +1057,169 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - 🚧 ♻️ Green Computing Optimization: Automatic migration a data centers con energia rinnovabile
   - 🚧 📊 Sustainability Metrics: KPI per misurare efficienza energetica e carbon impact
   - 🚧 🌿 Eco-Friendly Features: Dark mode per battery saving, compression algorithms, lazy loading
+
+
+### Test di non regressione
+Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non regressione su tutta l'applicazione. I test da eseguire sono:
+- Compilazione e upload/push dell'immagine
+  ```bash
+  ./script/docker-build.sh 
+  ./script/push-image-docker-hub.sh 
+  ```
+  risultato atteso: nessun arrore
+- Pulizia globale prima di partire (meglio partire da situazione pulita con volumi vuoti!)
+  ```bash
+  docker volume rm $(docker volume ls -q)
+  ```
+- Profilo `sqlite` eseguito in locale (con solo sqlite) senza docker
+  - Avvio del microservizio senza docker ma con `java -jar`
+    ```bash
+    mvn clean package -DskipTests
+    java -jar application/target/application-*.jar \
+      --spring.profiles.active=sqlite \
+      --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
+      --server.port=8082
+    ```
+    - L'applicazione web sarà disponibile su [http://localhost:8082](http://localhost:8082)
+    - oppure è possibile far partire l'immagine docker con il comando:
+      ```
+      docker run --rm -p 8082:8082 \
+        -e SPRING_PROFILES_ACTIVE=sqlite \
+        -e SPRING_DATASOURCE_URL=jdbc:sqlite:/tmp/database.sqlite \
+        -e SERVER_PORT=8082 \
+        alnao/gestioneannotazioni:latest
+      ```
+  - Creazione utenti su sqlite
+    ```bash
+    sqlite3 /tmp/database.sqlite < script/init-database/init-sqlite.sql
+    ```
+  - Inserimento di una nota e posizionata nello stato "Da inviare", l'applicazione disponibile a `http://localhost:8082/`
+  - Verifica che la annotazione sia inviata (viene inviata ogni 5 miunti, vedere log applicativi)
+    ```bash
+    sqlite3 /tmp/database.sqlite "SELECT * FROM annotazioni_inviate;"
+    ```
+- Profilo `onprem` eseguito in locale (con Postgresql e MongoDB) con docker compose
+  - Creazione dello stack con `docker-compose` nella cartella root
+    ```bash
+    docker-compose up -d --build
+    ```
+  - L'applicazione web sarà disponibile su [http://localhost:8082](http://localhost:8082)
+  - Verifica che la annotazione sia inviata (viene inviata ogni 5 miunti, vedere log applicativi)
+    ```bash
+    # Log applicazione
+    docker logs gestioneannotazioni-app | tail
+    # Stato coda
+    docker exec -it gestioneannotazioni-kafka kafka-topics \
+      --bootstrap-server localhost:29092 \
+      --describe \
+      --topic annotazioni-export
+    # Consomare una coda
+    docker exec -it gestioneannotazioni-kafka kafka-console-consumer \
+      --bootstrap-server localhost:29092 \
+      --topic annotazioni-export \
+      --from-beginning \
+      --property print.timestamp=true \
+      --property print.key=true \
+      --property print.value=true
+    ```
+  - Distruzione di tutto lo stack
+    ```
+    docker-compose down --remove-orphans
+    docker network prune -f
+    docker volume rm $(docker volume ls -q)
+    docker rmi $(docker images -q)
+    ```
+- Profilo `onprem` eseguito su Kubernetes-**Minikube** locale (con Postgresql e MongoDB)
+  - Prerequisito: avere kubernetes e minikube installati e funzionanti
+    ```bash
+    minikube start --memory=6096 --cpus=3
+    ```
+  - Creazione dello stack su minikube
+    ```bash
+    ./script/minikube-onprem/start-all.sh
+    ```
+    - lo script visualizza l'url locale o la modifica al file hosts
+  - Usando Freelens/Openlens si può verificare lo stato dei servizi/pod
+  - Per verificare la coda si può usare il kafka-ui disponibile all'url visualizzato dallo script oppure lanciare il comando
+    ```bash
+    POD=$(kubectl get pods -n gestioneannotazioni --no-headers | grep ^kafka-service | awk '{print $1}')
+    echo $POD
+    kubectl exec -it $POD -n gestioneannotazioni -- bash -c "kafka-console-consumer --bootstrap-server localhost:9092 --topic annotazioni-export --from-beginning"
+    ```
+  - Rimozione completa di tutto con distruzione anche dei volumi e fermo di minikube
+    ```bash
+    ./script/minikube-onprem/stop-all.sh
+    minikube delete
+    ```
+- Profilo `aws` in locale (con MySql e Dynamo)
+  - Creazione dello stack docker-compose
+    ```bash
+    docker-compose -f script/aws-onprem/docker-compose.yml up -d
+    ```
+    oppure lo script `./script/aws-onprem/start-all.sh`. Vengono create gli url:
+    - L'applicazione web sarà disponibile su [http://localhost:8085](http://localhost:8085)
+      - Adminer (MySQL): `http://localhost:8086`
+      - DynamoDB Admin:  `http://localhost:8087`
+  - L'invio delle annotazioni avviene su una coda SQS simulata da localstack e può essere verifcata con il comando:
+    ```
+    aws sqs list-queues --endpoint-url=http://localhost:4566 --region=eu-central-1
+    aws sqs receive-message --endpoint-url=http://localhost:4566 --queue-url=http://localhost:4566/000000000000/annotazioni --region=eu-central-1
+    ```
+  - Rimozione dello stack
+    ```bash
+    docker-compose -f script/aws-onprem/docker-compose.yml down
+    ```
+    presente anche uno script `./script/aws-onprem/stop-all.sh`
+- Profilo `aws` in Cloud AWS con MySql e MySql ed esecuzione su EC2
+  - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+  - Script per creare lo stack in AWS (RDS, Dynamo e EC2)
+    ```bash
+    ./script/aws-ec2/start-all.sh
+    ```
+    - L'output finale dello script mostra l'IP pubblico EC2 e la porta applicativa (default 8080)
+      - Accedi da browser: `http://<EC2_PUBLIC_IP>:8080`
+  - L'invio delle annotazioni avvinee in una coda SQS reale, le istruzioni per leggere
+    ```bash
+    SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
+    SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
+    aws sqs receive-message --queue-url "$SQS_QUEUE_URL" --region eu-central-1 --attribute-names All --message-attribute-names All
+    ```
+  - Rimozione dello stack
+    ```
+    ./script/aws-ec2/stop-all.sh
+    ```
+- Profilo `azure` in Cloud Azure con MySql e MySql ed esecuzione in locale
+  - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+  - Script per creare lo stack in Azure (Cosmos e MsSql) ma esecuzione del microservizio in locale
+    ```bash
+    ./script/azure-dbremoti-cosmos-runlocale/start-all.sh
+    ```
+  - L'applicazione web sarà disponibile in locale all'url [http://localhost:8082](http://localhost:8082)
+  - Rimozione dello stack
+    ```bash
+    ./script/azure-dbremoti-cosmos-runlocale/stop-all.sh
+    ```
+    
+- Profilo `onprem` in cloud Azure con Postgresql e MongoDB ed esecuzione in locale
+  - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+  - Script per creare lo stack in Azure (Postgresql e Cosmos-Mongo) ma esecuzione del microservizio in locale
+    ```bash
+    ./script/azure-dbremoti-mongo-runlocale/start-all.sh
+    ```
+    - In questo script è stata disattivata l'esportazione delle annotazioni
+  - L'applicazione web sarà disponibile in locale all'url [http://localhost:8082](http://localhost:8082)
+    - Rimozione dello stack
+    ```bash
+    ./script/azure-dbremoti-mongo-runlocale/stop-all.sh
+    ```
+- Pulizia finale del sistema docker locale
+  ```
+  minikube delete
+  docker-compose down --remove-orphans
+  docker network prune -f
+  docker volume rm $(docker volume ls -q)
+  docker rmi $(docker images -q)
+  ```
 
 
 # &lt; AlNao /&gt;

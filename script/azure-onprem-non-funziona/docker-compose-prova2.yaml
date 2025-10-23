@@ -1,0 +1,53 @@
+version: '3.9'
+
+networks:
+  azure-network:
+    driver: bridge
+
+volumes:
+  cosmosdb_data:
+    driver: local
+services:
+  # 🌐 CosmosDB Emulator Linux
+
+  cosmos-emulator:
+      #image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    image:  mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+    container_name: gestioneannotazioni-cosmosdb
+    environment:
+      AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 10
+      AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE: "0.0.0.0"
+    ports:
+      - "8081:8081"   # CosmosDB Emulator API
+      - "10251:10251" # Data Explorer
+      - "10252:10252" # Mongo API
+      - "10253:10253" # Table API
+      - "10254:10254" # Cassandra API
+      - "10255:10255" # Gremlin API
+    volumes:
+      - cosmosdb_data:/tmp/cosmos
+    networks:
+      - azure-network
+    command: --protocol https
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k https://127.0.0.1:8081/ -w '%{http_code}' -o /dev/null -s | grep -E '(200|401|403)' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+      
+
+  # 🐍 Python / Debug container
+  debug:
+    image: python:3.12-slim
+    container_name: debug-cosmos
+    networks:
+      - azure-network
+    depends_on:
+      cosmos-emulator:
+        condition: service_healthy
+    tty: true
+    stdin_open: true
+    command: sh -c "sleep infinity"
+    volumes:
+      - ./cosmos_certs:/certs

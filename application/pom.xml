@@ -5,10 +5,12 @@
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <version>0.0.2</version>
+
     <parent>
         <groupId>it.alnao.springbootexample</groupId>
         <artifactId>springbootexample-parent</artifactId>
-        <version>1.0.0</version>
+        <version>0.0.2</version>
     </parent>
 
     <artifactId>application</artifactId>
@@ -42,6 +44,11 @@
         </dependency>
         <dependency>
             <groupId>it.alnao.springbootexample</groupId>
+            <artifactId>adapter-azure</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>it.alnao.springbootexample</groupId>
             <artifactId>adapter-onprem</artifactId>
             <optional>true</optional>
         </dependency>
@@ -50,6 +57,7 @@
             <artifactId>adapter-sqlite</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- adapter-azure viene incluso SOLO nel profilo azure - vedi <profiles> sotto -->
         <dependency>
             <groupId>it.alnao.springbootexample</groupId>
             <artifactId>adapter-kafka</artifactId>
@@ -88,6 +96,17 @@
             </dependencies>
         </profile>
         
+        <profile>
+            <id>azure</id>
+            <dependencies>
+                <dependency>
+                    <groupId>it.alnao.springbootexample</groupId>
+                    <artifactId>adapter-azure</artifactId>
+                    <optional>false</optional>
+                </dependency>
+            </dependencies>
+        </profile>
+                
         <profile>
             <id>onprem</id>
             <activation>

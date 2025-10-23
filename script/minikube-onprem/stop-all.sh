@@ -24,4 +24,7 @@ kubectl delete -f script/minikube-onprem/kafka-ui-deployment.yaml || true
 kubectl delete -f script/minikube-onprem/kafka-deployment.yaml || true
 kubectl delete -f script/minikube-onprem/zookeeper-deployment.yaml || true
 
+echo "[INFO] Distruggo il namespace gestioneannotazioni..."
+kubectl delete -f script/minikube-onprem/namespace.yaml
+
 echo "[INFO] Tutti i servizi e le risorse sono stati rimossi."

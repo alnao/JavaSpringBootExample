@@ -1,5 +1,16 @@
 # Configurazione profilo onprem - PostgreSQL + MongoDB + Kafka
 spring:
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.cosmos.CosmosAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.cosmos.AzureCosmosAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.context.AzureContextAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.context.AzureTokenCredentialAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.kafka.AzureEventHubsKafkaOAuth2AutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.AzureGlobalPropertiesAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.storage.AzureStorageBlobAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.storage.AzureStorageQueueAutoConfiguration
   # Configurazione database PostgreSQL
   datasource:
     url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/gestione_annotazioni}
@@ -45,10 +56,15 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       auto-offset-reset: earliest
 
+# Disabilita completamente Azure Cosmos per questo profilo
+azure:
+  cosmos:
+    enabled: false
+
 # Configurazione export annotazioni via Kafka
 gestione-annotazioni:
   export-annotazioni:
-    enabled: true
+    enabled: ${ANNOTAZIONE_INVIO_ENABLED:true}
     cron-expression: "0 */5 * * * *"  # ogni 5 minuti
     kafka:
       broker-url: "${KAFKA_BROKER_URL:localhost:9092}"
