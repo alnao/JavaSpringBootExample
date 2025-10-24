@@ -34,5 +34,5 @@ management:
 # Configurazione export annotazioni per development (frequenza alta)
 gestione-annotazioni:
   export-annotazioni:
-    enabled: true
-    cron-expression: "0 */5 * * * *"   # ogni 5 minuti per test rapidi
+    enabled: false
+#    cron-expression: "0 */5 * * * *"   # ogni 5 minuti per test rapidi

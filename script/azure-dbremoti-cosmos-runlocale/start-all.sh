@@ -11,6 +11,8 @@ SQLSERVER_NAME="gestioneannotazioni-sql"
 SQLSERVER_DATABASE="annotazioni"
 SQLSERVER_ADMIN="sqladmin"
 SQLSERVER_PASSWORD="P@ssw0rd123!"
+SERVICEBUS_NAMESPACE="gestioneannotazioni-servicebus"
+SERVICEBUS_QUEUE="eventbus-annotazioni"
 
 # Funzione per gestire gli errori
 check_error() {
@@ -240,18 +242,44 @@ docker run --rm \
 
 check_error "Script SQL eseguito con successo"
 
-# 14. Verifica risorse create
+# 14. Creazione Service Bus namespace e coda EventBus
+echo "📨 Creazione Service Bus namespace e coda EventBus..."
+
+az servicebus namespace create \
+  --resource-group $RESOURCE_GROUP \
+  --name $SERVICEBUS_NAMESPACE \
+  --location $LOCATION \
+  --sku Standard
+check_error "Service Bus namespace creato"
+
+az servicebus queue create \
+  --resource-group $RESOURCE_GROUP \
+  --namespace-name $SERVICEBUS_NAMESPACE \
+  --name $SERVICEBUS_QUEUE
+check_error "Service Bus queue creata"
+
+# Recupero connection string Service Bus
+AZURE_SERVICEBUS_CONNECTION_STRING=$(az servicebus namespace authorization-rule keys list \
+  --resource-group $RESOURCE_GROUP \
+  --namespace-name $SERVICEBUS_NAMESPACE \
+  --name RootManageSharedAccessKey \
+  --query 'primaryConnectionString' \
+  --output tsv)
+check_error "Connection string Service Bus recuperata"
+
+# 15. Verifica risorse create
 echo ""
 echo "📊 Riepilogo risorse create:"
 az resource list \
   --resource-group $RESOURCE_GROUP \
   --output table
 
-# 15. Salvataggio variabili d'ambiente in file .env
+# 16. Salvataggio variabili d'ambiente in file .env
 echo ""
 echo "💾 Salvataggio variabili d'ambiente in .env..."
 cat > .env-azure-dbremoti-cosmos-runlocale << EOF
 SPRING_PROFILES_ACTIVE=azure
+RESOURCE_GROUP=$RESOURCE_GROUP
 SQLSERVER_HOST=$SQLSERVER_HOST
 SQLSERVER_ADMIN=$SQLSERVER_ADMIN
 SQLSERVER_PASSWORD=$SQLSERVER_PASSWORD
@@ -259,11 +287,14 @@ SQLSERVER_DATABASE=$SQLSERVER_DATABASE
 AZURE_COSMOS_URI=$AZURE_COSMOS_URI
 AZURE_COSMOS_KEY=$AZURE_COSMOS_KEY
 AZURE_COSMOS_DATABASE=$COSMOSDB_DATABASE
+AZURE_SERVICEBUS_CONNECTION_STRING=$AZURE_SERVICEBUS_CONNECTION_STRING
+SERVICEBUS_QUEUE=$SERVICEBUS_QUEUE
+SERVICEBUS_NAMESPACE=$SERVICEBUS_NAMESPACE
 COSMOSDB_DATABASE="annotazioni"
 EOF
 echo "✅ File .env-azure-dbremoti-cosmos-runlocale creato"
 
-# 16. Stampa riepilogo connessioni
+# 17. Stampa riepilogo connessioni
 echo ""
 echo "🔗 Parametri di connessione:"
 echo "   SQL Server: $SQLSERVER_HOST"
@@ -272,7 +303,7 @@ echo "   Cosmos URI: $AZURE_COSMOS_URI"
 echo "   Cosmos Database: $COSMOSDB_DATABASE"
 echo ""
 
-# 17. Avvio servizio con i parametri corretti
+# 18. Avvio servizio con i parametri corretti
 # mvn clean package -DskipTests
 # docker build -t alnao/gestioneannotazioni:latest .
 # docker push alnao/gestioneannotazioni:latest
@@ -291,6 +322,10 @@ docker run --rm -p 8082:8080 --name azure-dbremoti-cosmos-runlocale  \
     -e AZURE_COSMOS_DATABASE=$COSMOSDB_DATABASE \
     -e AZURE_COSMOS_ENABLED=true \
     -e AZURE_COSMOS_DISABLE_SSL_VERIFICATION=false \
+    -e ANNOTAZIONE_INVIO_ENABLED=true \
+    -e AZURE_SERVICEBUS_CONNECTION_STRING=$AZURE_SERVICEBUS_CONNECTION_STRING \
+    -e AZURE_SERVICEBUS_QUEUE_NAME=$SERVICEBUS_QUEUE \
     alnao/gestioneannotazioni:latest &
 
 echo "✅ Applicazione avviata su http://localhost:8082"
+echo "🎉 Tutto pronto! Puoi iniziare a utilizzare l'applicazione con Azure Cosmos DB e SQL Server remoti."

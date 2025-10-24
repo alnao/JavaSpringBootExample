@@ -73,7 +73,7 @@ app:
 # Configurazione export annotazioni via tabella locale
 gestione-annotazioni:
   export-annotazioni:
-    enabled: true
-    cron-expression: "0 */5 * * * *"   # ogni 5 minuti
     sqlite:
       table-name: "annotazioni_inviate"
+    #enabled: true
+    #cron-expression: "0 */5 * * * *"   # ogni 5 minuti

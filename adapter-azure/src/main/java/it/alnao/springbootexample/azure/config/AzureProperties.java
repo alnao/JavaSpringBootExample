@@ -10,6 +10,9 @@ import org.springframework.context.annotation.Profile;
 public class AzureProperties {
     
     private CosmosConfigProperties cosmos = new CosmosConfigProperties();
+    private ServiceBusProperties serviceBus = new ServiceBusProperties();
+
+
 
     // Getters and Setters
     public CosmosConfigProperties getCosmos() {
@@ -19,6 +22,36 @@ public class AzureProperties {
     public void setCosmos(CosmosConfigProperties cosmos) {
         this.cosmos = cosmos;
     }
+
+    public ServiceBusProperties getServiceBus() {
+        return serviceBus;
+    }
+    public void setServiceBus(ServiceBusProperties serviceBus) {
+        this.serviceBus = serviceBus;
+    }
+
+    public static class ServiceBusProperties {
+        private String connectionString = "Endpoint=sb://your-servicebus-namespace.servicebus.windows.net/;SharedAccessKeyName=your-key-name;SharedAccessKey=your-key";
+        private String queueName = "annotazioni-queue";
+
+        // Getters and Setters
+        public String getConnectionString() {
+            return connectionString;
+        }
+
+        public void setConnectionString(String connectionString) {
+            this.connectionString = connectionString;
+        }
+
+        public String getQueueName() {
+            return queueName;
+        }
+
+        public void setQueueName(String queueName) {
+            this.queueName = queueName;
+        }
+    }
+
 
     // Classe nested per configurazione CosmosDB
     public static class CosmosConfigProperties {

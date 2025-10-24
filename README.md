@@ -14,12 +14,12 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
 Il progetto è pensato per essere agnostico rispetto al cloud provider: sono sviluppate implementazioni per Replit, AWS e Azure. Il DBMS utilizzato dipende dal profilo selezionato:
 
 
-| Profilo | Infra/Cloud | DBMS Sql | DBMS No-Sql | Export Annotazioni |
-|--------|----------|-------------|-------------|-------------|
-| OnPrem | Kubernetes | Postgresql | Mongo | Kafka |
-| Sqlite | Replit | Sqlite | Sqlite | Sqlite | 
-| AWS | AWS | MySql | Dynamo | SQS | 
-| Azure | Azure | MsSql | Cosmos | *coming soon* |
+| Profilo | Sistema/Cloud | DBMS Sql | DBMS No-Sql | Export Annotazioni |
+|--------|----------|-------------|-------------|---------------------|
+| OnPrem | ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white) | ![Kafka](https://img.shields.io/badge/Kafka-231F20?style=flat-square&logo=apachekafka&logoColor=white) |
+| Sqlite | ![Replit](https://img.shields.io/badge/Replit-F26207?style=flat-square&logo=replit&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) |
+| AWS | ![AWS](https://img.shields.io/badge/AWS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) | ![DynamoDB](https://img.shields.io/badge/DynamoDB-4053D6?style=flat-square&logo=amazondynamodb&logoColor=white) | ![SQS](https://img.shields.io/badge/SQS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) |
+| Azure | ![Azure](https://img.shields.io/badge/Azure-0078D4?style=flat-square&logo=microsoftazure&logoColor=white) | ![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?style=flat-square&logo=microsoftsqlserver&logoColor=white) | ![Cosmos DB](https://img.shields.io/badge/Cosmos%20DB-0089D6?style=flat-square&logo=azurecosmosdb&logoColor=white) | ![Service Bus](https://img.shields.io/badge/Service%20Bus-0089D6?style=flat-square&logo=microsoftazure&logoColor=white) |
 
 
 ## 📚 Indice rapido
@@ -74,10 +74,10 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
   - Il profilo *On-Premise* con docker: Sistema docker installato 
   - Il profilo *AWS* eseguito in locale: Sistema docker installato 
   - Il profilo *AWS* eseguito on cloud: Account AWS con accesso a RDS MySQL e DynamoDB.
-    - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+    - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
   - Il profilo *Azure* eseguito in locale *non funziona perchè l'immagine Cosmos non funziona*
   - Il profilo *Azure* eseguito on cluod: Account Azure con accesso a Cosmos e MsSql
-    - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+    - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 
 ### ⚙️ Esecuzione locale
 - Build del progetto in ambiente di sviluppo
@@ -649,7 +649,7 @@ Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessar
     ```
 
 
-## 🐳 Esecuzione del profilo AWS in locale
+## ☁️ Esecuzione del profilo AWS in locale
 
 Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, DynamoDB Admin UI, Spring Boot profilo AWS):
 - Prima di eseguire il comando di compose bisogna verficare che la versione dell'immagine su DockerHub sia aggiornata!
@@ -698,7 +698,7 @@ Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, 
 
 ### 🚀 Esecuzione su AWS EC2
 Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con provisioning completamente automatizzato di tutte le risorse cloud necessarie (Aurora MySQL, DynamoDB, EC2, Security Group, IAM Role, KeyPair, ecc.) tramite script Bash e AWS CLI.
-- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - Prerequisiti:
   - AWS CLI installata e configurata (`aws configure`)
   - Credenziali AWS con permessi minimi per EC2, RDS, DynamoDB, IAM, VPC, KeyPair
@@ -762,7 +762,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
 ### 🐳 Esecuzione su AWS ECS Fargate
 Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con Fargate, utilizzando container serverless completamente gestiti da AWS. Il provisioning automatizzato include tutte le risorse cloud necessarie (Aurora MySQL, DynamoDB, ECR, ECS Cluster, Task Definition, Service, IAM Roles, Security Groups, ecc.) tramite script Bash e AWS CLI.
 
-- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - Prerequisiti:
   - AWS CLI installata e configurata (`aws configure`)
   - Docker installato per build e push delle immagini
@@ -857,7 +857,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   | **TOTALE + ALB + NAT** | **~5,6 USD** | **~169 USD** | **~6,6 USD** | **~202 USD** |
 
 
-## Esecuzione profilo Azure in locale
+## ☁️ Esecuzione profilo Azure in locale
 
 Ho perso molte ore a capire come far funzionare CosmosDB in locale usando l'immagine ufficiale
 ```
@@ -880,8 +880,8 @@ Microsoft documenta che il Linux Emulator è destinato a test container-to-conta
 
 
 ### 🚀 Esecuzione su Azure con Cosmos e MsSql con run locale del servizio
-Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server) ed esecuzione dell'applicazione Spring Boot in locale con Docker.
-- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server + ServiceBus) ed esecuzione dell'applicazione Spring Boot in locale con Docker.
+- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - 📋 **Prerequisiti**
   - Azure CLI installato e autenticato (`az login`)
   - Docker installato e in esecuzione
@@ -893,7 +893,8 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
   3. **Provisiona SQL Server** (tier Basic) con database per metadati e autenticazione
   4. **Configura Firewall** per accesso locale e servizi Azure
   5. **Inizializza Database** con tabelle (`users`, `annotazione_metadata`, `storico_stati`) e utenti di test
-  6. **Avvia Container Docker** con configurazione automatica
+  6. **Provisiona ServiceBus** come servizio per la gestione delle code di invio annotazioni
+  7. **Avvia Container Docker** nel sistema locale (non nel cloud) con configurazione automatica
 - ▶️ Esecuzione
   ```bash
   ./script/azure-dbremoti-cosmos-runlocale/start-all.sh
@@ -920,7 +921,7 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
 
 ### 🚀 Esecuzione su Azure con CosmosMongo e Postgresql con run locale del servizio
 Script bash per la creazione automatica di risorse Azure con profilo *onprem* (Cosmos con compatibilità Mongo e Postgresql) ed esecuzione dell'applicazione Spring Boot in locale con Docker.
-- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - 📋 **Prerequisiti**
   - Azure CLI installato e autenticato (`az login`)
   - Docker installato e in esecuzione
@@ -1001,6 +1002,8 @@ Script bash per la creazione automatica di risorse Azure con profilo *onprem* (C
   - ✅ 🖥️ Prima esecuzione in locale adapter azure *che non funziona*
   - ✅ ▶️ Script deploy su Azure della versione con cosmos e sqlserver con run in locale
   - ✅ 🎯 Script deploy su Azure della versione con cosmos-mongodb e postgresql con run in locale
+  - ✅ 📖 Export annotazioni verso servizio Azure service dockerbus
+  - 🚧 🔧 Verifica storico stati quando una annotazione viene inviata in tutti gli adapter
   - 🚧 📝 Esportazione delle annotazioni su Azure in sistema code
   - 🚧 🚀 Script deploy su Azure della versione con cosmos e sqlserver con run in virtuale azure
   - 🚧 🎡 Script deploy su Azure della versione con cosmos-mongo e postgres con run in vistuale azure
@@ -1089,22 +1092,28 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
         -e SERVER_PORT=8082 \
         alnao/gestioneannotazioni:latest
       ```
+      ma lanciando questa versione il sqlite sarà interno all'immagine e non nel sistema fisico di esecuzione!
   - Creazione utenti su sqlite
     ```bash
     sqlite3 /tmp/database.sqlite < script/init-database/init-sqlite.sql
     ```
-  - Inserimento di una nota e posizionata nello stato "Da inviare", l'applicazione disponibile a `http://localhost:8082/`
-  - Verifica che la annotazione sia inviata (viene inviata ogni 5 miunti, vedere log applicativi)
-    ```bash
-    sqlite3 /tmp/database.sqlite "SELECT * FROM annotazioni_inviate;"
-    ```
+  - Inserimento di una nota e posizionata nello stato "Da inviare"
+    - l'applicazione disponibile a `http://localhost:8082/`
+    - Verifica che la annotazione sia inviata (viene inviata ogni 5 miunti, vedere log applicativi)
+      ```bash
+      sqlite3 /tmp/database.sqlite "SELECT * FROM annotazioni_inviate;"
+      sqlite3 /tmp/database.sqlite "SELECT * FROM annotazioni_storicoStati order by data_modifica desc;"
+      ```
 - Profilo `onprem` eseguito in locale (con Postgresql e MongoDB) con docker compose
   - Creazione dello stack con `docker-compose` nella cartella root
     ```bash
-    docker-compose up -d --build
+    ./
     ```
   - L'applicazione web sarà disponibile su [http://localhost:8082](http://localhost:8082)
-  - Verifica che la annotazione sia inviata (viene inviata ogni 5 miunti, vedere log applicativi)
+    ```
+    docker exec -it gestioneannotazioni-kafka kafka-topics   --bootstrap-server localhost:9092   --create --topic annotazioni-inviate --partitions 1 --replication-factor 1
+    ```
+  - Verificare che la annotazione venga inviata correttamente nella coda-kafka:
     ```bash
     # Log applicazione
     docker logs gestioneannotazioni-app | tail
@@ -1113,7 +1122,7 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
       --bootstrap-server localhost:29092 \
       --describe \
       --topic annotazioni-export
-    # Consomare una coda
+    # Comsumare la coda delle annotazioni esportate
     docker exec -it gestioneannotazioni-kafka kafka-console-consumer \
       --bootstrap-server localhost:29092 \
       --topic annotazioni-export \
@@ -1171,7 +1180,7 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
     ```
     presente anche uno script `./script/aws-onprem/stop-all.sh`
 - Profilo `aws` in Cloud AWS con MySql e MySql ed esecuzione su EC2
-  - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+  - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
   - Script per creare lo stack in AWS (RDS, Dynamo e EC2)
     ```bash
     ./script/aws-ec2/start-all.sh
@@ -1189,11 +1198,12 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
     ./script/aws-ec2/stop-all.sh
     ```
 - Profilo `azure` in Cloud Azure con MySql e MySql ed esecuzione in locale
-  - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+  - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
   - Script per creare lo stack in Azure (Cosmos e MsSql) ma esecuzione del microservizio in locale
     ```bash
     ./script/azure-dbremoti-cosmos-runlocale/start-all.sh
     ```
+  - Verifica che le annotazioni sono correttamente inviate nella console web del servizio ServiceBus
   - L'applicazione web sarà disponibile in locale all'url [http://localhost:8082](http://localhost:8082)
   - Rimozione dello stack
     ```bash
@@ -1201,7 +1211,7 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
     ```
     
 - Profilo `onprem` in cloud Azure con Postgresql e MongoDB ed esecuzione in locale
-  - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare dei costi indesiderati ⚠️
+  - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
   - Script per creare lo stack in Azure (Postgresql e Cosmos-Mongo) ma esecuzione del microservizio in locale
     ```bash
     ./script/azure-dbremoti-mongo-runlocale/start-all.sh

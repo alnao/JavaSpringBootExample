@@ -11,6 +11,8 @@ echo "📊 Riepilogo risorse da cancellare:"
 az resource list \
   --resource-group $RESOURCE_GROUP \
   --output table
+
+echo ""
 echo "🚀 Avvio rimozione di tutto il $RESOURCE_GROUP. Potrebbero volerci alcuni minuti per completare la eliminazione di tutte le risorse"
 
 az group delete --resource-group $RESOURCE_GROUP --yes #--no-wait

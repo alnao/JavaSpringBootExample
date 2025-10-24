@@ -180,14 +180,14 @@ public class AnnotazioneController {
     })
     @GetMapping("/transizioni-stato")
     public ResponseEntity<List<TransizioneStatoResponse>> ottieniTransizioniStato() {
-        logger.info("GET /api/annotazioni/transizioni-stato - Richiesta lista transizioni di stato");
+        //logger.info("GET /api/annotazioni/transizioni-stato - Richiesta lista transizioni di stato");
         
         try {
             List<TransizioneStatoResponse> transizioni = TransizioneStatoMapper.toResponseList(
                 annotazioniPortService.listaCambiamentiStati()
             );
             
-            logger.info("GET /api/annotazioni/transizioni-stato - Restituite {} transizioni", transizioni.size());
+            //logger.info("GET /api/annotazioni/transizioni-stato - Restituiti {} possibili cambi di stato", transizioni.size());
             return ResponseEntity.ok(transizioni);
             
         } catch (Exception e) {

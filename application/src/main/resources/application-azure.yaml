@@ -39,15 +39,12 @@ spring:
       credential:
         managed-identity-enabled: ${SPRING_CLOUD_AZURE_CREDENTIAL_MANAGED_IDENTITY_ENABLED:false}
 
-
 gestione-annotazioni:
-  export-annotazioni:
-    enabled: ${ANNOTAZIONE_INVIO_ENABLED:false} # disabilitato in locale per evitare errori se non c'è EventHubs
+#  export-annotazioni:
+#    enabled: ${ANNOTAZIONE_INVIO_ENABLED:false} # disabilitato in locale per evitare errori se non c'è Service Bus
+#    cron-expression: "0 */5 * * * *"  # ogni 5 minuti
+
 azure:
-  #eventhubs: #see AnnotazioneInvioServiceAzureImpl.java #non si può fare a meno di questa sezione anche se non usata direttamente
-  #  connection-string: ${AZURE_EVENTHUBS_CONNECTION_STRING:localConnectionString}
-  #  name: ${AZURE_EVENTHUBS_NAME:localEventHubName}
-    
   cosmos: 
     # in locale see https://learn.microsoft.com/en-us/azure/cosmos-db/emulator 
     uri: ${AZURE_COSMOS_URI:https://localhost:8081}
@@ -57,10 +54,6 @@ azure:
     disable-ssl-verification: ${AZURE_COSMOS_DISABLE_SSL_VERIFICATION:false}
     enabled: true
     # ConditionalOnProperty(value = "azure.cosmos.enabled", havingValue = "true", matchIfMissing = true)
-
-# Configurazione Spring Cloud Azure Cosmos
-#spring.cloud.azure:
-#  cosmos:
-#    endpoint: ${AZURE_COSMOS_URI:https://localhost:8081}
-#    key: ${AZURE_COSMOS_KEY:localKey}
-#    database: ${AZURE_COSMOS_DATABASE:localDatabase}
+  service-bus:
+    connection-string: ${AZURE_SERVICEBUS_CONNECTION_STRING:localServiceBusConnectionString}
+    queue-name: ${AZURE_SERVICEBUS_QUEUE_NAME:localQueueName}

@@ -49,13 +49,22 @@ spring:
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
       retries: 3
+      properties:
+        metric:
+          reporters: ""
+          recording:
+            level: "INFO"
     consumer:
       bootstrap-servers: "${KAFKA_BROKER_URL:localhost:9092}"
       group-id: annotazioni-consumer-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       auto-offset-reset: earliest
-
+      properties:
+        metric:
+          reporters: ""
+          recording:
+            level: "INFO"
 # Disabilita completamente Azure Cosmos per questo profilo
 azure:
   cosmos:
@@ -64,8 +73,8 @@ azure:
 # Configurazione export annotazioni via Kafka
 gestione-annotazioni:
   export-annotazioni:
-    enabled: ${ANNOTAZIONE_INVIO_ENABLED:true}
-    cron-expression: "0 */5 * * * *"  # ogni 5 minuti
     kafka:
       broker-url: "${KAFKA_BROKER_URL:localhost:9092}"
       topic-name: "${KAFKA_TOPIC_NAME:annotazioni-export}"
+    #enabled: ${ANNOTAZIONE_INVIO_ENABLED:true}
+    #cron-expression: "0 */5 * * * *"  # ogni 5 minuti

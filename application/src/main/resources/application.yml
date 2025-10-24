@@ -110,5 +110,5 @@ gestione-annotazioni:
     allowed-headers: "*"
     allow-credentials: true
   export-annotazioni:
-    enabled: true
-    cron-expression: "0 0 0 * * *"   # ogni giorno a mezzanotte
+    enabled: ${EXPORT_ANNOTAZIONI_ENABLED:true}
+    cron-expression: ${EXPORT_ANNOTAZIONI_CRON_EXPRESSION:0 */5 * * * *}   # ogni 5 minuti

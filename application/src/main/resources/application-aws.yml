@@ -50,6 +50,5 @@ aws:
 # Configurazione export annotazioni via SQS
 gestione-annotazioni:
   export-annotazioni:
-    enabled: true
-    cron-expression: "0 */5 * * * *"  # ogni 5 minuti
-
+#    enabled: true
+#    cron-expression: "0 */5 * * * *"  # ogni 5 minuti

@@ -76,15 +76,15 @@ services:
       retries: 3
 
   # Kafka
-  kafka:
+  kafka-server:
     image: confluentinc/cp-kafka:7.4.0
     container_name: gestioneannotazioni-kafka
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_INTERNAL://kafka-server:9092,LISTENER_EXTERNAL://kafka-server:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_INTERNAL:PLAINTEXT,LISTENER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -113,12 +113,12 @@ services:
     container_name: gestioneannotazioni-kafka-ui
     environment:
       KAFKA_CLUSTERS_0_NAME: gestioneannotazioni-cluster
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-server:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     ports:
       - "8085:8080"
     depends_on:
-      kafka:
+      kafka-server:
         condition: service_healthy
     networks:
       - gestioneannotazioni-network
@@ -135,7 +135,8 @@ services:
       POSTGRES_USERNAME: gestioneannotazioni_user
       POSTGRES_PASSWORD: gestioneannotazioni_pass
       MONGODB_URI: mongodb://admin:admin123@mongodb:27017/gestioneannotazioni_db?authSource=admin
-      KAFKA_BROKER_URL: kafka:29092
+      KAFKA_BROKER_URL: kafka-server:29092
+      EXPORT_ANNOTAZIONI_CRON_EXPRESSION: "0 */2 * * * *" # ogni 2 minuti
       SERVER_PORT: 8080
     ports:
       - "8082:8080"
@@ -144,7 +145,7 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_healthy
-      kafka:
+      kafka-server:
         condition: service_healthy
     networks:
       - gestioneannotazioni-network
