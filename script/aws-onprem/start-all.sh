@@ -1,5 +1,5 @@
 #!/bin/bash
-# Avvia lo stack AWS-onprem (MySQL, DynamoDB Local, Spring Boot, Adminer, DynamoDB Admin)
+# Avvia lo stack AWS-kube (MySQL, DynamoDB Local, Spring Boot, Adminer, DynamoDB Admin)
 cd "$(dirname "$0")"
 docker-compose up -d --build
 

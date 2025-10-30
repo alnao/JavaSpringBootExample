@@ -225,7 +225,7 @@ az resource list \
 echo ""
 echo "💾 Salvataggio variabili d'ambiente in .env..."
 cat > .env-azure-dbremoti-mongo-runlocale << EOF
-SPRING_PROFILES_ACTIVE=onprem
+SPRING_PROFILES_ACTIVE=kube
 POSTGRES_HOST=$POSTGRES_HOST
 POSTGRES_URL=jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DATABASE}?sslmode=require
 POSTGRES_DATABASE=$POSTGRES_DATABASE
@@ -250,7 +250,7 @@ echo ""
 # 16. Avvio servizio con i parametri corretti
 echo "🚀 Avvio container Docker..."
 docker run --rm -p 8082:8080  --name azure-dbremoti-mongo-runlocale \
-    -e SPRING_PROFILES_ACTIVE=onprem \
+    -e SPRING_PROFILES_ACTIVE=kube \
     -e SPRING_DATASOURCE_URL="jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DATABASE}?sslmode=require" \
     -e SPRING_DATASOURCE_USERNAME=$POSTGRES_ADMIN \
     -e SPRING_DATASOURCE_PASSWORD=$POSTGRES_PASSWORD \

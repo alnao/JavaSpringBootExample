@@ -16,7 +16,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ../init-database/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql:ro
     networks:
-      - aws-onprem-network
+      - aws-kube-network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 30s
@@ -32,7 +32,7 @@ services:
     ports:
       - "8420:8000"
     networks:
-      - aws-onprem-network
+      - aws-kube-network
     command: -jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data
     volumes:
       - ./dynamodb_data:/home/dynamodblocal/data
@@ -46,7 +46,7 @@ services:
       - SERVICES=sqs
       - DEFAULT_REGION=eu-central-1
     networks:
-      - aws-onprem-network
+      - aws-kube-network
     volumes:
       - ./localstack_data:/var/lib/localstack
     healthcheck:
@@ -69,7 +69,7 @@ services:
       localstack:
         condition: service_healthy
     networks:
-      - aws-onprem-network
+      - aws-kube-network
     restart: "no"
 
   # Applicazione Spring Boot profilo AWS
@@ -102,7 +102,7 @@ services:
       dynamodb:
         condition: service_started
     networks:
-      - aws-onprem-network
+      - aws-kube-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
       interval: 30s
@@ -121,7 +121,7 @@ services:
     depends_on:
       - mysql
     networks:
-      - aws-onprem-network
+      - aws-kube-network
 
   # DynamoDB Admin UI
   dynamodb-admin:
@@ -137,7 +137,7 @@ services:
     depends_on:
       - dynamodb
     networks:
-      - aws-onprem-network
+      - aws-kube-network
 
   # Servizio one-shot per inizializzazione tabella DynamoDB
   init-dynamodb:
@@ -151,7 +151,7 @@ services:
     depends_on:
       - dynamodb
     networks:
-      - aws-onprem-network
+      - aws-kube-network
     restart: "no"
 
 # Nginx reverse proxy per frontend statico e API
@@ -166,7 +166,7 @@ services:
  #   depends_on:
  #     - app
  #   networks:
- #     - aws-onprem-network
+ #     - aws-kube-network
 
 volumes:
   mysql_data:
@@ -174,7 +174,7 @@ volumes:
   # dynamodb_data volume non più necessario, ora si usa una directory locale
 
 networks:
-  aws-onprem-network:
+  aws-kube-network:
     driver: bridge
 
 

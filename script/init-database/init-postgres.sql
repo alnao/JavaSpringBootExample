@@ -60,7 +60,7 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expiry ON refresh_tokens(expiry_da
 
 
 --- Sistema di annotazioni metadata
--- Schema per PostgreSQL (OnPrem)
+-- Schema per PostgreSQL (kube)
 CREATE TABLE IF NOT EXISTS annotazioni_metadata (
     id VARCHAR(255) PRIMARY KEY,
     versione_nota VARCHAR(50),

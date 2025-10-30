@@ -2,7 +2,7 @@
 
 ## 📋 Problema Identificato
 
-In un progetto Spring Boot con **architettura esagonale** e **multi-profilo**, l'inclusione di dipendenze Azure nel classpath causava errori anche quando si utilizzavano profili diversi (onprem, aws, sqlite):
+In un progetto Spring Boot con **architettura esagonale** e **multi-profilo**, l'inclusione di dipendenze Azure nel classpath causava errori anche quando si utilizzavano profili diversi (kube, aws, sqlite):
 
 ```
 BeanInstantiationException: Failed to instantiate [com.azure.core.credential.TokenCredential]
@@ -50,20 +50,7 @@ Caused by: java.lang.NoClassDefFoundError: com/azure/core/implementation/util/Ht
             </dependency>
         </dependencies>
     </profile>
-    
-    <profile>
-        <id>onprem</id>
-        <activation>
-            <activeByDefault>true</activeByDefault>
-        </activation>
-        <dependencies>
-            <dependency>
-                <groupId>it.alnao.springbootexample</groupId>
-                <artifactId>adapter-onprem</artifactId>
-                <optional>false</optional>
-            </dependency>
-        </dependencies>
-    </profile>
+
     
     <!-- ... altri profili ... -->
 </profiles>
@@ -73,7 +60,7 @@ Caused by: java.lang.NoClassDefFoundError: com/azure/core/implementation/util/Ht
 
 Anche se le classi Azure non sono nel classpath, manteniamo le esclusioni per sicurezza:
 
-**`application-onprem.yml`**:
+**`application-kube.yml`**:
 ```yaml
 spring:
   autoconfigure:
@@ -100,7 +87,7 @@ azure:
 ### 1. Compilazione con Maven
 
 ```bash
-# Profilo ONPREM (default)
+# Profilo kube (default)
 mvn clean package
 
 # Profilo AZURE
@@ -147,16 +134,16 @@ services:
       - sqlserver
 ```
 
-**`docker-compose-onprem.yml`**:
+**`docker-compose-kube.yml`**:
 ```yaml
 services:
   app:
     build:
       context: .
       args:
-        MAVEN_PROFILE: onprem  # Compila con -Ponprem
+        MAVEN_PROFILE: kube  # Compila con -Pokube
     environment:
-      - SPRING_PROFILES_ACTIVE=onprem
+      - SPRING_PROFILES_ACTIVE=kube
     depends_on:
       - postgres
       - mongodb
@@ -178,7 +165,7 @@ services:
         ┌─────────────────┼─────────────────┬──────────────┐
         │                 │                 │              │
    ┌────▼────┐       ┌────▼────┐      ┌────▼────┐   ┌─────▼─────┐
-   │  AZURE  │       │ ONPREM  │      │   AWS   │   │  SQLITE   │
+   │  AZURE  │       │ kube    │      │   AWS   │   │  SQLITE   │
    │ Adapter │       │ Adapter │      │ Adapter │   │  Adapter  │
    └─────────┘       └─────────┘      └─────────┘   └───────────┘
    (CosmosDB)        (Postgres +      (DynamoDB +   (SQLite)
@@ -188,7 +175,7 @@ services:
 
 ### Vantaggi di Questa Soluzione
 
-1. ✅ **Classpath Pulito**: Le dipendenze Azure NON sono nel classpath quando si usa onprem/aws/sqlite
+1. ✅ **Classpath Pulito**: Le dipendenze Azure NON sono nel classpath quando si usa kube/aws/sqlite
 2. ✅ **Zero Conflitti**: Nessun tentativo di autoconfiguration indesiderata
 3. ✅ **Build Ottimizzate**: JAR più piccoli (non include dipendenze inutilizzate)
 4. ✅ **Sicurezza**: Riduce la superficie di attacco (no librerie Azure in prod se non serve)
@@ -202,7 +189,7 @@ services:
 ### Test 1: Classpath Check
 ```bash
 # Compila senza profilo Azure
-mvn clean package -Ponprem
+mvn clean package -Pkube
 
 # Verifica che azure NON sia nel JAR
 jar tf application/target/application-*.jar | grep azure
@@ -211,8 +198,8 @@ jar tf application/target/application-*.jar | grep azure
 
 ### Test 2: Startup Test
 ```bash
-# Avvia con profilo onprem
-java -jar application/target/application-*.jar --spring.profiles.active=onprem
+# Avvia con profilo kube
+java -jar application/target/application-*.jar --spring.profiles.active=kube
 
 # Verifica nei log che NON ci siano:
 # - AzureTokenCredentialAutoConfiguration
@@ -223,7 +210,7 @@ java -jar application/target/application-*.jar --spring.profiles.active=onprem
 ### Test 3: Dependency Tree
 ```bash
 # Controlla le dipendenze effettive per profilo
-mvn dependency:tree -Ponprem > deps-onprem.txt
+mvn dependency:tree -Pkube > deps-kube.txt
 mvn dependency:tree -Pazure > deps-azure.txt
 
 # Confronta i file - adapter-azure deve apparire SOLO in deps-azure.txt
@@ -244,7 +231,7 @@ Se usi Docker, modifica il Dockerfile per accettare il profilo come build arg:
 
 ```dockerfile
 FROM maven:3.9.5-eclipse-temurin-17 AS build
-ARG MAVEN_PROFILE=onprem
+ARG MAVEN_PROFILE=kube
 WORKDIR /app
 COPY . .
 RUN mvn clean package -P${MAVEN_PROFILE} -DskipTests
@@ -258,7 +245,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 Build:
 ```bash
 docker build --build-arg MAVEN_PROFILE=azure -t myapp:azure .
-docker build --build-arg MAVEN_PROFILE=onprem -t myapp:onprem .
+docker build --build-arg MAVEN_PROFILE=kube -t myapp:kube .
 ```
 
 ### 3. **CI/CD Pipeline**
@@ -266,12 +253,12 @@ Esempio GitHub Actions:
 
 ```yaml
 jobs:
-  build-onprem:
+  build-kube:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build with onprem profile
-        run: mvn clean package -Ponprem
+      - name: Build with kube profile
+        run: mvn clean package -Pkube
       
   build-azure:
     runs-on: ubuntu-latest
@@ -289,7 +276,7 @@ jobs:
 **Causa**: Hai compilato con profilo sbagliato  
 **Soluzione**: `mvn clean package -Pazure`
 
-### Problema: Ancora errori Azure con profilo onprem
+### Problema: Ancora errori Azure con profilo kube
 **Causa**: Classi Azure cached nel target/  
 **Soluzione**: `mvn clean` poi ricompila con profilo corretto
 
@@ -313,7 +300,7 @@ jobs:
 - [x] Rimosso `adapter-azure` dalle dipendenze globali
 - [x] Aggiunto `adapter-azure` nel profilo Maven `azure`
 - [x] Mantenute esclusioni autoconfiguration negli altri profili (sicurezza)
-- [x] Testato build con `-Ponprem` (nessun azure nel classpath)
+- [x] Testato build con `-Pkube` (nessun azure nel classpath)
 - [x] Testato build con `-Pazure` (azure presente)
 - [x] Verificato startup senza errori TokenCredential
 

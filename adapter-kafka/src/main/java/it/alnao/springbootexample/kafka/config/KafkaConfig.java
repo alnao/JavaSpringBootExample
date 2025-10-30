@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-@Profile("onprem")
+@Profile("kube")
 public class KafkaConfig {
     
     private final AnnotazioneInvioProperties properties;

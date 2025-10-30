@@ -1,4 +1,4 @@
-// Script di inizializzazione per MongoDB (OnPrem)
+// Script di inizializzazione per MongoDB (profilo kube)
 db = db.getSiblingDB('gestioneannotazioni_db');
 
 // Crea collezione annotazioni se non esiste

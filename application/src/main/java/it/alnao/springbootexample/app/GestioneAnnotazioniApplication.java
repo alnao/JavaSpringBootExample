@@ -16,7 +16,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
     "it.alnao.springbootexample.api",
     "it.alnao.springbootexample.aws",
     "it.alnao.springbootexample.azure",
-    "it.alnao.springbootexample.onprem",
+    "it.alnao.springbootexample.mongodb",
+    "it.alnao.springbootexample.postgresql",
     "it.alnao.springbootexample.sqlite",
     "it.alnao.springbootexample.kafka",
     "it.alnao.springbootexample.core"

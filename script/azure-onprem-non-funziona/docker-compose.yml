@@ -102,7 +102,7 @@ services:
         -Djavax.net.ssl.trustStorePassword=
         -Dcom.azure.cosmos.implementation.ignoreInvalidSSL=true
       
-      SPRING_PROFILES_ACTIVE: onprem #giusto che sia aws al posto di azure perchè usa mongo(su cosmos)+postgres e non cosmos+sqlserver
+      SPRING_PROFILES_ACTIVE: kube #giusto che sia aws al posto di azure perchè usa mongo(su cosmos)+postgres e non cosmos+sqlserver
 
       # PostgreSQL
       POSTGRES_URL: jdbc:postgresql://postgres:5432/gestioneannotazioni

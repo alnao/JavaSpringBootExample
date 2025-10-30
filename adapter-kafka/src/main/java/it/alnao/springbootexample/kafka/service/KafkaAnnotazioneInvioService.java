@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Service
-@Profile("onprem")
+@Profile("kube")
 public class KafkaAnnotazioneInvioService implements AnnotazioneInvioService {
     
     private static final Logger logger = LoggerFactory.getLogger(KafkaAnnotazioneInvioService.class);

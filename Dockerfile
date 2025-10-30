@@ -18,7 +18,8 @@ COPY core/pom.xml core/
 COPY adapter-api/pom.xml adapter-api/
 COPY adapter-web/pom.xml adapter-web/
 COPY adapter-aws/pom.xml adapter-aws/
-COPY adapter-onprem/pom.xml adapter-onprem/
+COPY adapter-mongodb/pom.xml adapter-mongodb/
+COPY adapter-postgresql/pom.xml adapter-postgresql/
 COPY adapter-sqlite/pom.xml adapter-sqlite/
 COPY adapter-kafka/pom.xml adapter-kafka/
 COPY adapter-azure/pom.xml adapter-azure/
@@ -79,7 +80,7 @@ EXPOSE 8080
 
 # Variabili d'ambiente
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
-ENV SPRING_PROFILES_ACTIVE=onprem
+ENV SPRING_PROFILES_ACTIVE=kube
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

@@ -1,6 +1,6 @@
 # Adapter Kafka
 
-Questo modulo implementa l'invio delle annotazioni tramite Apache Kafka per il profilo `onprem`.
+Questo modulo implementa l'invio delle annotazioni tramite Apache Kafka per il profilo `kube`.
 
 ## Funzionalità
 
@@ -11,7 +11,7 @@ Questo modulo implementa l'invio delle annotazioni tramite Apache Kafka per il p
 
 ## Configurazione
 
-Nel file `application-onprem.yml`:
+Nel file `application-xxxx.yml`:
 
 ```yaml
 annotazione:
@@ -31,7 +31,7 @@ annotazione:
 ## Profilo di attivazione
 
 Questo adapter viene attivato automaticamente quando:
-- Il profilo Spring attivo è `onprem`
+- Il profilo Spring attivo è `kube`
 - La configurazione `annotazione.invio.enabled=true`
 
 ## Dipendenze principali

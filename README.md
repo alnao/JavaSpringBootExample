@@ -16,7 +16,7 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
 
 | Profilo | Sistema/Cloud | DBMS Sql | DBMS No-Sql | Export Annotazioni |
 |--------|----------|-------------|-------------|---------------------|
-| OnPrem | ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white) | ![Kafka](https://img.shields.io/badge/Kafka-231F20?style=flat-square&logo=apachekafka&logoColor=white) |
+| Kube | ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white) | ![Kafka](https://img.shields.io/badge/Kafka-231F20?style=flat-square&logo=apachekafka&logoColor=white) |
 | Sqlite | ![Replit](https://img.shields.io/badge/Replit-F26207?style=flat-square&logo=replit&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) |
 | AWS | ![AWS](https://img.shields.io/badge/AWS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) | ![DynamoDB](https://img.shields.io/badge/DynamoDB-4053D6?style=flat-square&logo=amazondynamodb&logoColor=white) | ![SQS](https://img.shields.io/badge/SQS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) |
 | Azure | ![Azure](https://img.shields.io/badge/Azure-0078D4?style=flat-square&logo=microsoftazure&logoColor=white) | ![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?style=flat-square&logo=microsoftsqlserver&logoColor=white) | ![Cosmos DB](https://img.shields.io/badge/Cosmos%20DB-0089D6?style=flat-square&logo=azurecosmosdb&logoColor=white) | ![Service Bus](https://img.shields.io/badge/Service%20Bus-0089D6?style=flat-square&logo=microsoftazure&logoColor=white) |
@@ -53,8 +53,9 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
   ├── 📁 adapter-api           # REST API Controllers
   ├── 📁 adapter-aws           # Implementazione AWS (DynamoDB + MySQL/Aurora)
   ├── 📁 adapter-azure         # Implementazione Azure (CosmosDB + SqlServer)
-  ├── 📁 adapter-kafka         # Componenti per la gestione delle code Kafka (ricezione e invio dati)
-  ├── 📁 adapter-onprem        # Implementazione On-Premise (MongoDB + PostgreSQL)
+  ├── 📁 adapter-kafka         # Componenti per la gestione delle code Kafka (profilo kube)
+  ├── 📁 adapter-mongodb       # Implementazione per la gestione di MongoDB (profilo kube)
+  ├── 📁 adapter-postgresql    # Implementazione per la gestione di PostgreSQL (profilo kube)
   ├── 📁 adapter-sqlite        # Implementazione SQLite (con solo il database SQLite locale)
   ├── 📁 adapter-web           # Risorse statiche e mini-sito di prova
   └── 📁 application           # Applicazione principale Spring Boot
@@ -278,7 +279,7 @@ L'applicazione supporta l'analisi statica del codice, la code coverage e la qual
     mvn clean verify sonar:sonar \
       -Dsonar.login=sqa_96b98122159fb242ae6b85a0f0ba42d82c41e06d \
       -Dsonar.host.url=http://localhost:9000 \
-      -Ponprem
+      -Pkube
     ```
     - Assicurati che il report di coverage sia generato (JaCoCo è già configurato nei vari moduli).
 
@@ -356,7 +357,7 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
       -e SERVER_PORT=8082 \
       alnao/gestioneannotazioni:latest
     ```
-    Nota: si può avviare il profilo *sqlite* per eseguire l'immagine senza altri servizi, oppure l'applicazione con il profilo *onprem* se nel sistema sono avviati anche i servizi MongoDb, Postgresql e Kafka come nel prossimo punto.
+    Nota: si può avviare il profilo *sqlite* per eseguire l'immagine senza altri servizi, oppure l'applicazione con il profilo *kube* se nel sistema sono avviati anche i servizi MongoDb, Postgresql e Kafka come nel prossimo punto.
 - **Esecuzione completa** 🔌 Rete Docker condivisa, alternativa robusta ma senza docker-compose:
     Possibile eseguire tutto con docker (senza docker-compose):
     ```bash
@@ -529,9 +530,9 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
     ```
     nota: sono tante risorse, forse si possono ridurre un po'!
 - Manifest già pronti:
-    Nella cartella `script/minikube-onprem` trovi i manifest YAML già pronti per avviare tutta l'infrastruttura, presente script che esegue nella giusta sequenza gli script di `kubectl apply`, lo script da lanciare è:
+    Nella cartella `script/minikube` trovi i manifest YAML già pronti per avviare tutta l'infrastruttura, presente script che esegue nella giusta sequenza gli script di `kubectl apply`, lo script da lanciare è:
     ```bash
-    ./script/minikube-onprem/start-all.sh
+    ./script/minikube/start-all.sh
     ```
 - Accesso all’applicazione:
     - Usando l’Ingress, aggiungendo al file hosts la riga:
@@ -551,7 +552,7 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
     - Viene usata l'immagine `alnao/gestioneannotazioni:latest` su dockerHub e non una immagine creata in sistema locale.
     - Per rimuovere tutto lo script da lanciare è
       ```bash
-      ./script/minikube-onprem/stop-all.sh
+      ./script/minikube/stop-all.sh
       minikube delete
       ```
 
@@ -920,7 +921,7 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
 
 
 ### 🚀 Esecuzione su Azure con CosmosMongo e Postgresql con run locale del servizio
-Script bash per la creazione automatica di risorse Azure con profilo *onprem* (Cosmos con compatibilità Mongo e Postgresql) ed esecuzione dell'applicazione Spring Boot in locale con Docker.
+Script bash per la creazione automatica di risorse Azure con profilo *kube* (Cosmos con compatibilità Mongo e Postgresql) ed esecuzione dell'applicazione Spring Boot in locale con Docker.
 - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - 📋 **Prerequisiti**
   - Azure CLI installato e autenticato (`az login`)
@@ -977,7 +978,7 @@ Script bash per la creazione automatica di risorse Azure con profilo *onprem* (C
   - ✅ 🛰️ Gestione dello stato DAINVIARE come ultimo stato possibile da API/Web.
   - ✅ 🧱 Verifica che utenti non possano fare operazioni il cui ruolo non lo prevede
     - Test Eseguito: chiamata transazione `http://localhost:8082/api/annotazioni/xxx-xxx-xxx-xxx-xxx/stato` con PATCH method `{vecchioStato: "CONFERMATA", nuovoStato: "MODIFICATA", utente: "admin"}` e ritornato errore 403 e nei log si vede il messaggio `Transizione non permessa: Transizione non permessa: da CONFERMATA a MODIFICATA per ruolo ADMIN`
-- ✅ 🐳 Build e deploy su DockerHub della versione *OnPrem*
+- ✅ 🐳 Build e deploy su DockerHub della versione *kube* (ex OnPrem)
   - ✅ 🐳 configurazione di docker-compose con MongoDb e Postgresql
   - ✅ ☸️ Esecuzione su Kubernetes/Minikube locale con yaml dedicati
 - ✅ ☁️ Esecuzione con docker-compose della versione AWS su sistema locale con Mysql e DynamoDB 
@@ -1003,16 +1004,17 @@ Script bash per la creazione automatica di risorse Azure con profilo *onprem* (C
   - ✅ ▶️ Script deploy su Azure della versione con cosmos e sqlserver con run in locale
   - ✅ 🎯 Script deploy su Azure della versione con cosmos-mongodb e postgresql con run in locale
   - ✅ 📖 Export annotazioni verso servizio Azure service dockerbus
-  - 🚧 🔧 Verifica storico stati quando una annotazione viene inviata in tutti gli adapter
-  - 🚧 📝 Esportazione delle annotazioni su Azure in sistema code
-  - 🚧 🚀 Script deploy su Azure della versione con cosmos e sqlserver con run in virtuale azure
-  - 🚧 🎡 Script deploy su Azure della versione con cosmos-mongo e postgres con run in vistuale azure
+  - 🚧 🔧 Verifica inserimento in storico stati quando una annotazione viene inviata
+  - ✅ 📝 Esportazione delle annotazioni su Azure in sistema code 
+  - 🚧 🚀 Script deploy su Azure della versione con cosmos e sqlserver con run in VM-azure
+  - 🚧 🎡 Script deploy su Azure della versione con cosmos-mongo e postgres con run in VM-azure
   - 🚧 🛠️ Script deploy su Azure con Azure Container Instances (ACI)
   - 🚧 📦 Script deploy su Azure con Azure Container Apps
 - 🚧 ☸️ Esecuzione su Cloud in infrastruttura Kubernetes
-  - 🚧 🤖 Deploy su AWS su EKS
-  - 🚧 ⚙️ Deploy su Azure su AKS
-  - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts
+  - ✅ 🐳 Cambio nome profilo da *OnPrem* ad *Kube*
+  - 🚧 🤖 Deploy su AWS su EKS del profilo Kube
+  - 🚧 ⚙️ Deploy su Azure su AKS del profilo Kube
+  - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts del profilo Kube
   - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
 - 🚧 🗃️ Sistema evoluto di gestione annotazioni
   - 🚧 👥 Sistema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento
@@ -1074,111 +1076,22 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
   ```bash
   docker volume rm $(docker volume ls -q)
   ```
-- Profilo `sqlite` eseguito in locale (con solo sqlite) senza docker
-  - Avvio del microservizio senza docker ma con `java -jar`
-    ```bash
-    mvn clean package -DskipTests
-    java -jar application/target/application-*.jar \
-      --spring.profiles.active=sqlite \
-      --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
-      --server.port=8082
-    ```
-    - L'applicazione web sarà disponibile su [http://localhost:8082](http://localhost:8082)
-    - oppure è possibile far partire l'immagine docker con il comando:
-      ```
-      docker run --rm -p 8082:8082 \
-        -e SPRING_PROFILES_ACTIVE=sqlite \
-        -e SPRING_DATASOURCE_URL=jdbc:sqlite:/tmp/database.sqlite \
-        -e SERVER_PORT=8082 \
-        alnao/gestioneannotazioni:latest
-      ```
-      ma lanciando questa versione il sqlite sarà interno all'immagine e non nel sistema fisico di esecuzione!
-  - Creazione utenti su sqlite
-    ```bash
-    sqlite3 /tmp/database.sqlite < script/init-database/init-sqlite.sql
-    ```
-  - Inserimento di una nota e posizionata nello stato "Da inviare"
-    - l'applicazione disponibile a `http://localhost:8082/`
-    - Verifica che la annotazione sia inviata (viene inviata ogni 5 miunti, vedere log applicativi)
-      ```bash
-      sqlite3 /tmp/database.sqlite "SELECT * FROM annotazioni_inviate;"
-      sqlite3 /tmp/database.sqlite "SELECT * FROM annotazioni_storicoStati order by data_modifica desc;"
-      ```
-- Profilo `onprem` eseguito in locale (con Postgresql e MongoDB) con docker compose
-  - Creazione dello stack con `docker-compose` nella cartella root
-    ```bash
-    ./
-    ```
-  - L'applicazione web sarà disponibile su [http://localhost:8082](http://localhost:8082)
-    ```
-    docker exec -it gestioneannotazioni-kafka kafka-topics   --bootstrap-server localhost:9092   --create --topic annotazioni-inviate --partitions 1 --replication-factor 1
-    ```
-  - Verificare che la annotazione venga inviata correttamente nella coda-kafka:
-    ```bash
-    # Log applicazione
-    docker logs gestioneannotazioni-app | tail
-    # Stato coda
-    docker exec -it gestioneannotazioni-kafka kafka-topics \
-      --bootstrap-server localhost:29092 \
-      --describe \
-      --topic annotazioni-export
-    # Comsumare la coda delle annotazioni esportate
-    docker exec -it gestioneannotazioni-kafka kafka-console-consumer \
-      --bootstrap-server localhost:29092 \
-      --topic annotazioni-export \
-      --from-beginning \
-      --property print.timestamp=true \
-      --property print.key=true \
-      --property print.value=true
-    ```
-  - Distruzione di tutto lo stack
-    ```
-    docker-compose down --remove-orphans
-    docker network prune -f
-    docker volume rm $(docker volume ls -q)
-    docker rmi $(docker images -q)
-    ```
-- Profilo `onprem` eseguito su Kubernetes-**Minikube** locale (con Postgresql e MongoDB)
-  - Prerequisito: avere kubernetes e minikube installati e funzionanti
-    ```bash
-    minikube start --memory=6096 --cpus=3
-    ```
-  - Creazione dello stack su minikube
-    ```bash
-    ./script/minikube-onprem/start-all.sh
-    ```
-    - lo script visualizza l'url locale o la modifica al file hosts
-  - Usando Freelens/Openlens si può verificare lo stato dei servizi/pod
-  - Per verificare la coda si può usare il kafka-ui disponibile all'url visualizzato dallo script oppure lanciare il comando
-    ```bash
-    POD=$(kubectl get pods -n gestioneannotazioni --no-headers | grep ^kafka-service | awk '{print $1}')
-    echo $POD
-    kubectl exec -it $POD -n gestioneannotazioni -- bash -c "kafka-console-consumer --bootstrap-server localhost:9092 --topic annotazioni-export --from-beginning"
-    ```
-  - Rimozione completa di tutto con distruzione anche dei volumi e fermo di minikube
-    ```bash
-    ./script/minikube-onprem/stop-all.sh
-    minikube delete
-    ```
-- Profilo `aws` in locale (con MySql e Dynamo)
-  - Creazione dello stack docker-compose
-    ```bash
-    docker-compose -f script/aws-onprem/docker-compose.yml up -d
-    ```
-    oppure lo script `./script/aws-onprem/start-all.sh`. Vengono create gli url:
-    - L'applicazione web sarà disponibile su [http://localhost:8085](http://localhost:8085)
-      - Adminer (MySQL): `http://localhost:8086`
-      - DynamoDB Admin:  `http://localhost:8087`
-  - L'invio delle annotazioni avviene su una coda SQS simulata da localstack e può essere verifcata con il comando:
-    ```
-    aws sqs list-queues --endpoint-url=http://localhost:4566 --region=eu-central-1
-    aws sqs receive-message --endpoint-url=http://localhost:4566 --queue-url=http://localhost:4566/000000000000/annotazioni --region=eu-central-1
-    ```
-  - Rimozione dello stack
-    ```bash
-    docker-compose -f script/aws-onprem/docker-compose.yml down
-    ```
-    presente anche uno script `./script/aws-onprem/stop-all.sh`
+- Script per eseguire il profilo `sqlite` eseguito in locale (con solo sqlite) senza docker
+  ```
+  ./script/sqlite-locale/test.sh
+  ```
+- Script per eseguire il profilo `kube` eseguito in locale (con Postgresql e MongoDB) con docker compose
+  ```
+  ./script/kube-local-test.sh
+  ```
+- Script per eseguire il profilo `kube` eseguito in locale con **minikube** e **kubernetes**
+  ```
+  ./script/minikube/test.sh 
+  ```
+- Script per eseguire il profilo `aws` eseguire in locale con docker
+  ```
+  ./script/aws-onprem/test.sh
+  ```
 - Profilo `aws` in Cloud AWS con MySql e MySql ed esecuzione su EC2
   - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
   - Script per creare lo stack in AWS (RDS, Dynamo e EC2)
@@ -1210,7 +1123,7 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
     ./script/azure-dbremoti-cosmos-runlocale/stop-all.sh
     ```
     
-- Profilo `onprem` in cloud Azure con Postgresql e MongoDB ed esecuzione in locale
+- Profilo `kube` in cloud Azure con Postgresql e MongoDB ed esecuzione in locale
   - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
   - Script per creare lo stack in Azure (Postgresql e Cosmos-Mongo) ma esecuzione del microservizio in locale
     ```bash

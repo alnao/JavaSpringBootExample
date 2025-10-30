@@ -130,7 +130,7 @@ services:
       dockerfile: Dockerfile
     container_name: gestioneannotazioni-app
     environment:
-      SPRING_PROFILES_ACTIVE: onprem
+      SPRING_PROFILES_ACTIVE: kube
       POSTGRES_URL: jdbc:postgresql://postgres:5432/gestioneannotazioni
       POSTGRES_USERNAME: gestioneannotazioni_user
       POSTGRES_PASSWORD: gestioneannotazioni_pass

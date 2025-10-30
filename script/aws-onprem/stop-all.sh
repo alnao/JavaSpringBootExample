@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ferma e rimuove lo stack AWS-onprem
+# Ferma e rimuove lo stack AWS-kube
 
 #cd "$(dirname "$0")"
 

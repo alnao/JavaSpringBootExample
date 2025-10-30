@@ -43,7 +43,8 @@
         <module>adapter-api</module>
         <module>adapter-web</module>
         <module>adapter-aws</module>
-        <module>adapter-onprem</module>
+        <module>adapter-mongodb</module>
+        <module>adapter-postgresql</module>
         <module>adapter-sqlite</module>
         <module>adapter-kafka</module>
         <module>adapter-azure</module>
@@ -81,7 +82,12 @@
             </dependency>
             <dependency>
                 <groupId>it.alnao.springbootexample</groupId>
-                <artifactId>adapter-onprem</artifactId>
+                <artifactId>adapter-mongodb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>it.alnao.springbootexample</groupId>
+                <artifactId>adapter-postgresql</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

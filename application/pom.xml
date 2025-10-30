@@ -49,7 +49,12 @@
         </dependency>
         <dependency>
             <groupId>it.alnao.springbootexample</groupId>
-            <artifactId>adapter-onprem</artifactId>
+            <artifactId>adapter-mongodb</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>it.alnao.springbootexample</groupId>
+            <artifactId>adapter-postgresql</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -108,14 +113,19 @@
         </profile>
                 
         <profile>
-            <id>onprem</id>
+            <id>kube</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
                 <dependency>
                     <groupId>it.alnao.springbootexample</groupId>
-                    <artifactId>adapter-onprem</artifactId>
+                    <artifactId>adapter-mongodb</artifactId>
+                    <optional>false</optional>
+                </dependency>
+                <dependency>
+                    <groupId>it.alnao.springbootexample</groupId>
+                    <artifactId>adapter-postgresql</artifactId>
                     <optional>false</optional>
                 </dependency>
                 <dependency>

@@ -10,7 +10,7 @@ spring:
     name: sistema-gestione-annotazioni
   
   profiles:
-    active: onprem
+    active: kube
 
   # Configurazione Web
   web:
