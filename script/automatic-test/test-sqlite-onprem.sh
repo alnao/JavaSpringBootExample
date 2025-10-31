@@ -8,7 +8,7 @@
 #./script/push-image-docker-hub.sh 
 
 echo "Posizione script: $(dirname "$0")"
-cd "$(dirname "$0")/.."
+#cd "$(dirname "$0")/.."
 echo "Directory di lavoro: $(pwd)"
 
 echo "Preparazione database SQLite in /tmp/database.sqlite..."

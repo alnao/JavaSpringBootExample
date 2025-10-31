@@ -40,7 +40,8 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
   - 🐳 [Esecuzione su AWS ECS Fargate](#-Esecuzione-su-aws-ecs-fargate)
 - ☁️ [Esecuzione profilo Azure (con CosmosDB e SqlServer)](#-Esecuzione-profilo-Azure-in-locale)
   - 🚀 [Esecuzione su Azure con Cosmos e MsSql con run locale del servizio](#-Esecuzione-su-Azure-con-Cosmos-e-MsSql-con-run-locale-del-servizio)
-  - 🐳 [Esecuzione su Azure con CosmosMongo e Postgresql con run locale del servizio](#-Esecuzione-su-Azure-con-CosmosMongo-e-Postgresql-con-run-locale-del-servizio)
+  - 🐳 [Esecuzione su Azure con CosmosMongo e Postgresql con run locale del servizio (profilo kube)](#-Esecuzione-su-Azure-con-CosmosMongo-e-Postgresql-con-run-locale-del-servizio)
+  - 🚀 [Esecuzione su Azure con Cosmos e MsSql con esecuzione su VirtualMachine Azure](#-Esecuzione-su-Azure-con-Cosmos-e-MsSql-con-esecuzione-su-VirtualMachine-Azure)
 - 📝 [Roadmap & todo-list](#-Roadmap-&-todo-list)
   - ✅ [Test di non regressione](#-Test-di-non-regressione)
 
@@ -956,6 +957,58 @@ Script bash per la creazione automatica di risorse Azure con profilo *kube* (Cos
     | **TOTALE 24/7** | | **€0.0227/h** | **€0.56/day** | **€3.89/week** | **~€16.80/mese** |
 
 
+### 🚀 Esecuzione su Azure con Cosmos e MsSql con esecuzione su VirtualMachine Azure
+Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server + ServiceBus) ed esecuzione dell'applicazione Spring Boot in una Virtual Machine su Azure
+- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+- 📋 **Prerequisiti**
+  - Azure CLI installato e autenticato (`az login`)
+  - Docker installato e in esecuzione
+  - Immagine Docker `alnao/gestioneannotazioni:latest`
+- Componenti creati dallo script
+  0. **Login**: per essere eseguito necessita della login eseguita con il comando `az login`
+  1. **Crea Resource Group** su Azure nella regione North Europe
+  2. **Provisiona CosmosDB** (tier Free) con database e container per annotazioni
+  3. **Provisiona SQL Server** (tier Basic) con database per metadati e autenticazione
+  4. **Configura Firewall** per accesso locale e servizi Azure
+  5. **Inizializza Database** con tabelle (`users`, `annotazione_metadata`, `storico_stati`) e utenti di test
+  6. **Provisiona ServiceBus** come servizio per la gestione delle code di invio annotazioni
+  7. **Virtual Machine** come macchine virtuale dove viene eseguito l'immagine docker del servizio
+  8. **Configurazione rete** per accesso della VM verso il database SQL
+
+- ▶️ Esecuzione
+  ```bash
+  ./script/azure-dbremoti-cosmos-vm/start-all.sh
+  ```
+- Rimozione completa
+  ```bash
+  ./script/azure-dbremoti-cosmos-vm/stop-all.sh
+  ```
+- ⚠️ Note importanti
+  - CosmosDB Free Tier: Limitato a 1000 RU/s e 25GB storage. Solo 1 account Free per subscription.
+  - SQL Server Basic: 5 DTU e 2GB storage. Costo stimato: ~5€/mese.
+  - VM Standard_B1s: 1 vCPU, 1GB RAM. Ideal per carichi leggeri con burstable performance.
+  - Firewall: Lo script configura l'accesso dal tuo IP e dalla VM. Aggiorna le regole se l'IP cambia.
+  - Password: Cambia P@ssw0rd123! con una password sicura prima di eseguire.
+  - Connection String: Salva le connection string restituite dai comandi in modo sicuro.
+  - SSH Key: La chiave SSH viene generata automaticamente in `$HOME/.ssh/azure-vm-key.pub`
+  - ⚠️ Costi: Con l'aggiunta della VM, i costi aumentano. Spegni la VM quando non la usi per risparmiare. ⚠️
+
+  | Risorsa | Tier/SKU | Costo Orario | Costo Giornaliero | Costo Settimanale | Costo Mensile |
+  |---------|----------|--------------|-------------------|-------------------|---------------|
+  | **Cosmos DB SQL API** | Free Tier (1000 RU/s, 25GB) | €0.00 | €0.00 | €0.00 | **€0.00** |
+  | **SQL Server Basic** | 5 DTU, 2GB | €0.0068 | €0.16 | €1.14 | **~€5.00** |
+  | **VM Standard_B1s** | 1 vCPU, 1GB RAM | €0.0105 | €0.25 | €1.76 | **~€7.60** |
+  | **VM IP Pubblico Standard** | Static IP | €0.0043 | €0.10 | €0.72 | **~€3.10** |
+  | **VM OS Disk** | 32GB Standard HDD | €0.0006 | €0.01 | €0.10 | **~€0.40** |
+  | **Storage SQL** | 2GB incluso | €0.00 | €0.00 | €0.00 | €0.00 |
+  | **Egress Data** | <100GB/mese | ~€0.00 | ~€0.01 | ~€0.07 | **~€0.30** |
+  | **Service Bus Standard** | 12.5M ops/mese | €0.0118 | €0.28 | €1.99 | **~€8.50** |
+  | **TOTALE 24/7** | | **€0.0340/h** | **€0.81/day** | **€5.78/week** | **~€24.90/mese** |
+
+
+
+
+
 
 ## 📝 Roadmap & todo-list
 - ✅ ⚙️ Creazione progetto con maven, creazione dei moduli adapter, adapter web con pagina web di esempio, test generale di esecuzione
@@ -1004,9 +1057,9 @@ Script bash per la creazione automatica di risorse Azure con profilo *kube* (Cos
   - ✅ ▶️ Script deploy su Azure della versione con cosmos e sqlserver con run in locale
   - ✅ 🎯 Script deploy su Azure della versione con cosmos-mongodb e postgresql con run in locale
   - ✅ 📖 Export annotazioni verso servizio Azure service dockerbus
-  - 🚧 🔧 Verifica inserimento in storico stati quando una annotazione viene inviata
+  - ✅ 🔧 Verifica inserimento in storico stati quando una annotazione viene inviata
   - ✅ 📝 Esportazione delle annotazioni su Azure in sistema code 
-  - 🚧 🚀 Script deploy su Azure della versione con cosmos e sqlserver con run in VM-azure
+  - ✅ 🚀 Script deploy su Azure della versione con cosmos e sqlserver con run in VM-azure
   - 🚧 🎡 Script deploy su Azure della versione con cosmos-mongo e postgres con run in VM-azure
   - 🚧 🛠️ Script deploy su Azure con Azure Container Instances (ACI)
   - 🚧 📦 Script deploy su Azure con Azure Container Apps
@@ -1021,7 +1074,7 @@ Script bash per la creazione automatica di risorse Azure con profilo *kube* (Cos
   - 🚧 🧑‍🤝‍🧑 Gestione modifica annotazione con lock
   - 🚧 🕸️ Gestione invio notifiche singolo se ci sono più istanze dell'applicazione in esecuzione (minikube)
   - 🚧 🔄 Import annotazioni (JSON e/o CSV): creazione service per l'import di annotazioni con cambio di stato dopo averle importate con implementazioni su tutti gli adapter
-  - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie notifiche
+  - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie annotazioni
     - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
   - 🚧 🧭 Sistema che gestisce la scadenza di una annotazione con spring-batch che elabora tutte le annotazioni rifiutate o scadute, con nuovo stato scadute.
   - 🚧 💾 Backup & Disaster Recovery: Cross-region backup, point-in-time recovery, RTO/RPO compliance
@@ -1071,27 +1124,25 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
   ./script/docker-build.sh 
   ./script/push-image-docker-hub.sh 
   ```
-  risultato atteso: nessun arrore
+  risultato atteso: nessun errore
 - Pulizia globale prima di partire (meglio partire da situazione pulita con volumi vuoti!)
   ```bash
   docker volume rm $(docker volume ls -q)
   ```
-- Script per eseguire il profilo `sqlite` eseguito in locale (con solo sqlite) senza docker
+- Script generale per eseguire tutti i gli script di test *automatici*
   ```
-  ./script/sqlite-locale/test.sh
+  ./script/automatic-test/test-all.sh
   ```
-- Script per eseguire il profilo `kube` eseguito in locale (con Postgresql e MongoDB) con docker compose
-  ```
-  ./script/kube-local-test.sh
-  ```
-- Script per eseguire il profilo `kube` eseguito in locale con **minikube** e **kubernetes**
-  ```
-  ./script/minikube/test.sh 
-  ```
-- Script per eseguire il profilo `aws` eseguire in locale con docker
-  ```
-  ./script/aws-onprem/test.sh
-  ```
+  - Che esegue gli script
+    ```
+    # Script per eseguire il profilo `sqlite` eseguito in locale (con solo sqlite) senza docker
+    ./script/automatic-test/test-sqlite-onprem.sh
+    # Script per eseguire il profilo `kube` eseguito in locale (con Postgresql e MongoDB) con docker compose
+    ./script/automatic-test/test-aws-onprem.sh
+    # Script per eseguire il profilo `kube` eseguito in locale con **minikube** e **kubernetes**
+    ./script/automatic-test/test-minikube.sh
+    ```
+
 - Profilo `aws` in Cloud AWS con MySql e MySql ed esecuzione su EC2
   - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
   - Script per creare lo stack in AWS (RDS, Dynamo e EC2)
@@ -1100,7 +1151,7 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
     ```
     - L'output finale dello script mostra l'IP pubblico EC2 e la porta applicativa (default 8080)
       - Accedi da browser: `http://<EC2_PUBLIC_IP>:8080`
-  - L'invio delle annotazioni avvinee in una coda SQS reale, le istruzioni per leggere
+  - L'invio delle annotazioni avviene in una coda SQS reale, le istruzioni per leggere
     ```bash
     SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
     SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
@@ -1122,7 +1173,17 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
     ```bash
     ./script/azure-dbremoti-cosmos-runlocale/stop-all.sh
     ```
-    
+- Profilo `azure` in Cloud Azure con MySql e MySql ed esecuzione in VirtualMachine su azure
+  - Script per creare lo stack in Azure (Cosmos e MsSql) e l'esecuzione del microservizio una VistualMachine su Azure
+    ```bash
+    ./script/azure-dbremoti-cosmos-vm/start-all.sh
+    ```
+  - L'applicazione web sarà disponibile all'url ritornato dallo script
+  - Verifica che le annotazioni sono correttamente inviate nella console web del servizio ServiceBus
+  - Rimozione dello stack
+    ```bash
+    ./script/azure-dbremoti-cosmos-runlocale/stop-all.sh
+    ```
 - Profilo `kube` in cloud Azure con Postgresql e MongoDB ed esecuzione in locale
   - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
   - Script per creare lo stack in Azure (Postgresql e Cosmos-Mongo) ma esecuzione del microservizio in locale

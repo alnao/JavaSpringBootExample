@@ -9,24 +9,23 @@ echo "Posizione script: $(dirname "$0")"
 #cd "$(dirname "$0")/.."
 echo "Directory di lavoro: $(pwd)"
 
-echo "Avvio Minikube..."
-minikube start --memory=6096 --cpus=3
+echo "Avvio docker-compose per AWS OnPrem necessari per i test..."
+docker-compose -f script/aws-onprem/docker-compose.yml up -d
 
+echo "L'applicazione web sarà disponibile su [http://localhost:8085](http://localhost:8085)"
+echo "Adminer (MySQL): [http://localhost:8086](http://localhost:8086)"
+echo "DynamoDB Admin: [http://localhost:8087](http://localhost:8087)"
 
-echo "Avvio stack Minikube necessario per i test..."
-./script/minikube/start-all.sh
-
-echo "Usando Freelens/Openlens si può verificare lo stato dei servizi/pod..."
 
 # Funzione per terminare l'applicazione in caso di errore
 cleanup() {
-    ./script/minikube/stop-all.sh
-    minikube delete
+    docker-compose -f script/aws-onprem/docker-compose.yml down
+    docker volume rm $(docker volume ls -q) > /dev/null 2>&1
+    docker rmi $(docker images -q) > /dev/null 2>&1
 }
 trap cleanup EXIT
 
-sleep 10
-URL=$(minikube service gestioneannotazioni-app -n gestioneannotazioni --url)
+URL="http://localhost:8085"
 
 echo "Attesa avvio applicazione (max 60 secondi)..."
 for i in {1..30}; do
@@ -105,50 +104,88 @@ RISPOSTA_INVIO2=$(curl -s -X PATCH $URL/api/annotazioni/$id_creato/stato \
     -d '{"vecchioStato":"CONFERMATA","utente":"admin","nuovoStato":"DAINVIARE"}')
 echo "Risposta invio annotazione: $RISPOSTA_INVIO2"
 
-# Verifica che l'annotazione sia stata inviata a Kafka
-POD=$(kubectl get pods -n gestioneannotazioni --no-headers | grep ^kafka-service | awk '{print $1}')
-echo "POD di kafka: $POD"
 
-echo "Verifica messaggi Kafka (max 10 minuti)..."
+SQS=$(aws sqs list-queues --endpoint-url=http://localhost:4566 --region=eu-central-1)
+QUEUE_URL=$(echo $SQS | jq -r '.QueueUrls[]')
+if [ -z "$QUEUE_URL" ]; then
+    echo "❌ ERRORE: Coda SQS 'GestioneAnnotazioniQueue' non trovata."
+    exit 1
+fi
+echo "Coda SQS trovata: $QUEUE_URL"
+
+echo "Verifica messaggi SQS (max 10 minuti)..."
 max_attempts=40  # 40 tentativi x 15 secondi = 600 secondi (10 minuti)
 attempt=0
-found_in_kafka=false
+found_in_sqs=false
 
 while [ $attempt -lt $max_attempts ]; do
     attempt=$((attempt + 1))
     
-    # Usa timeout per limitare il tempo di lettura a 10 secondi
-    kafka_messages=$(timeout 10s kubectl exec $POD -n gestioneannotazioni -- bash -c \
-        "kafka-console-consumer --bootstrap-server localhost:9092 --topic annotazioni-export --from-beginning --timeout-ms 8000" 2>&1 || true)
+    # Ricevi messaggio da SQS
+    RISPOSTA=$(aws sqs receive-message \
+        --endpoint-url=http://localhost:4566 \
+        --queue-url=$QUEUE_URL \
+        --region=eu-central-1 \
+        --wait-time-seconds=10 \
+        --max-number-of-messages=10 2>&1)
     
-    echo "Tentativo $attempt/$max_attempts - Messaggi ricevuti: ${#kafka_messages} caratteri"
+    echo "Tentativo $attempt/$max_attempts - Verifica presenza messaggi..."
     
-    # Verifica se il messaggio contiene l'ID dell'annotazione creata
-    if echo "$kafka_messages" | grep -q "$id_creato"; then
-        echo "✅ Annotazione trovata in Kafka al tentativo $attempt"
-        echo "Contenuto messaggio: $kafka_messages"
-        found_in_kafka=true
-        break
+    # Verifica se ci sono messaggi
+    message_count=$(echo "$RISPOSTA" | jq -r '.Messages | length' 2>/dev/null || echo "0")
+
+    # Gestione valori null o vuoti
+    if [ -z "$message_count" ] || [ "$message_count" = "null" ]; then
+        message_count=0
+    fi
+
+    if [ "$message_count" -gt 0 ]; then
+        # Verifica se il messaggio contiene l'ID dell'annotazione creata
+        if echo "$RISPOSTA" | jq -r '.Messages[].Body' | grep -q "$id_creato"; then
+            echo "✅ Annotazione trovata in SQS al tentativo $attempt"
+            echo "Numero messaggi ricevuti: $message_count"
+            
+            # Mostra il corpo del messaggio
+            message_body=$(echo "$RISPOSTA" | jq -r '.Messages[0].Body')
+            echo "Corpo messaggio:"
+            echo "$message_body" | jq .
+            
+            found_in_sqs=true
+            
+            # Opzionale: Cancella il messaggio dalla coda
+            #receipt_handle=$(echo "$RISPOSTA" | jq -r '.Messages[0].ReceiptHandle')
+            #aws sqs delete-message \
+            #    --endpoint-url=http://localhost:4566 \
+            #    --queue-url=$QUEUE_URL \
+            #    --region=eu-central-1 \
+            #    --receipt-handle="$receipt_handle"
+            #echo "Messaggio cancellato dalla coda SQS"
+            
+            break
+        else
+            echo "⚠️  Messaggi presenti ma ID annotazione non trovato. Continuo..."
+        fi
     else
         elapsed=$((attempt * 15))
-        echo "⏳ Annotazione non ancora presente in Kafka (attesa ${elapsed}s/600s)"
-        
-        if [ $attempt -lt $max_attempts ]; then
-            sleep 15
-        fi
+        echo "⏳ Nessun messaggio in SQS (attesa ${elapsed}s/600s)"
+    fi
+    
+    if [ $attempt -lt $max_attempts ]; then
+        sleep 15
     fi
 done
 
-if [ "$found_in_kafka" = false ]; then
-    echo "❌ Annotazione non trovata nei messaggi Kafka dopo 10 minuti."
-    echo "Ultimi messaggi ricevuti: $kafka_messages"
+if [ "$found_in_sqs" = false ]; then
+    echo "❌ Annotazione non trovata nei messaggi SQS dopo 10 minuti."
+    echo "Ultima risposta SQS: $RISPOSTA"
     exit 1
 fi
 
+
+
+
 # Terminazione applicazione (gestita da trap cleanup)
-echo "Terminazione applicazione"
-./script/minikube/stop-all.sh
-minikube delete
+docker-compose -f script/aws-onprem/docker-compose.yml down
 
 echo "✅ Test con profilo 'KUBE' superati!"
 
