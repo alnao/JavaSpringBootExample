@@ -42,6 +42,7 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
   - 🚀 [Esecuzione su Azure con Cosmos e MsSql con run locale del servizio](#-Esecuzione-su-Azure-con-Cosmos-e-MsSql-con-run-locale-del-servizio)
   - 🐳 [Esecuzione su Azure con CosmosMongo e Postgresql con run locale del servizio (profilo kube)](#-Esecuzione-su-Azure-con-CosmosMongo-e-Postgresql-con-run-locale-del-servizio)
   - 🚀 [Esecuzione su Azure con Cosmos e MsSql con esecuzione su VirtualMachine Azure](#-Esecuzione-su-Azure-con-Cosmos-e-MsSql-con-esecuzione-su-VirtualMachine-Azure)
+  - 🚀 [Esecuzione su Azure Container Instances](#-Esecuzione-su-Azure-Container-Instances)
 - 📝 [Roadmap & todo-list](#-Roadmap-&-todo-list)
   - ✅ [Test di non regressione](#-Test-di-non-regressione)
 
@@ -76,10 +77,10 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
   - Il profilo *On-Premise* con docker: Sistema docker installato 
   - Il profilo *AWS* eseguito in locale: Sistema docker installato 
   - Il profilo *AWS* eseguito on cloud: Account AWS con accesso a RDS MySQL e DynamoDB.
-    - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+    - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
   - Il profilo *Azure* eseguito in locale *non funziona perchè l'immagine Cosmos non funziona*
-  - Il profilo *Azure* eseguito on cluod: Account Azure con accesso a Cosmos e MsSql
-    - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+  - Il profilo *Azure* eseguito on cluod su VirtualMachine e/o ContainerInstances: Account Azure con accesso a Cosmos e MsSql
+    - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 
 ### ⚙️ Esecuzione locale
 - Build del progetto in ambiente di sviluppo
@@ -369,9 +370,9 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
     docker run -d --name annotazioni-mongo \
       --network annotazioni-network \
       -p 27017:27017 \
-      -e MONGO_INITDB_DATABASE=annotazioni \
-      -e MONGO_INITDB_ROOT_USERNAME=demo \
-      -e MONGO_INITDB_ROOT_PASSWORD=demo \
+      -e MONGO_INITDB_DATABASE=gestioneannotazioni \
+      -e MONGO_INITDB_ROOT_USERNAME=admin \
+      -e MONGO_INITDB_ROOT_PASSWORD=admin123 \
       mongo:4.4
     # Creazione document dentro Mongo
     docker cp script/init-database/init-mongodb.js annotazioni-mongo:/init-mongodb.js
@@ -381,9 +382,9 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
     docker run -d --name annotazioni-postgres \
       --network annotazioni-network \
       -p 5432:5432 \
-      -e POSTGRES_DB=annotazioni \
-      -e POSTGRES_USER=demo \
-      -e POSTGRES_PASSWORD=demo \
+      -e POSTGRES_DB=gestioneannotazioni \
+      -e POSTGRES_USER=gestioneannotazioni_user \
+      -e POSTGRES_PASSWORD=gestioneannotazioni_pass \
       postgres:13
     # Creazione database nel postgresql
     docker cp script/init-database/init-postgres.sql annotazioni-postgres:/init-postgres.sql
@@ -419,13 +420,14 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
       provectuslabs/kafka-ui:latest
 
     # Esecuzione servizio 
-    docker run  --rm -p 8082:8080 --name annotazioni-app \
-      --network annotazioni-network \
-      -e SPRING_DATASOURCE_URL=jdbc:postgresql://annotazioni-postgres:5432/annotazioni \
-      -e SPRING_DATA_MONGODB_URI=mongodb://demo:demo@annotazioni-mongo:27017/annotazioni?authSource=admin \
-      -e SPRING_DATASOURCE_USERNAME=demo \
-      -e SPRING_DATASOURCE_PASSWORD=demo \
-      -e KAFKA_BROKER_URL=annotazioni-kafka:9092 \
+    docker run  --rm -p 8082:8080 --name gestioneannotazioni-app \
+      --network javaspringbootexample_gestioneannotazioni-network \
+      -e SPRING_PROFILES_ACTIVE="kube" \
+      -e POSTGRES_URL="jdbc:postgresql://postgres:5432/gestioneannotazioni" \
+      -e POSTGRES_USERNAME="gestioneannotazioni_user" \
+      -e POSTGRES_PASSWORD="gestioneannotazioni_pass" \
+      -e MONGODB_URI="mongodb://admin:admin123@mongodb:27017/gestioneannotazioni_db?authSource=admin" \
+      -e KAFKA_BROKER_URL="kafka-server:29092" \
       alnao/gestioneannotazioni:latest
 
     # Applicazione disponibile al url
@@ -445,9 +447,9 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
     docker rmi $(docker images -q)
     ```
 - **Note**:
-    - L'immagine non contiene dati sensibili quindi non c'è problema se viene pubblicata
-    - Utilizzare sempre variabili d'ambiente sicure per le password e le connessioni DB in produzione.
-    - Tutto questo enorme casino può essere evitato con docker-compose,minikube e kubernetes. Vedere le sezioni dedicate.
+  - L'immagine non contiene dati sensibili quindi non c'è problema se viene pubblicata
+  - Utilizzare sempre variabili d'ambiente sicure per le password e le connessioni DB in produzione.
+  - Tutto questo enorme casino può essere evitato con docker-compose,minikube e kubernetes. Vedere le sezioni dedicate.
 
 
 ### 🐳 Esecuzione completa con Docker Compose
@@ -462,9 +464,9 @@ Per semplificare l’avvio di tutti i servizi necessari (applicazione, PostgreSQ
         image: postgres:13
         container_name: annotazioni-postgres
         environment:
-          POSTGRES_DB: annotazioni
-          POSTGRES_USER: demo
-          POSTGRES_PASSWORD: demo
+          POSTGRES_DB: gestioneannotazioni
+          POSTGRES_USER: gestioneannotazioni_user
+          POSTGRES_PASSWORD: gestioneannotazioni_pass
         ports:
           - "5432:5432"
         networks:
@@ -474,9 +476,9 @@ Per semplificare l’avvio di tutti i servizi necessari (applicazione, PostgreSQ
         image: mongo:4.4
         container_name: annotazioni-mongo
         environment:
-          MONGO_INITDB_DATABASE: annotazioni
-          MONGO_INITDB_ROOT_USERNAME: demo
-          MONGO_INITDB_ROOT_PASSWORD: demo
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: admin123
+          MONGO_INITDB_DATABASE: gestioneannotazioni
         ports:
           - "27017:27017"
         networks:
@@ -489,10 +491,14 @@ Per semplificare l’avvio di tutti i servizi necessari (applicazione, PostgreSQ
           - postgres
           - mongo
         environment:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/annotazioni
-          SPRING_DATASOURCE_USERNAME: demo
-          SPRING_DATASOURCE_PASSWORD: demo
-          SPRING_DATA_MONGODB_URI: mongodb://demo:demo@mongo:27017/annotazioni?authSource=admin
+          SPRING_PROFILES_ACTIVE: kube
+          POSTGRES_URL: jdbc:postgresql://postgres:5432/gestioneannotazioni
+          POSTGRES_USERNAME: gestioneannotazioni_user
+          POSTGRES_PASSWORD: gestioneannotazioni_pass
+          MONGODB_URI: mongodb://admin:admin123@mongodb:27017/gestioneannotazioni_db?authSource=admin
+          KAFKA_BROKER_URL: kafka-server:29092
+          EXPORT_ANNOTAZIONI_CRON_EXPRESSION: "0 */2 * * * *" # ogni 2 minuti
+          SERVER_PORT: 8080
         ports:
           - "8080:8080"
         networks:
@@ -700,7 +706,7 @@ Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, 
 
 ### 🚀 Esecuzione su AWS EC2
 Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con provisioning completamente automatizzato di tutte le risorse cloud necessarie (Aurora MySQL, DynamoDB, EC2, Security Group, IAM Role, KeyPair, ecc.) tramite script Bash e AWS CLI.
-- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+- ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - Prerequisiti:
   - AWS CLI installata e configurata (`aws configure`)
   - Credenziali AWS con permessi minimi per EC2, RDS, DynamoDB, IAM, VPC, KeyPair
@@ -764,7 +770,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
 ### 🐳 Esecuzione su AWS ECS Fargate
 Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con Fargate, utilizzando container serverless completamente gestiti da AWS. Il provisioning automatizzato include tutte le risorse cloud necessarie (Aurora MySQL, DynamoDB, ECR, ECS Cluster, Task Definition, Service, IAM Roles, Security Groups, ecc.) tramite script Bash e AWS CLI.
 
-- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+- ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - Prerequisiti:
   - AWS CLI installata e configurata (`aws configure`)
   - Docker installato per build e push delle immagini
@@ -883,7 +889,7 @@ Microsoft documenta che il Linux Emulator è destinato a test container-to-conta
 
 ### 🚀 Esecuzione su Azure con Cosmos e MsSql con run locale del servizio
 Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server + ServiceBus) ed esecuzione dell'applicazione Spring Boot in locale con Docker.
-- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+- ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - 📋 **Prerequisiti**
   - Azure CLI installato e autenticato (`az login`)
   - Docker installato e in esecuzione
@@ -923,7 +929,7 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
 
 ### 🚀 Esecuzione su Azure con CosmosMongo e Postgresql con run locale del servizio
 Script bash per la creazione automatica di risorse Azure con profilo *kube* (Cosmos con compatibilità Mongo e Postgresql) ed esecuzione dell'applicazione Spring Boot in locale con Docker.
-- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+- ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - 📋 **Prerequisiti**
   - Azure CLI installato e autenticato (`az login`)
   - Docker installato e in esecuzione
@@ -959,7 +965,7 @@ Script bash per la creazione automatica di risorse Azure con profilo *kube* (Cos
 
 ### 🚀 Esecuzione su Azure con Cosmos e MsSql con esecuzione su VirtualMachine Azure
 Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server + ServiceBus) ed esecuzione dell'applicazione Spring Boot in una Virtual Machine su Azure
-- ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+- ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - 📋 **Prerequisiti**
   - Azure CLI installato e autenticato (`az login`)
   - Docker installato e in esecuzione
@@ -1006,8 +1012,53 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
   | **TOTALE 24/7** | | **€0.0340/h** | **€0.81/day** | **€5.78/week** | **~€24.90/mese** |
 
 
+### 🚀 Esecuzione su Azure Container Instances
 
+Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server) ed esecuzione dell'applicazione Spring Boot in un **Azure Container Instance (ACI)**
 
+- ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+- 📋 **Prerequisiti**
+  - Azure CLI installato e autenticato (`az login`)
+  - Docker installato e in esecuzione
+  - Immagine Docker `alnao/gestioneannotazioni:latest`
+- Componenti creati dallo script
+  0. **Login**: per essere eseguito necessita della login eseguita con il comando `az login`
+  1. **Crea Resource Group** su Azure nella regione selezionata (consigliato: `westeurope` o `francecentral`)
+  2. **Provisiona CosmosDB** (tier Free) con database e container per annotazioni e storico stati
+  3. **Provisiona SQL Server** (tier Basic) con database per metadati e autenticazione
+  4. **Configura Firewall** per accesso dal tuo IP e dal container ACI
+  5. **Inizializza Database** con tabelle (`users`, `annotazione_metadata`, `storico_stati`) e utenti di test (tramite container sqlcmd su Docker)
+  6. **Crea Storage Account** per log e dati persistenti
+  7. **Crea Virtual Network e Subnet** per isolare il container ACI
+  8. **Crea Network Security Group** per limitare l'accesso solo al tuo IP pubblico
+  9. **Avvia Container Instance** con profilo `azure`, configurato con variabili d'ambiente e accesso privato
+  10. **Configura accesso SQL Server** dal container ACI (aggiunta IP privato al firewall)
+
+- ▶️ **Esecuzione**
+  ```bash
+  ./script/azure-dbremoti-cosmos-aci/start-all.sh
+  ```
+- **Rimozione completa**
+  ```bash
+  ./script/azure-dbremoti-cosmos-aci/stop-all.sh
+  ```
+- ⚠️ **Note importanti**
+  - CosmosDB Free Tier: Limitato a 1000 RU/s e 25GB storage. Solo 1 account Free per subscription.
+  - SQL Server Basic: 5 DTU e 2GB storage. Costo stimato: ~5€/mese.
+  - ACI: Container eseguito in subnet privata, accessibile solo dal tuo IP (configurato automaticamente).
+  - Firewall: Lo script configura l'accesso dal tuo IP. Aggiorna la regola se l'IP cambia.
+  - Password: Cambia P@ssw0rd123! con una password sicura prima di eseguire.
+  - Connection String: Salva le connection string restituite dai comandi in modo sicuro.
+  - ⚠️ Costi: Anche con tier Free/Basic, SQL Server e ACI hanno costi mensili. Monitorare sempre i costi ⚠️
+
+  | Risorsa                | Tier/SKU                  | Costo Orario | Costo Giornaliero | Costo Settimanale | Costo Mensile |
+  |------------------------|---------------------------|--------------|-------------------|-------------------|---------------|
+  | **Cosmos DB SQL API**  | Free Tier (1000 RU/s, 25GB) | €0.00       | €0.00            | €0.00            | **€0.00**     |
+  | **SQL Server Basic**   | 5 DTU, 2GB                | €0.0068      | €0.16            | €1.14            | **~€5.00**    |
+  | **ACI (1 vCPU, 2GB RAM)** | Standard               | €0.0127      | €0.30            | €2.10            | **~€9.20**    |
+  | **Storage Account**    | Standard (32GB)           | ~€0.01       | ~€0.25           | ~€1.75           | **~€7.50**    |
+  | **Egress Data**        | <100GB/mese               | ~€0.00       | ~€0.01           | ~€0.07           | **~€0.30**    |
+  | **TOTALE 24/7**        |                           | **€0.0295/h**| **€0.72/day**     | **€5.06/week**   | **~€22.00/mese** |
 
 
 ## 📝 Roadmap & todo-list
@@ -1070,9 +1121,9 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
   - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts del profilo Kube
   - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
 - 🚧 🗃️ Sistema evoluto di gestione annotazioni
-  - 🚧 👥 Sistema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento
-  - 🚧 🧑‍🤝‍🧑 Gestione modifica annotazione con lock
-  - 🚧 🕸️ Gestione invio notifiche singolo se ci sono più istanze dell'applicazione in esecuzione (minikube)
+  - ✅ 🧑‍🤝‍🧑 Gestione modifica annotazione con annotazione `@Version` di JPA (vedi Entity AnnotazioneMetadataEntity di Postgresql). *Non funziona perchè il Service esegue un refresh della versione interna*
+  - 🚧 👥 Sistema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento con Redis
+  - 🚧 🕸️ Gestione invio notifiche singolo se ci sono più istanze dell'applicazione in esecuzione (esempio minikube)
   - 🚧 🔄 Import annotazioni (JSON e/o CSV): creazione service per l'import di annotazioni con cambio di stato dopo averle importate con implementazioni su tutti gli adapter
   - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie annotazioni
     - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
@@ -1144,7 +1195,7 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
     ```
 
 - Profilo `aws` in Cloud AWS con MySql e MySql ed esecuzione su EC2
-  - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+  - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
   - Script per creare lo stack in AWS (RDS, Dynamo e EC2)
     ```bash
     ./script/aws-ec2/start-all.sh
@@ -1162,7 +1213,7 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
     ./script/aws-ec2/stop-all.sh
     ```
 - Profilo `azure` in Cloud Azure con MySql e MySql ed esecuzione in locale
-  - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+  - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
   - Script per creare lo stack in Azure (Cosmos e MsSql) ma esecuzione del microservizio in locale
     ```bash
     ./script/azure-dbremoti-cosmos-runlocale/start-all.sh
@@ -1185,7 +1236,7 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
     ./script/azure-dbremoti-cosmos-runlocale/stop-all.sh
     ```
 - Profilo `kube` in cloud Azure con Postgresql e MongoDB ed esecuzione in locale
-  - ⚠️ Nota importante: l'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+  - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
   - Script per creare lo stack in Azure (Postgresql e Cosmos-Mongo) ma esecuzione del microservizio in locale
     ```bash
     ./script/azure-dbremoti-mongo-runlocale/start-all.sh

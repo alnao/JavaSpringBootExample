@@ -10,6 +10,23 @@ public class AnnotazioneMetadataEntity {
     @Id
     private String id;
 
+    /*
+    @jakarta.persistence.Version
+    @Column(name = "versione_jpa")
+    private Long versionJPA;
+
+    Aggiungi un campo version (integer/long) nella tua entity Annotazione.
+    Ogni update verifica che la versione nel DB sia uguale a quella letta dall’utente.
+    Se la versione è cambiata, l’update fallisce (Spring Data JPA supporta @Version).
+    In caso di concorrenza, Spring solleva OptimisticLockException
+
+    Spring/JPA gestisce automaticamente il valore e l’incremento ad ogni update.
+    Quando crei una nuova annotazione, puoi lasciarlo null o a 0 (JPA lo inizializza).
+
+    Logicamanente non può funzionare perchè nel AnnotazioneServiceImpl nel aggiornaAnnotazione
+    viene ricaricata la AnnotazioneMetadata da DB e quindi la versione JPA viene sovrascritta.
+    */
+
     @Column(name = "versione_nota")
     private String versioneNota;
 
@@ -142,4 +159,13 @@ public class AnnotazioneMetadataEntity {
     public void setPriorita(Integer priorita) {
         this.priorita = priorita;
     }
+/*
+    public Long getVersionJPA() {
+        return versionJPA;
+    }
+
+    public void setVersionJPA(Long versionJPA) {
+        this.versionJPA = versionJPA;
+    }
+*/
 }

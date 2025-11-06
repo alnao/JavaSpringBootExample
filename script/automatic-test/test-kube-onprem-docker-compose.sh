@@ -21,9 +21,9 @@ docker-compose up -d
 cleanup() {
     echo "Terminazione applicazione"
     docker-compose down --remove-orphans
-    docker network prune -f
-    docker volume rm $(docker volume ls -q)
-    docker rmi $(docker images -q)
+    docker network prune -f  > /dev/null 2>&1
+    docker volume rm $(docker volume ls -q)  > /dev/null 2>&1
+    docker rmi $(docker images -q)  > /dev/null 2>&1
 }
 trap cleanup EXIT
 
@@ -140,9 +140,9 @@ fi
 # Terminazione applicazione (gestita da trap cleanup)
 echo "Terminazione applicazione"
 docker-compose down --remove-orphans
-docker network prune -f
-docker volume rm $(docker volume ls -q)
-docker rmi $(docker images -q)
+docker network prune -f > /dev/null 2>&1
+docker volume rm $(docker volume ls -q) > /dev/null 2>&1
+docker rmi $(docker images -q) > /dev/null 2>&1
 
 echo "✅ Test con profilo 'KUBE' superati!"
 

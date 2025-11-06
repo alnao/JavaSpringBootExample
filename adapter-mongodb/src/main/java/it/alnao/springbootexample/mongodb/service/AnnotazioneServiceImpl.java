@@ -80,6 +80,7 @@ public class AnnotazioneServiceImpl implements AnnotazioneService {
         annotazione.setValoreNota(valoreNota);
         Annotazione savedAnnotazione = annotazioneRepository.save(annotazione);
 
+        logger.info("AnnotazioneServiceImpl creaAnnotazione Creata annotazione con ID: {}", savedAnnotazione.getId());
         // Crea metadata SQL
         AnnotazioneMetadata metadata = new AnnotazioneMetadata();
         metadata.setId(id);
@@ -95,6 +96,7 @@ public class AnnotazioneServiceImpl implements AnnotazioneService {
         metadata.setPubblica(false);
         metadata.setPriorita(1);
         AnnotazioneMetadata savedMetadata = metadataRepository.save(metadata);
+        logger.info("AnnotazioneServiceImpl creaAnnotazione Creata metadata per annotazione con ID: {}", savedMetadata.getId());    
 
         return new AnnotazioneCompleta(savedAnnotazione, savedMetadata);
     }
@@ -240,14 +242,19 @@ public class AnnotazioneServiceImpl implements AnnotazioneService {
 
     @Override
     public void impostaVisibilitaPubblica(UUID id, boolean pubblica, String utente) {
+        logger.info("AnnotazioneServiceImpl Impostando visibilità pubblica dell'annotazione con ID: {} a: {} da utente: {}", id, pubblica, utente);
         Optional<AnnotazioneMetadata> metadataOpt = metadataRepository.findById(id);
+        logger.info("AnnotazioneServiceImpl Trovata metadata per annotazione con ID: {}", id);
         if (metadataOpt.isPresent()) {
             AnnotazioneMetadata metadata = metadataOpt.get();
             metadata.setPubblica(pubblica);
             metadata.setUtenteUltimaModifica(utente);
             metadata.setDataUltimaModifica(LocalDateTime.now());
+            logger.info("AnnotazioneServiceImpl Aggiornando metadata per annotazione con ID: {}", id);
             metadataRepository.save(metadata);
+            logger.info("Visibilità pubblica aggiornata per annotazione con ID: {}", id);
         }
+        logger.info("AnnotazioneServiceImpl Fine impostazione visibilità pubblica per annotazione con ID: {}", id);
     }
 
     @Override

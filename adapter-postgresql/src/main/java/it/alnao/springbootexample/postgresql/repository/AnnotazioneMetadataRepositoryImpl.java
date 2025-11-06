@@ -148,6 +148,7 @@ public class AnnotazioneMetadataRepositoryImpl implements AnnotazioneMetadataRep
         entity.setPubblica(domain.getPubblica());
         entity.setPriorita(domain.getPriorita());
         entity.setStato(domain.getStato());
+        //entity.setVersionJPA(domain.getVersionJPA());
         return entity;
     }
 
@@ -165,6 +166,7 @@ public class AnnotazioneMetadataRepositoryImpl implements AnnotazioneMetadataRep
         domain.setPubblica(entity.getPubblica());
         domain.setPriorita(entity.getPriorita());
         domain.setStato(entity.getStato());
+        //domain.setVersionJPA(entity.getVersionJPA());
         return domain;
     }
 }

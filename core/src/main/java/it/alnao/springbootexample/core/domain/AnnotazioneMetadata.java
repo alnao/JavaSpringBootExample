@@ -20,6 +20,7 @@ public class AnnotazioneMetadata {
     private Boolean pubblica;
     private Integer priorita;
     private String stato; 
+    //private Long versionJPA;
     
     public AnnotazioneMetadata() {
         this.dataInserimento = LocalDateTime.now();
@@ -132,7 +133,14 @@ public class AnnotazioneMetadata {
     public void setPriorita(Integer priorita) {
         this.priorita = priorita;
     }
-    
+/*
+    public Long getVersionJPA() {
+        return versionJPA;
+    }
+    public void setVersionJPA(Long versionJPA) {
+        this.versionJPA = versionJPA;
+    }
+*/    
     public void aggiorna(String utenteModifica) {
         this.dataUltimaModifica = LocalDateTime.now();
         this.utenteUltimaModifica = utenteModifica;
@@ -153,6 +161,7 @@ public class AnnotazioneMetadata {
             ", pubblica=" + pubblica +
             ", priorita=" + priorita +
             ", stato='" + stato + '\'' +
+//            ", versionJPA=" + versionJPA +
             '}';
     }
 }

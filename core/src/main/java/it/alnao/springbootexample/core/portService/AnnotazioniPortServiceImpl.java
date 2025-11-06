@@ -9,6 +9,9 @@ import it.alnao.springbootexample.core.service.AnnotazioneStoricoStatiService;
 import it.alnao.springbootexample.core.service.ValidatoreTransizioniStatoService;
 import it.alnao.springbootexample.core.service.auth.UserService;
 import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -17,6 +20,7 @@ import java.util.UUID;
 
 @Service
 public class AnnotazioniPortServiceImpl implements AnnotazioniPortService {
+    private static final Logger logger = LoggerFactory.getLogger(AnnotazioniPortServiceImpl.class);
     
     @Autowired
     private AnnotazioneService annotazioneService;
@@ -31,23 +35,29 @@ public class AnnotazioniPortServiceImpl implements AnnotazioniPortService {
     private AnnotazioneStoricoStatiService annotazioneStoricoStatiService;
 
         public AnnotazioneCompleta creaAnnotazione(AnnotazioneCompleta annotazione, String utente) {
+            logger.info("AnnotazioniPortServiceImpl Creazione annotazione per utente: {}, valore: {}", utente, annotazione.getAnnotazione().getValoreNota());
             AnnotazioneCompleta annotazioneCompleta = annotazioneService.creaAnnotazione(
                     annotazione.getAnnotazione().getValoreNota(),
                     annotazione.getMetadata().getDescrizione(),
                     utente
             );
             if (annotazione.getMetadata().getCategoria() != null) {
+                logger.debug("AnnotazioniPortServiceImpl Impostazione categoria: {} per annotazione ID: {}", annotazione.getMetadata().getCategoria(), annotazioneCompleta.getId());
                 annotazioneService.impostaCategoria(annotazioneCompleta.getId(), annotazione.getMetadata().getCategoria(), utente);
             }
             if (annotazione.getMetadata().getTags() != null) {
+                logger.debug("AnnotazioniPortServiceImpl Impostazione tags: {} per annotazione ID: {}", annotazione.getMetadata().getTags(), annotazioneCompleta.getId());
                 annotazioneService.impostaTags(annotazioneCompleta.getId(), annotazione.getMetadata().getTags(), utente);
             }
             if (annotazione.getMetadata().getPubblica() != null) {
+                logger.debug("AnnotazioniPortServiceImpl Impostazione visibilità pubblica: {} per annotazione ID: {}", annotazione.getMetadata().getPubblica(), annotazioneCompleta.getId());
                 annotazioneService.impostaVisibilitaPubblica(annotazioneCompleta.getId(), annotazione.getMetadata().getPubblica(), utente);
             }
             if (annotazione.getMetadata().getPriorita() != null) {
+                logger.debug("AnnotazioniPortServiceImpl Impostazione priorità: {} per annotazione ID: {}", annotazione.getMetadata().getPriorita(), annotazioneCompleta.getId());
                 annotazioneService.impostaPriorita(annotazioneCompleta.getId(), annotazione.getMetadata().getPriorita(), utente);
             }
+            logger.debug("AnnotazioniPortServiceImpl Annotazione creata con successo, ID: {}", annotazioneCompleta.getId());
             return annotazioneService.trovaPerID(annotazioneCompleta.getId()).orElse(null);
         }
 

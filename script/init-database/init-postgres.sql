@@ -4,6 +4,7 @@
 -- Tabella degli utenti
 CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(255) PRIMARY KEY,
+--     versione_jpa BIGINT,
     username VARCHAR(100) UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255),
