@@ -38,11 +38,11 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
 - ☁️ [Esecuzione del profilo AWS (con MySql e Dynamo)](#-Esecuzione-del-profilo-AWS-in-locale)
   - 🚀 [Esecuzione su AWS EC2](#-Esecuzione-su-AWS-EC2)
   - 🐳 [Esecuzione su AWS ECS Fargate](#-Esecuzione-su-aws-ecs-fargate)
-- ☁️ [Esecuzione profilo Azure (con CosmosDB e SqlServer)](#-Esecuzione-profilo-Azure-in-locale)
-  - 🚀 [Esecuzione su Azure con Cosmos e MsSql con run locale del servizio](#-Esecuzione-su-Azure-con-Cosmos-e-MsSql-con-run-locale-del-servizio)
-  - 🐳 [Esecuzione su Azure con CosmosMongo e Postgresql con run locale del servizio (profilo kube)](#-Esecuzione-su-Azure-con-CosmosMongo-e-Postgresql-con-run-locale-del-servizio)
-  - 🚀 [Esecuzione su Azure con Cosmos e MsSql con esecuzione su VirtualMachine Azure](#-Esecuzione-su-Azure-con-Cosmos-e-MsSql-con-esecuzione-su-VirtualMachine-Azure)
-  - 🚀 [Esecuzione su Azure Container Instances](#-Esecuzione-su-Azure-Container-Instances)
+- ☁️ [Esecuzione locale profilo Azure (con CosmosDB e SqlServer)](#-Esecuzione-locale-profilo-Azure)
+  - 🚀 [Esecuzione locale profilo Azure con db remoti su Azure](#-Esecuzione-locale-profilo-Azure-con-db-remoti-su-Azure)
+  - 🐳 [Esecuzione locale profilo Kube con db remoti su Azure](#-Esecuzione-locale-profilo-Kube-con-db-remoti-su-Azure)
+  - 🚀 [Esecuzione su VirtualMachine Azure del profilo Azure](#-Esecuzione-su-VirtualMachine-Azure-del-profilo-Azure)
+  - 🚀 [Esecuzione su Azure Container Instances del profilo Azure](#-Esecuzione-su-Azure-Container-Instances-del-profilo-Azure)
 - 📝 [Roadmap & todo-list](#-Roadmap-&-todo-list)
   - ✅ [Test di non regressione](#-Test-di-non-regressione)
 
@@ -865,7 +865,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   | **TOTALE + ALB + NAT** | **~5,6 USD** | **~169 USD** | **~6,6 USD** | **~202 USD** |
 
 
-## ☁️ Esecuzione profilo Azure in locale
+## ☁️ Esecuzione locale profilo Azure
 
 Ho perso molte ore a capire come far funzionare CosmosDB in locale usando l'immagine ufficiale
 ```
@@ -887,7 +887,7 @@ Microsoft documenta che il Linux Emulator è destinato a test container-to-conta
 - Non esistono workaround affidabili per usare l’SDK dal host Linux/macOS o da container separati senza problemi di TLS/JSON RPC.
 
 
-### 🚀 Esecuzione su Azure con Cosmos e MsSql con run locale del servizio
+### 🚀 Esecuzione locale profilo Azure con db remoti su Azure
 Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server + ServiceBus) ed esecuzione dell'applicazione Spring Boot in locale con Docker.
 - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - 📋 **Prerequisiti**
@@ -906,6 +906,11 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
 - ▶️ Esecuzione
   ```bash
   ./script/azure-dbremoti-cosmos-runlocale/start-all.sh
+  ```
+  - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+- Esecuzione script di test 
+  ```bash
+  ./script/azure-dbremoti-cosmos-runlocale/test.sh
   ```
 - Rimozione completa
   ```bash
@@ -927,7 +932,7 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
     | **TOTALE 24/7** | | **€0.0068/h** | **€0.17/day** | **€1.21/week** | **~€5.30/mese** |
 
 
-### 🚀 Esecuzione su Azure con CosmosMongo e Postgresql con run locale del servizio
+### 🚀 Esecuzione locale profilo Kube con db remoti su Azure
 Script bash per la creazione automatica di risorse Azure con profilo *kube* (Cosmos con compatibilità Mongo e Postgresql) ed esecuzione dell'applicazione Spring Boot in locale con Docker.
 - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - 📋 **Prerequisiti**
@@ -946,6 +951,10 @@ Script bash per la creazione automatica di risorse Azure con profilo *kube* (Cos
   ```bash
   ./script/azure-dbremoti-mongo-runlocale/start-all.sh
   ```
+  - Esecuzione del test automatico
+    ```bash
+    ./script/azure-dbremoti-cosmos-aci/test.sh
+    ```
 - Rimozione completa
   ```bash
   ./script/azure-dbremoti-mongo-runlocale/stop-all.sh
@@ -963,7 +972,7 @@ Script bash per la creazione automatica di risorse Azure con profilo *kube* (Cos
     | **TOTALE 24/7** | | **€0.0227/h** | **€0.56/day** | **€3.89/week** | **~€16.80/mese** |
 
 
-### 🚀 Esecuzione su Azure con Cosmos e MsSql con esecuzione su VirtualMachine Azure
+### 🚀 Esecuzione su VirtualMachine Azure del profilo Azure
 Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server + ServiceBus) ed esecuzione dell'applicazione Spring Boot in una Virtual Machine su Azure
 - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - 📋 **Prerequisiti**
@@ -985,6 +994,10 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
   ```bash
   ./script/azure-dbremoti-cosmos-vm/start-all.sh
   ```
+  - Esecuzione del test automatico
+    ```bash
+    ./script/azure-dbremoti-cosmos-aci/test.sh
+    ```
 - Rimozione completa
   ```bash
   ./script/azure-dbremoti-cosmos-vm/stop-all.sh
@@ -1012,33 +1025,43 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
   | **TOTALE 24/7** | | **€0.0340/h** | **€0.81/day** | **€5.78/week** | **~€24.90/mese** |
 
 
-### 🚀 Esecuzione su Azure Container Instances
+### 🚀 Esecuzione su Azure Container Instances del profilo Azure
 
 Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server) ed esecuzione dell'applicazione Spring Boot in un **Azure Container Instance (ACI)**
 
+
 - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+  | Periodo | Costo Totale (senza free tier) | Costo Reale (con ottimizzazioni) |
+  |---------|--------------------------------|-----------------------------------|
+  | **Giornaliero** | **€1.49** | **€1.26** |
+  | **Settimanale** | **€10.43** | **€8.82** |
+  | **Mensile** | **€44.70** | **€37.80** |
 - 📋 **Prerequisiti**
   - Azure CLI installato e autenticato (`az login`)
-  - Docker installato e in esecuzione
-  - Immagine Docker `alnao/gestioneannotazioni:latest`
-- Componenti creati dallo script
-  0. **Login**: per essere eseguito necessita della login eseguita con il comando `az login`
-  1. **Crea Resource Group** su Azure nella regione selezionata (consigliato: `westeurope` o `francecentral`)
-  2. **Provisiona CosmosDB** (tier Free) con database e container per annotazioni e storico stati
-  3. **Provisiona SQL Server** (tier Basic) con database per metadati e autenticazione
-  4. **Configura Firewall** per accesso dal tuo IP e dal container ACI
-  5. **Inizializza Database** con tabelle (`users`, `annotazione_metadata`, `storico_stati`) e utenti di test (tramite container sqlcmd su Docker)
-  6. **Crea Storage Account** per log e dati persistenti
-  7. **Crea Virtual Network e Subnet** per isolare il container ACI
-  8. **Crea Network Security Group** per limitare l'accesso solo al tuo IP pubblico
-  9. **Avvia Container Instance** con profilo `azure`, configurato con variabili d'ambiente e accesso privato
-  10. **Configura accesso SQL Server** dal container ACI (aggiunta IP privato al firewall)
+  - Immagine Docker `alnao/gestioneannotazioni:latest`. Sostituito con Amazon Container Registry perchè: 
+    - Please be aware that Docker Hub has recently introduced a pull rate limit on Docker images. When specifying an image from the Docker Hub registry, this may impact your container instance. [Learn more](https://docs.docker.com/docker-hub/download-rate-limit).
+- Le risorse create da questo esempio sono:
+  | Name | ResourceGroup | Type|
+  | -----|---------------|-----|
+  | gestioneannotazioni-logs | gestioneannotazioni-aci-rg | Microsoft.OperationalInsights/workspaces |
+  | gestioneannotazioni-cosmos | gestioneannotazioni-aci-rg | Microsoft.DocumentDB/databaseAccounts |
+  | gestioneannotazioni-sql | gestioneannotazioni-aci-rg | Microsoft.Sql/servers |
+  | gestioneannotazioni-sql/gestioneannotazioni | gestioneannotazioni-aci-rg | Microsoft.Sql/servers/databases |
+  | gestioneannotazioni-sql/master | gestioneannotazioni-aci-rg | Microsoft.Sql/servers/databases |
+  | gestioneannotazioniacisa | gestioneannotazioni-aci-rg | Microsoft.Storage/storageAccounts |
+  | gestioneannotazioniacr | gestioneannotazioni-aci-rg | Microsoft.ContainerRegistry/registries |
+  | gestioneannotazioni-servicebus | gestioneannotazioni-aci-rg | Microsoft.ServiceBus/namespaces |
+  | gestioneannotazioni-aci | gestioneannotazioni-aci-rg | Microsoft.ContainerInstance/containerGroups |
 
 - ▶️ **Esecuzione**
   ```bash
   ./script/azure-dbremoti-cosmos-aci/start-all.sh
   ```
-- **Rimozione completa**
+  - Esecuzione del test automatico
+    ```bash
+    ./script/azure-dbremoti-cosmos-aci/test.sh
+    ```
+- Rimozione completa
   ```bash
   ./script/azure-dbremoti-cosmos-aci/stop-all.sh
   ```
@@ -1050,15 +1073,20 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
   - Password: Cambia P@ssw0rd123! con una password sicura prima di eseguire.
   - Connection String: Salva le connection string restituite dai comandi in modo sicuro.
   - ⚠️ Costi: Anche con tier Free/Basic, SQL Server e ACI hanno costi mensili. Monitorare sempre i costi ⚠️
-
-  | Risorsa                | Tier/SKU                  | Costo Orario | Costo Giornaliero | Costo Settimanale | Costo Mensile |
-  |------------------------|---------------------------|--------------|-------------------|-------------------|---------------|
-  | **Cosmos DB SQL API**  | Free Tier (1000 RU/s, 25GB) | €0.00       | €0.00            | €0.00            | **€0.00**     |
-  | **SQL Server Basic**   | 5 DTU, 2GB                | €0.0068      | €0.16            | €1.14            | **~€5.00**    |
-  | **ACI (1 vCPU, 2GB RAM)** | Standard               | €0.0127      | €0.30            | €2.10            | **~€9.20**    |
-  | **Storage Account**    | Standard (32GB)           | ~€0.01       | ~€0.25           | ~€1.75           | **~€7.50**    |
-  | **Egress Data**        | <100GB/mese               | ~€0.00       | ~€0.01           | ~€0.07           | **~€0.30**    |
-  | **TOTALE 24/7**        |                           | **€0.0295/h**| **€0.72/day**     | **€5.06/week**   | **~€22.00/mese** |
+    | Servizio | SKU/Tier | Free Tier | Costo Giornaliero | Costo Settimanale | Costo Mensile | Note |
+    |----------|----------|-----------|-------------------|-------------------|---------------|------|
+    | **Resource Group** | Standard | ✅ Sempre gratuito | €0.00 | €0.00 | €0.00 | Container logico |
+    | **Azure Cosmos DB** | Free Tier | ✅ Sì (400 RU/s + 25GB) | €0.00 | €0.00 | €0.00 | 2 container x 400 RU/s = 800 RU/s totali |
+    | **Azure SQL Server** | Server | ✅ Solo server | €0.00 | €0.00 | €0.00 | Il server stesso è gratuito |
+    | **Azure SQL Database** | Basic (2GB) | ❌ No | €0.17 | €1.19 | €5.10 | 5 DTU, max 2GB storage |
+    | **Azure Container Instances** | 1 vCPU, 2GB RAM | ⚠️ Parziale | €1.03 | €7.21 | €30.90 | ~€0.043/ora (24h/giorno) |
+    | **Azure Container Registry** | Basic | ⚠️ Primi 12 mesi | €0.17 | €1.19 | €5.10 | 10GB storage inclusi |
+    | **Storage Account** | Standard LRS | ⚠️ Primi 12 mesi | €0.01 | €0.07 | €0.30 | Quota minima per share |
+    | **Log Analytics Workspace** | Pay-as-you-go | ⚠️ 5GB/mese free | €0.03 | €0.21 | €0.90 | ~100MB/giorno stimati |
+    | **Service Bus** | Standard | ❌ No | €0.03 | €0.21 | €0.90 | 1M operazioni base incluse |
+    | **Virtual Network** | Standard | ✅ Sempre gratuito | €0.00 | €0.00 | €0.00 | Solo se `CREATE_VNET=SI` |
+    | **Network Security Group** | Standard | ✅ Sempre gratuito | €0.00 | €0.00 | €0.00 | Solo se `CREATE_VNET=SI` |
+    | **Bandwidth (Egress)** | Zone 1 (EU) | ⚠️ 100GB/mese free | €0.05 | €0.35 | €1.50 | Stima 2GB/mese oltre free tier |
 
 
 ## 📝 Roadmap & todo-list
@@ -1102,7 +1130,7 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
       docker tag alnao/gestioneannotazioni:latest alnao/gestioneannotazioni:0.0.1
       docker push alnao/gestioneannotazioni:0.0.1
       ```
-- 🚧 ☁️ Integrazione con Azure
+- ✅ ☁️ Integrazione con Azure
   - ✅ 🔩 Creazione del adapter Azure e sviluppo implementazioni per cosmos e ms-sql server.
   - ✅ 🖥️ Prima esecuzione in locale adapter azure *che non funziona*
   - ✅ ▶️ Script deploy su Azure della versione con cosmos e sqlserver con run in locale
@@ -1111,17 +1139,17 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
   - ✅ 🔧 Verifica inserimento in storico stati quando una annotazione viene inviata
   - ✅ 📝 Esportazione delle annotazioni su Azure in sistema code 
   - ✅ 🚀 Script deploy su Azure della versione con cosmos e sqlserver con run in VM-azure
-  - 🚧 🎡 Script deploy su Azure della versione con cosmos-mongo e postgres con run in VM-azure
-  - 🚧 🛠️ Script deploy su Azure con Azure Container Instances (ACI)
-  - 🚧 📦 Script deploy su Azure con Azure Container Apps
+  - ✅ 🛠️ Script deploy su Azure con Azure Container Instances (ACI)
 - 🚧 ☸️ Esecuzione su Cloud in infrastruttura Kubernetes
   - ✅ 🐳 Cambio nome profilo da *OnPrem* ad *Kube*
   - 🚧 🤖 Deploy su AWS su EKS del profilo Kube
+  - 🚧 📦 Deploy su Azure con Azure Container Apps (ACA non è Kubernetes *ma quasi*)
   - 🚧 ⚙️ Deploy su Azure su AKS del profilo Kube
+  - 🚧 🎡 Script deploy su Azure della versione con cosmos-mongo e postgres con run in VM-azure
   - 🚧 🔧 Sistem di Deploy con Kubernetes Helm charts del profilo Kube
   - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
 - 🚧 🗃️ Sistema evoluto di gestione annotazioni
-  - ✅ 🧑‍🤝‍🧑 Gestione modifica annotazione con annotazione `@Version` di JPA (vedi Entity AnnotazioneMetadataEntity di Postgresql). *Non funziona perchè il Service esegue un refresh della versione interna*
+  - ✅ 🧑‍🤝‍🧑 Gestione modifica annotazione con annotazione `@Version` di JPA (vedi Entity AnnotazioneMetadataEntity di Postgresql). *Non funziona perchè il Service esegue un refresh della versione all'interno del metodo aggiornaAnnotazione quindi non andrebbe in errore in caso di contesa*
   - 🚧 👥 Sistema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento con Redis
   - 🚧 🕸️ Gestione invio notifiche singolo se ci sono più istanze dell'applicazione in esecuzione (esempio minikube)
   - 🚧 🔄 Import annotazioni (JSON e/o CSV): creazione service per l'import di annotazioni con cambio di stato dopo averle importate con implementazioni su tutti gli adapter

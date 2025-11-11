@@ -103,9 +103,19 @@ wait_for_sql_server() {
 }
 
 # 2. Login ad Azure (se non già autenticato)
-echo "🔐 Login ad Azure..."
-az login
-check_error "Login completato"
+  echo "🔐 Login ad Azure..."
+  if az account show &>/dev/null; then
+    CURRENT_ACCOUNT=$(az account show --query "name" --output tsv)
+    CURRENT_USER=$(az account show --query "user.name" --output tsv)
+    echo "✅ Già autenticato come: $CURRENT_USER"
+    echo "   Subscription: $CURRENT_ACCOUNT"
+  else
+    echo "🔐 Login ad Azure richiesto..."
+    az login
+    check_error "Login completato"
+  fi
+  check_error "Login completato"
+
 
 # 3. Creazione Resource Group
 echo "📦 Creazione Resource Group..."

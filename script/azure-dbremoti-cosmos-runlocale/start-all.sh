@@ -12,7 +12,7 @@ SQLSERVER_DATABASE="annotazioni"
 SQLSERVER_ADMIN="sqladmin"
 SQLSERVER_PASSWORD="P@ssw0rd123!"
 SERVICEBUS_NAMESPACE="gestioneannotazioni-servicebus"
-SERVICEBUS_QUEUE="eventbus-annotazioni"
+SERVICEBUS_QUEUE="gestioneannotazioni-queue"
 
 # Funzione per gestire gli errori
 check_error() {
@@ -94,10 +94,19 @@ wait_for_sql_server() {
     return 1
 }
 
-# 2. Login ad Azure (se non già autenticato)
-echo "🔐 Login ad Azure..."
-az login
-check_error "Login completato"
+# 2. Login ad Azure
+  echo "🔐 Login ad Azure..."
+  if az account show &>/dev/null; then
+    CURRENT_ACCOUNT=$(az account show --query "name" --output tsv)
+    CURRENT_USER=$(az account show --query "user.name" --output tsv)
+    echo "✅ Già autenticato come: $CURRENT_USER"
+    echo "   Subscription: $CURRENT_ACCOUNT"
+  else
+    echo "🔐 Login ad Azure richiesto..."
+    az login
+    check_error "Login completato"
+  fi
+  check_error "Login completato"
 
 # 3. Creazione Resource Group
 echo "📦 Creazione Resource Group..."

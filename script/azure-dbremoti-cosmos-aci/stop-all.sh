@@ -24,8 +24,6 @@ az group delete --resource-group $RESOURCE_GROUP --yes
 # 6. Eliminazione file .env
 echo "💾 Eliminazione file .env-azure-aci..."
 rm -f .env-azure-aci
-check_error "File .env eliminato"
-
 echo ""
 echo "✅ Pulizia completata!"
 echo ""
