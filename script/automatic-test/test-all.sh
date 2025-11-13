@@ -15,5 +15,11 @@ echo "Directory di lavoro: $(pwd)"
 # Script per eseguire il profilo `kube` eseguito in locale con **minikube** e **kubernetes**
 ./script/automatic-test/test-minikube.sh
 
+    # docker compose up -d --build
+    # docker-compose down --remove-orphans
+    docker network prune -f  > /dev/null 2>&1
+    docker volume rm $(docker volume ls -q)  > /dev/null 2>&1
+    docker rmi $(docker images -q)  > /dev/null 2>&1
+
 echo "---------------------------------------------------------"
 echo "✅ Tutti i test sono completati con successo!"

@@ -69,6 +69,11 @@
             <version>${project.version}</version>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>it.alnao.springbootexample</groupId>
+            <artifactId>adapter-redis</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- TEST -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

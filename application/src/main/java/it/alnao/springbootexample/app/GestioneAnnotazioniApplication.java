@@ -20,6 +20,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
     "it.alnao.springbootexample.postgresql",
     "it.alnao.springbootexample.sqlite",
     "it.alnao.springbootexample.kafka",
+    "it.alnao.springbootexample.redis",
     "it.alnao.springbootexample.core"
 })
 public class GestioneAnnotazioniApplication {

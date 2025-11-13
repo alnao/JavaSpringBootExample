@@ -37,6 +37,11 @@ spring:
       - com.azure.spring.cloud.autoconfigure.implementation.AzureGlobalPropertiesAutoConfiguration
       - com.azure.spring.cloud.autoconfigure.implementation.storage.AzureStorageBlobAutoConfiguration
       - com.azure.spring.cloud.autoconfigure.implementation.storage.AzureStorageQueueAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
+      - org.redisson.spring.starter.RedissonAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.data.redis.RedisHealthContributorAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.data.redis.RedisReactiveHealthContributorAutoConfiguration
   # Inizializzazione SQL
   sql:
     init:

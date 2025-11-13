@@ -21,6 +21,14 @@ spring:
       credential:
         type: none
         
+  # Configurazione Redis per lock distribuiti per quei profili che lo usano!
+  redis:
+    data:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      ssl: ${REDIS_SSL:false}
+      timeout: 3000ms
   security:
     oauth2:
       client:
@@ -82,6 +90,8 @@ logging:
 
 # Configurazione personalizzata
 gestione-annotazioni:
+  prenotazione-lock:
+    lock-expiration-seconds: ${SISTEMA_LOCK_TIMEOUT_SECONDS:42}
   config:
     max-annotation-size: 10000
     max-description-size: 500
@@ -111,4 +121,4 @@ gestione-annotazioni:
     allow-credentials: true
   export-annotazioni:
     enabled: ${EXPORT_ANNOTAZIONI_ENABLED:true}
-    cron-expression: ${EXPORT_ANNOTAZIONI_CRON_EXPRESSION:0 */5 * * * *}   # ogni 5 minuti
+    cron-expression: ${EXPORT_ANNOTAZIONI_CRON_EXPRESSION:0 */2 * * * *}   # ogni 2 minuti

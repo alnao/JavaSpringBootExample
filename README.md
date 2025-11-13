@@ -24,12 +24,13 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
 
 ## 📚 Indice rapido
 
-- 🛠️ [Struttura progetto](#️-struttura-progetto)
-  - ⚙️ [Esecuzione locale](#-esecuzione-locale)
+- 🛠️ [Struttura progetto](#-struttura-progetto)
+  - ⚙️ [Esecuzione locale](#-Esecuzione-locale)
   - 📡 [API Endpoints](#-api-endpoints)
   - 📊 [Monitoring con actuator](#-monitoring-con-actuator)
   - 📖 [Documentazione API con Swagger / OpenAPI](#-documentazione-api-con-swagger--openapi)
   - 📈 [Analisi qualità e coverage con SonarQube](#-analisi-qualità-e-coverage-con-sonarqube)
+  - ⏰ [Sistema di lock distribuito con Redis](#-Redis)
   - 🔒 [Sistema di autenticazione](#-Sistema-di-autenticazione)
 - 🐳 [Deploy ed esecuzione con DockerHub](#-deploy-ed-esecuzione-con-dockerhub)
   - 🐳 [Esecuzione completa con Docker Compose (con Mongo e Postgresql)](#-Esecuzione-completa-con-Docker-Compose)
@@ -58,6 +59,7 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
   ├── 📁 adapter-kafka         # Componenti per la gestione delle code Kafka (profilo kube)
   ├── 📁 adapter-mongodb       # Implementazione per la gestione di MongoDB (profilo kube)
   ├── 📁 adapter-postgresql    # Implementazione per la gestione di PostgreSQL (profilo kube)
+  ├── 📁 adapter-redis         # Sistema di lock distribuiti con Redis
   ├── 📁 adapter-sqlite        # Implementazione SQLite (con solo il database SQLite locale)
   ├── 📁 adapter-web           # Risorse statiche e mini-sito di prova
   └── 📁 application           # Applicazione principale Spring Boot
@@ -184,7 +186,25 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
       curl -X GET http://localhost:8081/api/annotazioni/statistiche
       
       ```
-
+  - Prenotazione/lock di un'annotazione (acquisisce lock per XX secondi)
+    ```
+    curl -X POST http://localhost:8080/api/annotazioni/{id}/prenota \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"utente":"admin"}'
+    ```
+    - Verifica stato prenotazione
+      ```
+      curl -X GET http://localhost:8080/api/annotazioni/{id}/prenota/stato \
+        -H "Authorization: Bearer $TOKEN"
+      ```
+    - Rilasciare una prenotazione manualmente
+      ```
+      curl -X DELETE http://localhost:8080/api/annotazioni/{id}/prenota \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json" \
+        -d '{"utente":"admin"}'
+      ```
 
 
 ### 📊 Monitoring con actuator
@@ -299,6 +319,59 @@ L'applicazione supporta l'analisi statica del codice, la code coverage e la qual
       2025.09.01 13:25:11 WARN  es[][o.e.c.r.a.DiskThresholdMonitor] flood stage disk watermark [95%] exceeded on [txaoVj8zTtCfBRE4_SfPVQ][sonarqube][/opt/sonarqube/data/es7/nodes/0] free: 3gb[3.3%], all indices on this node will be marked read-only
       ```
     - Puoi personalizzare le regole di qualità e i badge direttamente dalla dashboard SonarQube.
+
+### ⏰ Redis
+Redis è integrato nell'applicazione come sistema di **lock distribuito** per gestire la prenotazione delle annotazioni e prevenire modifiche concorrenti. L'integrazione utilizza `Redisson` come client Redis per Spring Boot.
+- **Funzionalità di Lock Distribuito**
+  - Prenotazione annotazioni: Gli utenti possono "prenotare" un'annotazione per modificarla in esclusiva per XX secondi
+  - Prevenzione conflitti: Se un'annotazione è bloccata da un utente, altri utenti non possono modificarla fino al rilascio del lock
+  - Auto-rilascio: I lock vengono automaticamente rilasciati dopo XX secondi o quando l'utente completa la modifica
+- **Configurazione**
+  La configurazione Redis si trova in:
+  - `application/src/main/resources/application-kube.yml`: Configurazione per profilo Docker/Kubernetes con Redisson
+  - `adapter-redis/.../service/RedisLockService.java`: Implementazione lock distribuito con Redisson
+  - `adapter-sqlite/.../service/InMemoryLockService.java`: Implementazione lock in-memory per profilo sqlite
+  - **Nota**: Nel profilo `sqlite`, Redis non è necessario e viene automaticamente disabilitato tramite auto-configuration excludes
+- **Implementazioni Alternative**
+  - Profili `kube` (Docker/Kubernetes), `aws` e `azure`: Utilizza Redis distribuito via Redisson per ambienti multi-istanza
+  - Profilo `sqlite`**: Utilizza `InMemoryLockService` con `ConcurrentHashMap` per ambienti single-instance (suggerito per sviluppo/test)
+- **API di Prenotazione**
+  - Prenota un'annotazione (acquisisce lock per XX secondi)
+    ```
+    curl -X POST http://localhost:8080/api/annotazioni/{id}/prenota \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"utente":"admin"}'
+    ```
+  - Verifica stato prenotazione
+    ```
+    curl -X GET http://localhost:8080/api/annotazioni/{id}/prenota/stato \
+      -H "Authorization: Bearer $TOKEN"
+    ```
+  - Rilascia prenotazione manualmente
+    ```
+    curl -X DELETE http://localhost:8080/api/annotazioni/{id}/prenota \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"utente":"admin"}'
+    ```
+- Comandi Utili Redis
+  - Visualizza tutti i lock attivi
+    ```
+    docker exec gestioneannotazioni-redis redis-cli HGETALL "annotation:lock:owners"
+    ```
+  - Visualizza tutte le chiavi
+    ```
+    docker exec gestioneannotazioni-redis redis-cli KEYS "*"
+    ```
+  - Pulisci completamente Redis (attenzione: operazione distruttiva perchè cancella tutta la memoria) 
+    ```
+    docker exec gestioneannotazioni-redis redis-cli FLUSHALL
+    ```
+  - Monitora comandi in real-time
+    ```
+    docker exec gestioneannotazioni-redis redis-cli MONITOR
+    ```
 
 
 ## 🔒 Sistema di autenticazione
@@ -1041,17 +1114,17 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
   - Immagine Docker `alnao/gestioneannotazioni:latest`. Sostituito con Amazon Container Registry perchè: 
     - Please be aware that Docker Hub has recently introduced a pull rate limit on Docker images. When specifying an image from the Docker Hub registry, this may impact your container instance. [Learn more](https://docs.docker.com/docker-hub/download-rate-limit).
 - Le risorse create da questo esempio sono:
-  | Name | ResourceGroup | Type|
-  | -----|---------------|-----|
-  | gestioneannotazioni-logs | gestioneannotazioni-aci-rg | Microsoft.OperationalInsights/workspaces |
-  | gestioneannotazioni-cosmos | gestioneannotazioni-aci-rg | Microsoft.DocumentDB/databaseAccounts |
-  | gestioneannotazioni-sql | gestioneannotazioni-aci-rg | Microsoft.Sql/servers |
-  | gestioneannotazioni-sql/gestioneannotazioni | gestioneannotazioni-aci-rg | Microsoft.Sql/servers/databases |
-  | gestioneannotazioni-sql/master | gestioneannotazioni-aci-rg | Microsoft.Sql/servers/databases |
-  | gestioneannotazioniacisa | gestioneannotazioni-aci-rg | Microsoft.Storage/storageAccounts |
-  | gestioneannotazioniacr | gestioneannotazioni-aci-rg | Microsoft.ContainerRegistry/registries |
-  | gestioneannotazioni-servicebus | gestioneannotazioni-aci-rg | Microsoft.ServiceBus/namespaces |
-  | gestioneannotazioni-aci | gestioneannotazioni-aci-rg | Microsoft.ContainerInstance/containerGroups |
+  | Name | Type |
+  | -----|------|
+  | gestioneannotazioni-logs | Microsoft.OperationalInsights/workspaces |
+  | gestioneannotazioni-cosmos | Microsoft.DocumentDB/databaseAccounts |
+  | gestioneannotazioni-sql | Microsoft.Sql/servers |
+  | gestioneannotazioni-sql/gestioneannotazioni | Microsoft.Sql/servers/databases |
+  | gestioneannotazioni-sql/master | Microsoft.Sql/servers/databases |
+  | gestioneannotazioniacisa | Microsoft.Storage/storageAccounts |
+  | gestioneannotazioniacr | Microsoft.ContainerRegistry/registries |
+  | gestioneannotazioni-servicebus | Microsoft.ServiceBus/namespaces |
+  | gestioneannotazioni-aci | Microsoft.ContainerInstance/containerGroups |
 
 - ▶️ **Esecuzione**
   ```bash
@@ -1150,7 +1223,17 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
   - 🚧 📈 Auto-Scaling Policies: Horizontal Pod Autoscaler (HPA) e Vertical Pod Autoscaler (VPA) per Kubernetes
 - 🚧 🗃️ Sistema evoluto di gestione annotazioni
   - ✅ 🧑‍🤝‍🧑 Gestione modifica annotazione con annotazione `@Version` di JPA (vedi Entity AnnotazioneMetadataEntity di Postgresql). *Non funziona perchè il Service esegue un refresh della versione all'interno del metodo aggiornaAnnotazione quindi non andrebbe in errore in caso di contesa*
-  - 🚧 👥 Sistema di lock che impedisca che due utenti modifichino la stessa annotazione allo stesso momento con Redis
+  - ✅ 👥 Sistema di lock con Redis che impedisce che due utenti modifichino la stessa annotazione allo stesso momento
+    - ✅ 🔒 Implementazione Redis con Redisson per profili kube, aws, azure
+    - ✅ 💾 Implementazione in-memory per profilo sqlite
+    - ✅ 🎯 Gestione eccezioni con HTTP 409 CONFLICT quando annotazione è già in modifica
+    - ✅ 🔄 Api per bloccare una annotazione da un utente specifico
+    - ✅ 🛠️ Creazione script test specifo per il blocci di annotazioni e modifica test dei profili
+    - 🚧 ☁️ Modifica script profilo AWS per servizio redis on Cloud
+    - 🚧 ☁️ Modifica script profilo Azure per servizio redis on Cloud
+    - 🚧 ⚙️ Modifica al frontend per bloccare una annotazione quando si entra nel dettaglio
+    - 🚧 🔧 Nell'elenco delle annotazioni, indicare se una annotazione è bloccata da qualcuno, modifica del frontend
+    - 🚧 🤖 Test finali del frontend e modifica di tutti gli script di test
   - 🚧 🕸️ Gestione invio notifiche singolo se ci sono più istanze dell'applicazione in esecuzione (esempio minikube)
   - 🚧 🔄 Import annotazioni (JSON e/o CSV): creazione service per l'import di annotazioni con cambio di stato dopo averle importate con implementazioni su tutti gli adapter
   - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie annotazioni
@@ -1158,14 +1241,19 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
   - 🚧 🧭 Sistema che gestisce la scadenza di una annotazione con spring-batch che elabora tutte le annotazioni rifiutate o scadute, con nuovo stato scadute.
   - 🚧 💾 Backup & Disaster Recovery: Cross-region backup, point-in-time recovery, RTO/RPO compliance
   - 🚧 🔐 OAuth2/OIDC Provider: Integrazione con provider esterni (Google, Microsoft, GitHub) + SSO enterprise
+- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.2.0
+- 🚧 🛡️ Gestione password via secret
+  - 🚧 🔒 Gestione password tramite setret di Kubernetes nel profilo Kube
+  - 🚧 🔒 Gestione password tramite AWS Secret manager nel profilo aws
+  - 🚧 🔒 Gestione password tramite Azure key vault nel profilo azure
+  - 🚧 🔒 Gestione password tramite File statici nel profilo sqlite
+- 🚧 🎯 Sistema di caricamento annotazioni avanzato, caricare annotazioni tramite stream dati
+- 🚧 🗃️ Idee per il futuro
   - 🚧 🏗️ GitOps Workflow: ArgoCD/Flux per deployment automatici, configuration drift detection
   - 🚧 🧪 Testing Pyramid: Unit + Integration + E2E + Performance + Security testing automatizzati
   - 🚧 📎 File Attachments: Supporto allegati (immagini, PDF, documenti) con preview e versioning
-- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.2.0
-- 🚧 🗃️ Sistema di caching con redis
   - 🚧 ⚡ Redis Caching Layer: Cache multi-livello (L1: in-memory, L2: Redis) con invalidation strategies e cache warming
   - 🚧 📊 Read Replicas: Separazione read/write con eventual consistency e load balancing intelligente
-  - 🚧 🔒 API Rate Limiting: Rate limiting intelligente con burst allowance, IP whitelisting, geographic restrictions
   - 🚧 🔍 Elasticsearch Integration: Ricerca full-text avanzata con highlighting, auto-complete, ricerca semantica
 - Fantasie dell'IA
   - 🚧 📦 Container Security: Vulnerability scanning (Trivy/Snyk), distroless images, rootless containers

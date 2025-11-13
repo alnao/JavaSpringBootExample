@@ -9,16 +9,22 @@ import it.alnao.springbootexample.api.dto.AggiornaAnnotazioneRequest;
 import it.alnao.springbootexample.api.dto.AnnotazioneResponse;
 import it.alnao.springbootexample.api.dto.CambiaStatoAnnotazioneRequest;
 import it.alnao.springbootexample.api.dto.CreaAnnotazioneRequest;
+import it.alnao.springbootexample.api.dto.ErrorResponse;
+import it.alnao.springbootexample.api.dto.PrenotaAnnotazioneRequest;
+import it.alnao.springbootexample.api.dto.PrenotaAnnotazioneResponse;
 import it.alnao.springbootexample.api.dto.TransizioneStatoResponse;
 import it.alnao.springbootexample.api.mapper.AnnotazioneMapper;
 import it.alnao.springbootexample.api.mapper.TransizioneStatoMapper;
 import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 import it.alnao.springbootexample.core.domain.StatoAnnotazione;
+import it.alnao.springbootexample.core.exception.AnnotationLockedException;
 import it.alnao.springbootexample.core.portService.AnnotazioniPortService;
+import it.alnao.springbootexample.core.service.LockService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,11 +41,17 @@ import java.util.UUID;
 @CrossOrigin(origins = "*")
 @Tag(name = "Annotazioni", description = "API per la gestione delle annotazioni")
 public class AnnotazioneController {
+    //predo da una properties o config
+    @Value("${gestione-annotazioni.prenotazione-lock.lock-expiration-seconds:42}")
+    Integer lockNumeroSecondiDefault;
     
     private static final Logger logger = LoggerFactory.getLogger(AnnotazioneController.class);
     
     @Autowired
     private AnnotazioniPortService annotazioniPortService;
+    
+    @Autowired
+    private LockService lockService;
     
     @Operation(summary = "Crea una nuova annotazione")
     @ApiResponses(value = {
@@ -79,16 +91,30 @@ public class AnnotazioneController {
     }
     
     @Operation(summary = "Aggiorna un'annotazione esistente")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Annotazione aggiornata con successo"),
+        @ApiResponse(responseCode = "409", description = "Annotazione bloccata da altro utente"),
+        @ApiResponse(responseCode = "404", description = "Annotazione non trovata")
+    })
     @PutMapping("/{id}")
-    public ResponseEntity<AnnotazioneResponse> aggiornaAnnotazione(
+    public ResponseEntity<?> aggiornaAnnotazione(
             @Parameter(description = "ID dell'annotazione")
             @PathVariable UUID id,
             @Valid @RequestBody AggiornaAnnotazioneRequest request) {
         logger.info("PUT /api/annotazioni/{} - Aggiornamento annotazione per utente: {}", id, request.getUtente());
-        request.setId(id);
-        AnnotazioneCompleta annotazioneAggiornata = annotazioniPortService.aggiornaAnnotazione(AnnotazioneMapper.fromUpdateRequest(request),request.getUtente());
-        logger.info("PUT /api/annotazioni/{} - Annotazione aggiornata con successo", id);
-        return ResponseEntity.ok(AnnotazioneMapper.toResponse(annotazioneAggiornata));
+        
+        try {
+            request.setId(id);
+            AnnotazioneCompleta annotazioneAggiornata = annotazioniPortService.aggiornaAnnotazione(
+                AnnotazioneMapper.fromUpdateRequest(request), request.getUtente());
+            logger.info("PUT /api/annotazioni/{} - Annotazione aggiornata con successo", id);
+            return ResponseEntity.ok(AnnotazioneMapper.toResponse(annotazioneAggiornata));
+            
+        } catch (AnnotationLockedException e) {
+            logger.warn("PUT /api/annotazioni/{} - Lock non acquisito: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(e.getMessage(), "ANNOTATION_LOCKED"));
+        }
     }
     
     @Operation(summary = "Elimina un'annotazione")
@@ -234,6 +260,190 @@ public class AnnotazioneController {
         } catch (Exception e) {
             logger.error("PATCH /api/annotazioni/{}/stato - Errore interno: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    @Operation(summary = "Prenota un'annotazione per modifica", 
+               description = "Acquisisce un lock di XX secondi sull'annotazione per permettere la modifica esclusiva")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Annotazione prenotata con successo"),
+        @ApiResponse(responseCode = "409", description = "Annotazione già bloccata da altro utente"),
+        @ApiResponse(responseCode = "404", description = "Annotazione non trovata")
+    })
+    @PostMapping("/{id}/prenota")
+    public ResponseEntity<?> prenotaAnnotazione(
+            @Parameter(description = "ID dell'annotazione da prenotare")
+            @PathVariable UUID id,
+            @Valid @RequestBody PrenotaAnnotazioneRequest request) {
+        
+        logger.info("POST /api/annotazioni/{}/prenota - Prenotazione annotazione per utente: {}", id, request.getUtente());
+        
+        // Verifica che l'annotazione esista
+        if (annotazioniPortService.trovaPerID(id).isEmpty()) {
+            logger.warn("POST /api/annotazioni/{}/prenota - Annotazione non trovata", id);
+            return ResponseEntity.notFound().build();
+        }
+        
+        Integer numeroSecondi = request.getSecondi() != null ? request.getSecondi() : lockNumeroSecondiDefault;
+        
+        // Verifica se già bloccata
+        if (lockService.isLocked(id)) {
+            String owner = lockService.getOwner(id).orElse("unknown");
+            
+            // Se è bloccata dallo stesso utente, considera la prenotazione già attiva
+            if (owner.equals(request.getUtente())) {
+                logger.info("POST /api/annotazioni/{}/prenota - Annotazione già prenotata dallo stesso utente", id);
+                PrenotaAnnotazioneResponse response = new PrenotaAnnotazioneResponse(
+                    id, 
+                    request.getUtente(), 
+                    LocalDateTime.now(),
+                    LocalDateTime.now().plusSeconds(numeroSecondi),
+                    true,
+                    "Annotazione già prenotata da te"
+                );
+                return ResponseEntity.ok(response);
+            }
+            
+            // Bloccata da altro utente
+            logger.warn("POST /api/annotazioni/{}/prenota - Annotazione già bloccata da: {}", id, owner);
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                    "Annotazione già in modifica da: " + owner, 
+                    "ANNOTATION_ALREADY_LOCKED"
+                ));
+        }
+        
+        // Tenta di acquisire il lock per XX secondi
+        boolean lockAcquired = lockService.acquireLock(id, request.getUtente(), numeroSecondi);
+        
+        if (lockAcquired) {
+            logger.info("POST /api/annotazioni/{}/prenota - Lock acquisito per {} secondi da utente: {}", 
+                id, numeroSecondi, request.getUtente());
+            
+            PrenotaAnnotazioneResponse response = new PrenotaAnnotazioneResponse(
+                id, 
+                request.getUtente(), 
+                LocalDateTime.now(),
+                LocalDateTime.now().plusSeconds(numeroSecondi),
+                true,
+                "Annotazione prenotata con successo per " + numeroSecondi + " secondi"
+            );
+            
+            return ResponseEntity.ok(response);
+        } else {
+            logger.warn("POST /api/annotazioni/{}/prenota - Impossibile acquisire lock per utente: {}", 
+                id, request.getUtente());
+            
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                    "Impossibile prenotare l'annotazione in questo momento", 
+                    "LOCK_ACQUISITION_FAILED"
+                ));
+        }
+    }
+    
+    @Operation(summary = "Rilascia la prenotazione di un'annotazione", 
+               description = "Rilascia il lock su un'annotazione prenotata")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Lock rilasciato con successo"),
+        @ApiResponse(responseCode = "404", description = "Annotazione non trovata"),
+        @ApiResponse(responseCode = "409", description = "Lock non posseduto dall'utente")
+    })
+    @DeleteMapping("/{id}/prenota")
+    public ResponseEntity<?> rilasciaPrenotazione(
+            @Parameter(description = "ID dell'annotazione")
+            @PathVariable UUID id,
+            @Valid @RequestBody PrenotaAnnotazioneRequest request) {
+        
+        logger.info("DELETE /api/annotazioni/{}/prenota - Rilascio prenotazione per utente: {}", id, request.getUtente());
+        
+        // Verifica che l'annotazione esista
+        if (annotazioniPortService.trovaPerID(id).isEmpty()) {
+            logger.warn("DELETE /api/annotazioni/{}/prenota - Annotazione non trovata", id);
+            return ResponseEntity.notFound().build();
+        }
+        
+        // Verifica il proprietario del lock
+        if (lockService.isLocked(id)) {
+            String owner = lockService.getOwner(id).orElse("unknown");
+            
+            if (!owner.equals(request.getUtente())) {
+                logger.warn("DELETE /api/annotazioni/{}/prenota - Tentativo di rilascio lock da utente non proprietario. Owner: {}, Richiedente: {}", 
+                    id, owner, request.getUtente());
+                
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(
+                        "Non puoi rilasciare una prenotazione che non ti appartiene", 
+                        "NOT_LOCK_OWNER"
+                    ));
+            }
+        }
+        
+        // Rilascia il lock
+        lockService.releaseLock(id, request.getUtente());
+        logger.info("DELETE /api/annotazioni/{}/prenota - Lock rilasciato con successo da utente: {}", 
+            id, request.getUtente());
+        
+        return ResponseEntity.noContent().build();
+    }
+    
+    @Operation(summary = "Verifica lo stato di prenotazione di un'annotazione")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Stato prenotazione ottenuto con successo"),
+        @ApiResponse(responseCode = "404", description = "Annotazione non trovata")
+    })
+    @GetMapping("/{id}/prenota/stato")
+    public ResponseEntity<?> verificaStatoPrenotazione(
+            @Parameter(description = "ID dell'annotazione")
+            @PathVariable UUID id) {
+        
+        logger.info("GET /api/annotazioni/{}/prenota/stato - Verifica stato prenotazione", id);
+        // Verifica che l'annotazione esista
+        if (annotazioniPortService.trovaPerID(id).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        boolean isLocked = lockService.isLocked(id);
+        String owner = lockService.getOwner(id).orElse(null);
+        
+        StatoPrenotazioneResponse response = new StatoPrenotazioneResponse(id, isLocked, owner);
+        return ResponseEntity.ok(response);
+    }
+    
+    // Classe interna per lo stato di prenotazione
+    public static class StatoPrenotazioneResponse {
+        private UUID annotazioneId;
+        private boolean prenotata;
+        private String utenteProprietario;
+        
+        public StatoPrenotazioneResponse(UUID annotazioneId, boolean prenotata, String utenteProprietario) {
+            this.annotazioneId = annotazioneId;
+            this.prenotata = prenotata;
+            this.utenteProprietario = utenteProprietario;
+        }
+        
+        public UUID getAnnotazioneId() {
+            return annotazioneId;
+        }
+        
+        public void setAnnotazioneId(UUID annotazioneId) {
+            this.annotazioneId = annotazioneId;
+        }
+        
+        public boolean isPrenotata() {
+            return prenotata;
+        }
+        
+        public void setPrenotata(boolean prenotata) {
+            this.prenotata = prenotata;
+        }
+        
+        public String getUtenteProprietario() {
+            return utenteProprietario;
+        }
+        
+        public void setUtenteProprietario(String utenteProprietario) {
+            this.utenteProprietario = utenteProprietario;
         }
     }
     

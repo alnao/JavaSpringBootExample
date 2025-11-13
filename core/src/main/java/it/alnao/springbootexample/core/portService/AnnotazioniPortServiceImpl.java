@@ -4,8 +4,10 @@ import it.alnao.springbootexample.core.domain.auth.User;
 import it.alnao.springbootexample.core.domain.auth.UserRole;
 import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.domain.TransizioneStato;
+import it.alnao.springbootexample.core.exception.AnnotationLockedException;
 import it.alnao.springbootexample.core.service.AnnotazioneService;
 import it.alnao.springbootexample.core.service.AnnotazioneStoricoStatiService;
+import it.alnao.springbootexample.core.service.LockService;
 import it.alnao.springbootexample.core.service.ValidatoreTransizioniStatoService;
 import it.alnao.springbootexample.core.service.auth.UserService;
 import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
@@ -33,6 +35,9 @@ public class AnnotazioniPortServiceImpl implements AnnotazioniPortService {
     
     @Autowired
     private AnnotazioneStoricoStatiService annotazioneStoricoStatiService;
+    
+    @Autowired(required = false)
+    private LockService lockService;
 
         public AnnotazioneCompleta creaAnnotazione(AnnotazioneCompleta annotazione, String utente) {
             logger.info("AnnotazioniPortServiceImpl Creazione annotazione per utente: {}, valore: {}", utente, annotazione.getAnnotazione().getValoreNota());
@@ -62,13 +67,24 @@ public class AnnotazioniPortServiceImpl implements AnnotazioniPortService {
         }
 
     public AnnotazioneCompleta aggiornaAnnotazione(AnnotazioneCompleta annotazione, String utente) {
-        // 1. Recupera il ruolo dell'utente
+        UUID id = annotazione.getId();
+        
+        // 1. Verifica lock se disponibile
+        if (lockService != null) {
+            if (lockService.isLocked(id)) {
+                Optional<String> ownerOpt = lockService.getOwner(id);
+                if (ownerOpt.isPresent() && !ownerOpt.get().equals(utente)) {
+                    throw new AnnotationLockedException(id, ownerOpt.get());
+                }
+            }
+        }
+        
+        // 2. Recupera il ruolo dell'utente
         User user = userService.findByUsername(utente).orElseThrow(() -> new IllegalArgumentException("Utente non trovato: " + utente));
         UserRole ruoloUtente = user.getRole();
-        // 2. Verifica se il ruolo abilita a fare quel cambio stato
+        // 3. Verifica se il ruolo abilita a fare quel cambio stato
         validatoreTransizioniStatoService.validaTransizione(StatoAnnotazione.INSERITA, StatoAnnotazione.MODIFICATA, ruoloUtente);
-        // 3. Recupera l'annotazione attuale per ottenere la versione
-        UUID id = annotazione.getId();
+        // 4. Aggiorna l'annotazione
         annotazioneService.aggiornaAnnotazione(
                 id,
                 annotazione.getAnnotazione().getValoreNota(),

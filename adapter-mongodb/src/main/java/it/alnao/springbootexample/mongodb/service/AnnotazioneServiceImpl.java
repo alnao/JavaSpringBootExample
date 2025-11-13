@@ -4,9 +4,11 @@ import it.alnao.springbootexample.core.domain.Annotazione;
 import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
 import it.alnao.springbootexample.core.domain.StatoAnnotazione;
+import it.alnao.springbootexample.core.exception.AnnotationLockedException;
 import it.alnao.springbootexample.core.repository.AnnotazioneRepository;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import it.alnao.springbootexample.core.service.AnnotazioneService;
+import it.alnao.springbootexample.core.service.LockService;
 import it.alnao.springbootexample.core.utils.AnnotazioniUtils;
 import it.alnao.springbootexample.mongodb.entity.AnnotazioneStoricoEntity;
 import it.alnao.springbootexample.mongodb.repository.AnnotazioneStoricoMongoRepository;
@@ -68,6 +70,9 @@ public class AnnotazioneServiceImpl implements AnnotazioneService {
     @Autowired
     private AnnotazioneStoricoMongoRepository storicoMongoRepository;
 
+    @Autowired
+    private LockService lockService;
+
     @Override
     public AnnotazioneCompleta creaAnnotazione(String valoreNota, String descrizione, String utente) {
         UUID id = UUID.randomUUID();
@@ -103,43 +108,59 @@ public class AnnotazioneServiceImpl implements AnnotazioneService {
 
     @Override
     public AnnotazioneCompleta aggiornaAnnotazione(UUID id, String nuovoValore, String nuovaDescrizione, String utente) {
-        Optional<Annotazione> existingAnnotazione = annotazioneRepository.findById(id);
-        Optional<AnnotazioneMetadata> existingMetadata = metadataRepository.findById(id);
-
-        if (existingAnnotazione.isPresent() && existingMetadata.isPresent()) {
-            Annotazione annotazione = existingAnnotazione.get();
-            AnnotazioneMetadata metadata = existingMetadata.get();
-
-            // 1. Salva la versione precedente nello storico
-            AnnotazioneStoricoEntity storico = new AnnotazioneStoricoEntity();
-            storico.setIdOriginale(annotazione.getId().toString());
-            storico.setVersioneNota(annotazione.getVersioneNota());
-            storico.setValoreNota(annotazione.getValoreNota());
-            storico.setDescrizione(metadata.getDescrizione());
-            storico.setUtente(metadata.getUtenteUltimaModifica());
-            storico.setCategoria(metadata.getCategoria());
-            storico.setTags(metadata.getTags());
-            storico.setPubblica(metadata.getPubblica());
-            storico.setPriorita(metadata.getPriorita());
-            storico.setDataModifica(metadata.getDataUltimaModifica());
-            storicoMongoRepository.save(storico);
-
-            // 2. Aggiorna annotazione
-            annotazione.setValoreNota(nuovoValore);
-            annotazione.setVersioneNota(AnnotazioniUtils.incrementaVersione(annotazione.getVersioneNota()));
-            Annotazione updatedAnnotazione = annotazioneRepository.save(annotazione);
-
-            // 3. Aggiorna metadata
-            metadata.setDataUltimaModifica(LocalDateTime.now());
-            metadata.setUtenteUltimaModifica(utente);
-            metadata.setDescrizione(nuovaDescrizione);
-            metadata.setVersioneNota(annotazione.getVersioneNota());
-            AnnotazioneMetadata updatedMetadata = metadataRepository.save(metadata);
-
-            return new AnnotazioneCompleta(updatedAnnotazione, updatedMetadata);
+        // Tentativo di acquisire il lock con timeout di 30 secondi
+        if (!lockService.acquireLock(id, utente, 30)) {
+            Optional<String> owner = lockService.getOwner(id);
+            String ownerName = owner.orElse("altro utente");
+            logger.warn("Impossibile acquisire lock su annotazione {} per utente {}, già posseduto da {}", 
+                id, utente, ownerName);
+            throw new AnnotationLockedException(id, ownerName);
         }
+        
+        try {
+            Optional<Annotazione> existingAnnotazione = annotazioneRepository.findById(id);
+            Optional<AnnotazioneMetadata> existingMetadata = metadataRepository.findById(id);
 
-        throw new RuntimeException("Annotazione non trovata con ID: " + id);
+            if (existingAnnotazione.isPresent() && existingMetadata.isPresent()) {
+                Annotazione annotazione = existingAnnotazione.get();
+                AnnotazioneMetadata metadata = existingMetadata.get();
+
+                // 1. Salva la versione precedente nello storico
+                AnnotazioneStoricoEntity storico = new AnnotazioneStoricoEntity();
+                storico.setIdOriginale(annotazione.getId().toString());
+                storico.setVersioneNota(annotazione.getVersioneNota());
+                storico.setValoreNota(annotazione.getValoreNota());
+                storico.setDescrizione(metadata.getDescrizione());
+                storico.setUtente(metadata.getUtenteUltimaModifica());
+                storico.setCategoria(metadata.getCategoria());
+                storico.setTags(metadata.getTags());
+                storico.setPubblica(metadata.getPubblica());
+                storico.setPriorita(metadata.getPriorita());
+                storico.setDataModifica(metadata.getDataUltimaModifica());
+                storicoMongoRepository.save(storico);
+
+                // 2. Aggiorna annotazione
+                annotazione.setValoreNota(nuovoValore);
+                annotazione.setVersioneNota(AnnotazioniUtils.incrementaVersione(annotazione.getVersioneNota()));
+                Annotazione updatedAnnotazione = annotazioneRepository.save(annotazione);
+
+                // 3. Aggiorna metadata
+                metadata.setDataUltimaModifica(LocalDateTime.now());
+                metadata.setUtenteUltimaModifica(utente);
+                metadata.setDescrizione(nuovaDescrizione);
+                metadata.setVersioneNota(annotazione.getVersioneNota());
+                AnnotazioneMetadata updatedMetadata = metadataRepository.save(metadata);
+
+                logger.info("Annotazione {} aggiornata con successo da utente {}", id, utente);
+                return new AnnotazioneCompleta(updatedAnnotazione, updatedMetadata);
+            }
+
+            throw new RuntimeException("Annotazione non trovata con ID: " + id);
+            
+        } finally {
+            // Rilascia sempre il lock, anche in caso di eccezione
+            lockService.releaseLock(id, utente);
+        }
     }
 
     @Override

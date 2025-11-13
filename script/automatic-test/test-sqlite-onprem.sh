@@ -41,6 +41,7 @@ cleanup() {
     echo "Terminazione applicazione (PID: $APP_PID)..."
     kill $APP_PID 2>/dev/null || true
     wait $APP_PID 2>/dev/null || true
+    echo "Script test-sqlite-onprem concluso."
 }
 trap cleanup EXIT
 
@@ -141,13 +142,19 @@ while [ $attempt -lt $max_attempts ]; do
         break
     else
         elapsed=$((attempt * 15))
-        echo "⏳ Tentativo $attempt/$max_attempts: nessuna annotazione trovata (attesa ${elapsed}s/120s)"
+        echo "⏳ Tentativo $attempt/$max_attempts: nessuna annotazione trovata (attesa ${elapsed}s/600s)"
         
         if [ $attempt -lt $max_attempts ]; then
             sleep 15
         fi
     fi
 done
+
+#Avvio lo script dedicato per il test di prenotazione annotazione
+echo ""
+echo ""
+echo "Esecuzione test di prenotazione annotazione..."
+./script/automatic-test/test-prenotazione-annotazione.sh
 
 if [ "$row_count" -lt 1 ]; then
     echo "❌ Verifica database SQLite fallita dopo 2 minuti"
@@ -163,7 +170,7 @@ fi
 echo "Terminazione applicazione (PID: $APP_PID)..."
 kill $APP_PID 2>/dev/null || true
 
-echo "Test con profilo 'sqlite' superati!"
+echo "✅ Test con profilo 'sqlite' superati!"
 
-echo "Tutti i test sono stati eseguiti con successo!"
+echo "✅ Tutti i test sono stati eseguiti con successo!"
 exit 0

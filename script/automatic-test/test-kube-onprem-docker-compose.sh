@@ -9,21 +9,21 @@ echo "Posizione script: $(dirname "$0")"
 #cd "$(dirname "$0")/.."
 echo "Directory di lavoro: $(pwd)"
 
-echo "Costruzione immagine Docker..."
-./script/docker-build.sh 
+#echo "Costruzione immagine Docker..."
+#./script/docker-build.sh 
 
 echo  "Avvio stack Docker necessario per i test..."
-docker-compose up -d
+docker-compose up -d --build
 
 
 
 # Funzione per terminare l'applicazione in caso di errore
 cleanup() {
-    echo "Terminazione applicazione"
     docker-compose down --remove-orphans
     docker network prune -f  > /dev/null 2>&1
     docker volume rm $(docker volume ls -q)  > /dev/null 2>&1
     docker rmi $(docker images -q)  > /dev/null 2>&1
+    echo "Script test-kube-onprem-docker-compose concluso"
 }
 trap cleanup EXIT
 
@@ -137,10 +137,18 @@ if [ "$found_in_kafka" = false ]; then
     exit 1
 fi
 
+echo "✅ Invio annotazione a Kafka verificato con successo."
+
+#Avvio lo script dedicato per il test di prenotazione annotazione
+echo ""
+echo ""
+echo "Esecuzione test di prenotazione annotazione..."
+./script/automatic-test/test-prenotazione-annotazione.sh
+
 # Terminazione applicazione (gestita da trap cleanup)
 echo "Terminazione applicazione"
 docker-compose down --remove-orphans
-docker network prune -f > /dev/null 2>&1
+#docker network prune -f > /dev/null 2>&1
 docker volume rm $(docker volume ls -q) > /dev/null 2>&1
 docker rmi $(docker images -q) > /dev/null 2>&1
 
