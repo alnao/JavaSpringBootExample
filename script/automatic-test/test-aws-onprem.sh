@@ -10,9 +10,9 @@ echo "Posizione script: $(dirname "$0")"
 echo "Directory di lavoro: $(pwd)"
 
 echo "Avvio docker-compose per AWS OnPrem necessari per i test..."
-docker-compose -f script/aws-onprem/docker-compose.yml up -d
+docker-compose -f script/aws-onprem/docker-compose.yml up -d --build
 
-echo "L'applicazione web sarà disponibile su [http://localhost:8085](http://localhost:8085)"
+echo "L'applicazione web sarà disponibile su [http://localhost:8082](http://localhost:8082)"
 echo "Adminer (MySQL): [http://localhost:8086](http://localhost:8086)"
 echo "DynamoDB Admin: [http://localhost:8087](http://localhost:8087)"
 
@@ -25,7 +25,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-URL="http://localhost:8085"
+URL="http://localhost:8082"
 
 echo "Attesa avvio applicazione (max 60 secondi)..."
 for i in {1..30}; do
@@ -181,6 +181,12 @@ if [ "$found_in_sqs" = false ]; then
     exit 1
 fi
 
+
+#Avvio lo script dedicato per il test di prenotazione annotazione
+echo ""
+echo ""
+echo "Esecuzione test di prenotazione annotazione..."
+./script/automatic-test/test-prenotazione-annotazione.sh
 
 
 

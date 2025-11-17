@@ -16,16 +16,16 @@ import org.springframework.context.annotation.Profile;
 @Profile({"kube", "aws", "azure"})
 public class RedisConfig {
     
-    @Value("${spring.data.redis.host:localhost}")
+    @Value("${spring.redis.data.host:localhost}")
     private String redisHost;
     
-    @Value("${spring.data.redis.port:6379}")
+    @Value("${spring.redis.data.port:6379}")
     private int redisPort;
     
-    @Value("${spring.data.redis.password:}")
+    @Value("${spring.redis.data.password:}")
     private String redisPassword;
     
-    @Value("${spring.data.redis.ssl:false}")
+    @Value("${spring.redis.data.ssl:false}")
     private boolean redisSsl;
     
     @Bean

@@ -5,6 +5,11 @@
 # Script di test per la funzionalità di prenotazione annotazioni
 
 BASE_URL="http://localhost:8082/api"
+#se mi arriva un parametro lo uso come base url
+if [ ! -z "$1" ]; then
+  BASE_URL="$1/api"
+fi
+
 ANNOTATION_ID=""
 
 # Colori per output
@@ -51,13 +56,15 @@ echo ""
 
 # 3. Creazione annotazione di test
 echo -e "${YELLOW}3. Creazione annotazione di test...${NC}"
+TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+VALORE_NOTA="Annotazione per test di prenotazione creata $TIME"
 CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/annotazioni" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
-    "utente": "admin",
-    "valoreNota": "Test prenotazione",
-    "descrizione": "Annotazione per test di prenotazione",
+    "utente": "admin", 
+    "valoreNota": "'"$VALORE_NOTA"'",
+    "descrizione": "Test prenotazione",
     "categoria": "TEST",
     "pubblica": true
   }')
@@ -66,6 +73,7 @@ ANNOTATION_ID=$(echo $CREATE_RESPONSE | grep -o '"id":"[^"]*' | cut -d'"' -f4)
 
 if [ -z "$ANNOTATION_ID" ]; then
     echo -e "${RED}✗ Errore: Creazione annotazione fallita${NC}"
+    echo "Risposta: $CREATE_RESPONSE"
     exit 1
 fi
 echo -e "${GREEN}✓ Annotazione creata con ID: $ANNOTATION_ID${NC}"

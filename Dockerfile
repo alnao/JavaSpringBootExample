@@ -1,5 +1,5 @@
 # Stage 1: Build con JDK
-FROM openjdk:17-jdk-slim AS builder
+FROM eclipse-temurin:17-jdk-jammy AS builder
 
 LABEL maintainer="alnao.it"
 LABEL description="Sistema Gestione Annotazioni - Build Stage"
@@ -38,7 +38,8 @@ RUN mvn clean package -DskipTests -B
 # Stage 2: Runtime con JRE
 #FROM openjdk:17-jre-slim AS runtime
 #FROM openjdk:8u342-jre AS runtime
-FROM openjdk:17-jdk-slim AS runtime
+#FROM openjdk:17-jdk-slim AS runtime
+FROM eclipse-temurin:17-jre-jammy AS runtime 
 
 LABEL maintainer="alnao.it"
 LABEL description="Sistema Gestione Annotazioni - Runtime"

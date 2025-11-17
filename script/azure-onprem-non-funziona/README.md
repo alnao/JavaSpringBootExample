@@ -163,11 +163,11 @@ Risolto con
       volumes:
         - cosmos_certs:/certs
       ports:
-        - "8085:8080"
+        - "8082:8080"
       networks:
         - azure-network
       healthcheck:
-        test: curl -f http://localhost:8080/actuator/health || exit 1
+        test: curl -f http://localhost:8082/actuator/health || exit 1
         interval: 30s
         timeout: 10s
         retries: 3
@@ -199,7 +199,7 @@ Risolto con
     -e AZURE_COSMOS_KEY=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw== \
     -v cosmos_certs:/certs \
     -u root \
-    -p 8085:8080 \
+    -p 8082:8080 \
     --entrypoint sh \
     alnao/gestioneannotazioni:latest \
     -c "echo '📋 Importing CosmosDB certificate...'; \
@@ -234,7 +234,7 @@ Risolto con
     -e AZURE_COSMOS_KEY=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw== \
     -v cosmos_certs:/certs \
     -u root \
-    -p 8085:8080 \
+    -p 8082:8080 \
     alnao/gestioneannotazioni:latest
   # Collegarsi alla immagine
   docker exec -it gestioneannotazioni-app-azure /bin/bash

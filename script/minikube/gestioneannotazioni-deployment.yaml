@@ -27,6 +27,10 @@ spec:
               value: mongodb://demo:demo@mongo:27017/gestioneannotazioni_db?authSource=admin
             - name: KAFKA_BROKER_URL
               value: kafka-service:9092
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
           ports:
             - containerPort: 8080
 ---

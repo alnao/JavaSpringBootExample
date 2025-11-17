@@ -108,13 +108,21 @@ public class AnnotazioneServiceImpl implements AnnotazioneService {
 
     @Override
     public AnnotazioneCompleta aggiornaAnnotazione(UUID id, String nuovoValore, String nuovaDescrizione, String utente) {
+        if (utente==null){
+            throw new IllegalArgumentException("Utente non può essere null");
+        }
         // Tentativo di acquisire il lock con timeout di 30 secondi
         if (!lockService.acquireLock(id, utente, 30)) {
             Optional<String> owner = lockService.getOwner(id);
             String ownerName = owner.orElse("altro utente");
-            logger.warn("Impossibile acquisire lock su annotazione {} per utente {}, già posseduto da {}", 
-                id, utente, ownerName);
-            throw new AnnotationLockedException(id, ownerName);
+            if (utente.equals(ownerName)) {
+                logger.info("Utente {} ha già il lock sull'annotazione {}", utente, id);
+                // L'utente che sta tentando di aggiornare è lo stesso che detiene il lock
+            }else {
+                logger.warn("Impossibile acquisire lock su annotazione {} per utente {}, già posseduto da {}", 
+                    id, utente, ownerName);
+                throw new AnnotationLockedException(id, ownerName);
+            }
         }
         
         try {

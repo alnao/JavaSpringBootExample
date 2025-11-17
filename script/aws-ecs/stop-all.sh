@@ -54,6 +54,26 @@ else
   echo "Coda SQS $SQS_QUEUE_NAME non esistente"
 fi
 
+# 4b. Rimuovi ElastiCache Redis cluster
+REDIS_CLUSTER_ID="gestioneannotazioni-redis"
+echo "Rimozione ElastiCache Redis cluster..."
+aws elasticache delete-cache-cluster \
+  --cache-cluster-id $REDIS_CLUSTER_ID \
+  --region $AWS_REGION \
+  2>/dev/null || echo "Redis cluster non esistente"
+
+# Attendi che il cluster sia completamente eliminato prima di rimuovere il subnet group
+echo "Attendo eliminazione Redis cluster..."
+aws elasticache wait cache-cluster-deleted --cache-cluster-id $REDIS_CLUSTER_ID --region $AWS_REGION 2>/dev/null || true
+
+# 4c. Rimuovi subnet group ElastiCache
+CACHE_SUBNET_GROUP_NAME="gestioneannotazioni-redis-subnet-group"
+echo "Rimozione subnet group ElastiCache..."
+aws elasticache delete-cache-subnet-group \
+  --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
+  --region $AWS_REGION \
+  2>/dev/null || echo "Subnet group non esistente"
+
 # 5. Elimina Aurora instance e cluster
 aws rds delete-db-instance --db-instance-identifier $AURORA_INSTANCE_ID --skip-final-snapshot --region $AWS_REGION || true
 aws rds wait db-instance-deleted --db-instance-identifier $AURORA_INSTANCE_ID --region $AWS_REGION || true

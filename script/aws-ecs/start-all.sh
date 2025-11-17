@@ -275,6 +275,53 @@ if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
 fi
 echo "SQS Queue URL: $SQS_QUEUE_URL"
 
+# 4b. Crea subnet group per ElastiCache (richiesto per creare il cluster)
+CACHE_SUBNET_GROUP_NAME="gestioneannotazioni-redis-subnet-group"
+SUBNET_IDS=$(aws ec2 describe-subnets --region $AWS_REGION --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[*].SubnetId' --output text)
+aws elasticache create-cache-subnet-group \
+  --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
+  --cache-subnet-group-description "Subnet group for gestioneannotazioni Redis" \
+  --subnet-ids $SUBNET_IDS \
+  --region $AWS_REGION \
+  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
+  2>/dev/null || echo "Cache subnet group già esistente"
+
+# 4c. Crea ElastiCache Redis cluster
+REDIS_CLUSTER_ID="gestioneannotazioni-redis"
+aws elasticache create-cache-cluster \
+  --cache-cluster-id $REDIS_CLUSTER_ID \
+  --engine redis \
+  --cache-node-type cache.t3.micro \
+  --num-cache-nodes 1 \
+  --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
+  --security-group-ids $SECURITY_GROUP_ID \
+  --region $AWS_REGION \
+  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
+  2>/dev/null || echo "Redis cluster già esistente"
+
+# Aggiungi regola porta Redis (6379) al security group
+aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 6379 --source-group $SECURITY_GROUP_ID --region $AWS_REGION 2>/dev/null || echo "Regola porta 6379 già esistente"
+
+# Attendi che Redis sia disponibile
+echo "Attendo che ElastiCache Redis sia disponibile (può richiedere 5-10 minuti)..."
+aws elasticache wait cache-cluster-available --cache-cluster-id $REDIS_CLUSTER_ID --region $AWS_REGION
+
+# Recupera endpoint Redis
+REDIS_ENDPOINT=$(aws elasticache describe-cache-clusters \
+  --cache-cluster-id $REDIS_CLUSTER_ID \
+  --show-cache-node-info \
+  --region $AWS_REGION \
+  --query 'CacheClusters[0].CacheNodes[0].Endpoint.Address' \
+  --output text)
+REDIS_PORT=$(aws elasticache describe-cache-clusters \
+  --cache-cluster-id $REDIS_CLUSTER_ID \
+  --show-cache-node-info \
+  --region $AWS_REGION \
+  --query 'CacheClusters[0].CacheNodes[0].Endpoint.Port' \
+  --output text)
+
+echo "Redis endpoint: $REDIS_ENDPOINT:$REDIS_PORT"
+
 # === 5. Creazione cluster ECS ===
 echo "[5/7] Creazione ECS Cluster..."
 CLUSTER_STATUS=$(aws ecs describe-clusters --clusters $CLUSTER_NAME --region $AWS_REGION --query 'clusters[0].status' --output text 2>/dev/null)
@@ -332,7 +379,9 @@ cat > ./script/aws-ecs/task-def.json <<EOF
         { "name": "RDS_DATABASE", "value": "$AURORA_DB_NAME" },
         { "name": "RDS_USERNAME", "value": "$AURORA_MASTER_USER" },
         { "name": "RDS_PASSWORD", "value": "$AURORA_MASTER_PASS" },
-        { "name": "SQS_QUEUE_URL", "value": "$SQS_QUEUE_URL" }
+        { "name": "SQS_QUEUE_URL", "value": "$SQS_QUEUE_URL" },
+        { "name": "REDIS_HOST", "value": "$REDIS_ENDPOINT" },
+        { "name": "REDIS_PORT", "value": "$REDIS_PORT" }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
@@ -407,6 +456,8 @@ fi
 
 echo "=== INFO DEPLOY ==="
 echo "Aurora endpoint: $aurora_endpoint"
+echo "ElastiCache Redis: $REDIS_ENDPOINT:$REDIS_PORT"
+echo "SQS Queue: $SQS_QUEUE_URL"
 echo "Security Group ID: $SECURITY_GROUP_ID"
 echo "VPC ID: $VPC_ID"
 echo "Subnets: $SUBNETS"

@@ -16,7 +16,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ../init-database/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql:ro
     networks:
-      - aws-kube-network
+      - aws-onprem-network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 30s
@@ -32,7 +32,7 @@ services:
     ports:
       - "8420:8000"
     networks:
-      - aws-kube-network
+      - aws-onprem-network
     command: -jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data
     volumes:
       - ./dynamodb_data:/home/dynamodblocal/data
@@ -46,7 +46,7 @@ services:
       - SERVICES=sqs
       - DEFAULT_REGION=eu-central-1
     networks:
-      - aws-kube-network
+      - aws-onprem-network
     volumes:
       - ./localstack_data:/var/lib/localstack
     healthcheck:
@@ -69,8 +69,21 @@ services:
       localstack:
         condition: service_healthy
     networks:
-      - aws-kube-network
+      - aws-onprem-network
     restart: "no"
+ 
+  redis:
+    image: redis:7-alpine
+    container_name: gestioneannotazioni-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aws-onprem-network
 
   # Applicazione Spring Boot profilo AWS
   app:
@@ -78,7 +91,7 @@ services:
     container_name: gestioneannotazioni-app-aws
     environment:
       SPRING_PROFILES_ACTIVE: aws
-      SERVER_PORT: 8085
+      SERVER_PORT: 8082
       # Database MySQL/RDS
       AWS_RDS_URL: jdbc:mysql://mysql:3306/gestioneannotazioni
       AWS_RDS_USERNAME: gestioneannotazioni_user
@@ -94,17 +107,22 @@ services:
       SQS_ENDPOINT: http://localstack:4566
       SQS_QUEUE_URL: http://localstack:4566/000000000000/annotazioni
       SQS_REGION: eu-central-1
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     ports:
-      - "8085:8085"
+      - "8082:8082"
     depends_on:
       mysql:
         condition: service_healthy
       dynamodb:
         condition: service_started
+      redis:
+        condition: service_healthy
     networks:
-      - aws-kube-network
+      - aws-onprem-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -121,7 +139,7 @@ services:
     depends_on:
       - mysql
     networks:
-      - aws-kube-network
+      - aws-onprem-network
 
   # DynamoDB Admin UI
   dynamodb-admin:
@@ -137,7 +155,7 @@ services:
     depends_on:
       - dynamodb
     networks:
-      - aws-kube-network
+      - aws-onprem-network
 
   # Servizio one-shot per inizializzazione tabella DynamoDB
   init-dynamodb:
@@ -151,7 +169,7 @@ services:
     depends_on:
       - dynamodb
     networks:
-      - aws-kube-network
+      - aws-onprem-network
     restart: "no"
 
 # Nginx reverse proxy per frontend statico e API
@@ -166,7 +184,7 @@ services:
  #   depends_on:
  #     - app
  #   networks:
- #     - aws-kube-network
+ #     - aws-onprem-network
 
 volumes:
   mysql_data:
@@ -174,7 +192,7 @@ volumes:
   # dynamodb_data volume non più necessario, ora si usa una directory locale
 
 networks:
-  aws-kube-network:
+  aws-onprem-network:
     driver: bridge
 
 

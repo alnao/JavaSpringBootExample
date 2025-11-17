@@ -11,7 +11,7 @@ DB_INSTANCE_ID="gestioneannotazioni-instance"
 SG_NAME="gestioneannotazioni-sg"
 KEY_NAME="${KEY_NAME:-gestioneannotazioni-key}"
 SQS_QUEUE_NAME="gestioneannotazioni-annotazioni"
-
+REDIS_CLUSTER_ID="gestioneannotazioni-redis"
 
 # 1. Termina e rimuovi tutte le EC2 con tag gestioneannotazioni-app
 INSTANCE_IDS=$(aws ec2 describe-instances --region $REGION --filters Name=tag:gestioneannotazioni-app,Values=true Name=instance-state-name,Values=running,stopped --query 'Reservations[].Instances[].InstanceId' --output text)
@@ -41,6 +41,25 @@ if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
 else
   echo "Coda SQS $SQS_QUEUE_NAME non esistente"
 fi
+
+# 4b. Rimuovi ElastiCache Redis cluster
+echo "Rimozione ElastiCache Redis cluster..."
+aws elasticache delete-cache-cluster \
+  --cache-cluster-id $REDIS_CLUSTER_ID \
+  --region $REGION \
+  2>/dev/null || echo "Redis cluster non esistente"
+
+# Attendi che il cluster sia completamente eliminato prima di rimuovere il subnet group
+echo "Attendo eliminazione Redis cluster..."
+aws elasticache wait cache-cluster-deleted --cache-cluster-id $REDIS_CLUSTER_ID --region $REGION 2>/dev/null || true
+
+# 4c. Rimuovi subnet group ElastiCache
+CACHE_SUBNET_GROUP_NAME="gestioneannotazioni-redis-subnet-group"
+echo "Rimozione subnet group ElastiCache..."
+aws elasticache delete-cache-subnet-group \
+  --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
+  --region $REGION \
+  2>/dev/null || echo "Subnet group non esistente"
 
 # 5. Rimuovi Security Group
 echo "Rimozione Security Group..."
@@ -84,6 +103,8 @@ echo "- EC2 instances con tag gestioneannotazioni-app"
 echo "- Aurora MySQL cluster e instance"
 echo "- Tabelle DynamoDB (annotazioni, annotazioni_storico, annotazioni_storicoStati)"
 echo "- Coda SQS ($SQS_QUEUE_NAME)"
+echo "- ElastiCache Redis cluster ($REDIS_CLUSTER_ID)"
+echo "- ElastiCache subnet group ($CACHE_SUBNET_GROUP_NAME)"
 echo "- Security Group ($SG_NAME)"
 echo "- Key pair ($KEY_NAME)"
 echo "- IAM Role e Instance Profile ($INSTANCE_PROFILE_NAME)"

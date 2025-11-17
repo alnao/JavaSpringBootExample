@@ -41,14 +41,23 @@ kubectl wait --for=condition=Ready pod -l app=kafka-service --timeout=300s --nam
 kubectl apply -f script/minikube/kafka-ui-deployment.yaml
 kubectl wait --for=condition=Ready pod -l app=kafka-ui --timeout=300s --namespace=gestioneannotazioni
 
-# Avvio il backend
-echo "[INFO] Avvio backend gestioneannotazioni (2 repliche)..."
-kubectl apply -f script/minikube/gestioneannotazioni-deployment.yaml
-
 # Attendi che i pod del backend siano pronti e avvio adminer e mongo-express
 echo "[INFO] Avvio Adminer e Mongo Express (tool di gestione DB)..."
 kubectl apply -f script/minikube/adminer-deployment.yaml
 kubectl apply -f script/minikube/mongo-express-deployment.yaml
+
+# Avvio Redis
+echo "[INFO] Avvio Redis..."
+kubectl apply -f script/minikube/redis-deployment.yaml
+kubectl wait --for=condition=Ready pod -l app=redis --timeout=300s --namespace=gestioneannotazioni
+
+# Avvio il backend
+echo "[INFO] Avvio backend gestioneannotazioni (2 repliche)..."
+kubectl apply -f script/minikube/gestioneannotazioni-deployment.yaml
+
+# Attendi che i pod del backend siano pronti
+echo "[INFO] Attendo che i pod del backend siano pronti..."
+kubectl wait --for=condition=Ready pod -l app=gestioneannotazioni-app --timeout=300s --namespace=gestioneannotazioni
 
 # Espongo i servizi con ingress
 echo "[INFO] Applico Ingress per esporre l'applicazione su gestioneannotazioni.local..."

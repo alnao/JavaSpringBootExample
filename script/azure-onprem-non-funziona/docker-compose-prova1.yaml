@@ -153,7 +153,7 @@ services:
     volumes:
       - cosmos_certs:/certs
     ports:
-      - "8085:8080"
+      - "8082:8080"
     networks:
       - azure-network
     healthcheck:

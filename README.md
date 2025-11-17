@@ -14,12 +14,12 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
 Il progetto è pensato per essere agnostico rispetto al cloud provider: sono sviluppate implementazioni per Replit, AWS e Azure. Il DBMS utilizzato dipende dal profilo selezionato:
 
 
-| Profilo | Sistema/Cloud | DBMS Sql | DBMS No-Sql | Export Annotazioni |
-|--------|----------|-------------|-------------|---------------------|
-| Kube | ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white) | ![Kafka](https://img.shields.io/badge/Kafka-231F20?style=flat-square&logo=apachekafka&logoColor=white) |
-| Sqlite | ![Replit](https://img.shields.io/badge/Replit-F26207?style=flat-square&logo=replit&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) |
-| AWS | ![AWS](https://img.shields.io/badge/AWS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) | ![DynamoDB](https://img.shields.io/badge/DynamoDB-4053D6?style=flat-square&logo=amazondynamodb&logoColor=white) | ![SQS](https://img.shields.io/badge/SQS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) |
-| Azure | ![Azure](https://img.shields.io/badge/Azure-0078D4?style=flat-square&logo=microsoftazure&logoColor=white) | ![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?style=flat-square&logo=microsoftsqlserver&logoColor=white) | ![Cosmos DB](https://img.shields.io/badge/Cosmos%20DB-0089D6?style=flat-square&logo=azurecosmosdb&logoColor=white) | ![Service Bus](https://img.shields.io/badge/Service%20Bus-0089D6?style=flat-square&logo=microsoftazure&logoColor=white) |
+| Profilo | Sistema/Cloud | DBMS Sql | DBMS No-Sql | Export | Lock annotazioni |
+|--------|----------|-------------|-------------|----------|--------------------|
+| `kube` | ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white) | ![Kafka](https://img.shields.io/badge/Kafka-434F40?style=flat-square&logo=apachekafka&logoColor=white) | ![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | 
+| `sqlite` | ![Replit](https://img.shields.io/badge/Replit-F26207?style=flat-square&logo=replit&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![Java](https://img.shields.io/badge/ConcurrentHashMap-ED8B00?style=flat-square&logo=openjdk&logoColor=white) | 
+| `aws` | ![AWS](https://img.shields.io/badge/AWS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) | ![DynamoDB](https://img.shields.io/badge/DynamoDB-4053D6?style=flat-square&logo=amazondynamodb&logoColor=white) | ![SQS](https://img.shields.io/badge/SQS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![Redis](https://img.shields.io/badge/ElastiCache%20for%20Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | 
+| `azure` | ![Azure](https://img.shields.io/badge/Azure-0078D4?style=flat-square&logo=microsoftazure&logoColor=white) | ![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?style=flat-square&logo=microsoftsqlserver&logoColor=white) | ![Cosmos DB](https://img.shields.io/badge/Cosmos%20DB-0089D6?style=flat-square&logo=azurecosmosdb&logoColor=white) | ![Service Bus](https://img.shields.io/badge/Service%20Bus-0089D6?style=flat-square&logo=microsoftazure&logoColor=white) | ![Azure Cache for Redis](https://img.shields.io/badge/Cache%20for%20Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | 
 
 
 ## 📚 Indice rapido
@@ -140,7 +140,7 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
       ```
 
 ### 📡 API Endpoints
-- Eseguendo il sistema in locale la base degli URL è `http://localhost:8080` (8081/8085 nel caso di esecuzione tramite docker-compose su Minikube o AWS)
+- Eseguendo il sistema in locale la base degli URL è `http://localhost:8080` (8081/8082 nel caso di esecuzione tramite docker-compose su Minikube o AWS)
 - API di autenticazione gestite da AuthController:
     | Metodo | Endpoint | Descrizione |
     |--------|----------|-------------|
@@ -533,29 +533,7 @@ Per semplificare l’avvio di tutti i servizi necessari (applicazione, PostgreSQ
     ```yaml
     version: '3.8'
     services:
-      postgres:
-        image: postgres:13
-        container_name: annotazioni-postgres
-        environment:
-          POSTGRES_DB: gestioneannotazioni
-          POSTGRES_USER: gestioneannotazioni_user
-          POSTGRES_PASSWORD: gestioneannotazioni_pass
-        ports:
-          - "5432:5432"
-        networks:
-          - annotazioni-network
-
-      mongo:
-        image: mongo:4.4
-        container_name: annotazioni-mongo
-        environment:
-          MONGO_INITDB_ROOT_USERNAME: admin
-          MONGO_INITDB_ROOT_PASSWORD: admin123
-          MONGO_INITDB_DATABASE: gestioneannotazioni
-        ports:
-          - "27017:27017"
-        networks:
-          - annotazioni-network
+      ... #mongo, postgresql, kafka e redis!
 
       app:
         image: alnao/annotazioni:latest
@@ -570,6 +548,8 @@ Per semplificare l’avvio di tutti i servizi necessari (applicazione, PostgreSQ
           POSTGRES_PASSWORD: gestioneannotazioni_pass
           MONGODB_URI: mongodb://admin:admin123@mongodb:27017/gestioneannotazioni_db?authSource=admin
           KAFKA_BROKER_URL: kafka-server:29092
+          REDIS_HOST: redis
+          REDIS_PORT: 6379
           EXPORT_ANNOTAZIONI_CRON_EXPRESSION: "0 */2 * * * *" # ogni 2 minuti
           SERVER_PORT: 8080
         ports:
@@ -760,8 +740,8 @@ Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, 
     ```
   - presenta anche uno script `./script/aws-onprem/start-all.sh` che esegue il docker compose
 - Servizi disponibili:
-  - **Frontend**:        [http://localhost:8085](http://localhost:8085)
-  - **Backend API**:     [http://localhost:8085/api/annotazioni](http://localhost:8085/api/annotazioni)
+  - **Frontend**:        [http://localhost:8082](http://localhost:8082)
+  - **Backend API**:     [http://localhost:8082/api/annotazioni](http://localhost:8082/api/annotazioni)
   - **Adminer (MySQL)**: [http://localhost:8086](http://localhost:8086)
   - **DynamoDB Admin**:  [http://localhost:8087](http://localhost:8087)
 - Per vedere i log di un servizio:
@@ -795,6 +775,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
     - Provisioning Aurora MySQL (RDS) e DynamoDB
     - Creazione della coda SQS utilizzata per l'invio/export delle annotazioni
     - Upload e lancio script di inizializzazione SQL su Aurora (init-mysql.sql)
+    - Creazione del Redis con ElasticCache (e di una subnet specifica!)
     - Creazione e configurazione istanza EC2 (Amazon Linux 2)
     - Deploy automatico del jar Spring Boot e avvio con profilo `aws`
     - Configurazione variabili d'ambiente e sicurezza SSH
@@ -835,9 +816,10 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
   |------------------|----------------------|---------------------|----------------------------|--------------------------|
   | Aurora MySQL     | ~2,4 USD             | ~72 USD             | ~2,4 USD                   | ~72 USD                  |
   | DynamoDB         | ~0,01 USD            | ~0,30 USD           | ~0,04 USD                  | ~1,25 USD                |
+  | ElasticCache     | ~0,4 USD             | ~12 USD             | ~0,4 USD                   | ~12 USD                  | 
   | EC2 t3.medium    | ~1,2 USD             | ~37 USD             | ~1,2 USD                   | ~37 USD                  |
   | ECR/Storage      | trascurabile         | trascurabile        | trascurabile               | trascurabile             |
-  | **Totale**       | **~3,6 USD**         | **~110 USD**        | **~3,7 USD**               | **~115 USD**             |
+  | **Totale**       | **~4 USD**           | **~122 USD**        | **~4.2 USD**               | **~127 USD**             |
 
 
 ### 🐳 Esecuzione su AWS ECS Fargate
@@ -858,14 +840,15 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     Lo script ci può mettere diversi minuto per la creazione del database aurora e del task ECS!
     Lo script esegue in sequenza:
     1. **Build e Push ECR**: Compilazione Maven, build Docker, creazione repository ECR e push immagine
-    2. **IAM Roles**: Creazione Task Role (accesso Aurora/DynamoDB) e Execution Role (logging CloudWatch)
-    3. **Networking**: Creazione Security Groups con regole per HTTP (8080), Aurora (3306), HTTPS/SSH
+    2. **IAM Roles**: Creazione Task Role (accesso Aurora/DynamoDB/ElastiCache) e Execution Role (logging CloudWatch)
+    3. **Networking**: Creazione Security Groups con regole per HTTP (8080), Aurora (3306), Redis (6379), HTTPS/SSH
     4. **Aurora MySQL**: Provisioning cluster RDS con inizializzazione database e tabelle
     5. **SQS**: Creazione coda SQS per *l'invio* delle annotazioni confermate
-    5. **DynamoDB**: Creazione tabelle `annotazioni` e `annotazioni_storico` con attributi ottimizzati
-    6. **ECS Deployment**: Creazione cluster, task definition, service con Fargate e auto-scaling
-    7. **CloudWatch Logs**: Configurazione logging applicativo con retention automatica
-    8. **Endpoint Discovery**: Rilevamento automatico IP pubblico del task per accesso HTTP
+    6. **ElastiCache Redis**: Provisioning cluster Redis per lock distribuiti (cache.t3.micro)
+    7. **DynamoDB**: Creazione tabelle `annotazioni` e `annotazioni_storico` con attributi ottimizzati
+    8. **ECS Deployment**: Creazione cluster, task definition, service con Fargate e auto-scaling
+    9. **CloudWatch Logs**: Configurazione logging applicativo con retention automatica
+    10. **Endpoint Discovery**: Rilevamento automatico IP pubblico del task per accesso HTTP
       - a volte capita che il task non faccia in tempo a partire e il ritorna l'ip corretto, in questi casi è possibile lanciare lo script
         ```bash
         ./script/aws-ecs/check-fargete.sh
@@ -884,6 +867,10 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     - Endpoint API: `http://<TASK_PUBLIC_IP>:8080/api/annotazioni`
     - Swagger UI: `http://<TASK_PUBLIC_IP>:8080/swagger-ui.html`
     - Health Check: `http://<TASK_PUBLIC_IP>:8080/actuator/health`
+  - Test dell'applicazione: è possibile lanciare lo script che verifica il sistema di prenotazione delle annotazioni con lo script
+    ```
+    ./script/automatic-test/test-prenotazione-annotazione.sh <indirizzoip>:8080
+    ```
   - Comando AWS-CLI per la lettura dei messaggi nelle code SQS
     ```
     SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
@@ -918,7 +905,8 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   - Service ECS configurato con health check automatici e restart in caso di failure
   - Task definition ottimizzata per Fargate con 1 vCPU e 2GB RAM
   - Networking configurato per accesso pubblico sicuro con Security Groups specifici
-  - Aurora endpoint automaticamente rilevato e configurato nel container
+  - Aurora endpoint e Redis endpoint automaticamente rilevati e configurati nel container
+  - ElastiCache Redis configurato per lock distribuiti su annotazioni con accesso solo interno al VPC
 
 - Tabella dei costi stimati per risorse sempre accese (24/7), regione Francoforte (eu-central-1), prezzi AWS settembre 2025:
   
@@ -926,16 +914,17 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   |-----------------------|----------------------|---------------------|----------------------|--------------------|
   | ECS Fargate (1 vCPU, 2GB RAM) | ~0,8 USD (1 task 24/7) | ~24 USD (1 task 24/7) | ~1,6 USD (2 task avg) | ~48 USD (2 task avg) |
   | Aurora MySQL (db.r6g.large) | ~2,4 USD (1 instance) | ~72 USD (1 instance) | ~2,4 USD (1 instance) | ~72 USD (1 instance) |
+  | ElastiCache Redis (cache.t3.micro) | ~0,4 USD (1 node) | ~12 USD (1 node) | ~0,4 USD (1 node) | ~12 USD (1 node) |
   | DynamoDB (On-Demand) | ~0,01 USD (<1K RCU/WCU) | ~0,30 USD (<1K RCU/WCU) | ~0,05 USD (~5K RCU/WCU) | ~1,50 USD (~5K RCU/WCU) |
   | ECR Repository (Storage immagini) | ~0,05 USD (~5GB storage) | ~1,50 USD (~5GB storage) | ~0,05 USD (~5GB storage) | ~1,50 USD (~5GB storage) |
   | CloudWatch Logs (Log retention) | ~0,02 USD (~1GB logs) | ~0,60 USD (~1GB logs) | ~0,10 USD (~5GB logs) | ~3,00 USD (~5GB logs) |
   | VPC (Subnet/Route Tables/IGW) | ~0,01 USD (risorse base) | ~0,30 USD (risorse base) | ~0,01 USD (risorse base) | ~0,30 USD (risorse base) |
   | Traffico di Rete (Data Transfer) | ~0,05 USD (~5GB out) | ~1,50 USD (~5GB out) | ~0,20 USD (~20GB out) | ~6,00 USD (~20GB out) |
-  | **TOTALE BASE** | **~3,4 USD** | **~102 USD** | **~4,4 USD** | **~135 USD** |
+  | **TOTALE BASE** | **~3,8 USD** | **~114 USD** | **~4,8 USD** | **~147 USD** |
   | Application Load Balancer (opzionale) | ~0,75 USD (se abilitato) | ~22,50 USD (se abilitato) | ~0,75 USD (se abilitato) | ~22,50 USD (se abilitato) |
-  | **TOTALE + ALB** | **~4,1 USD** | **~124 USD** | **~5,1 USD** | **~157 USD** |
+  | **TOTALE + ALB** | **~4,5 USD** | **~136 USD** | **~5,5 USD** | **~169 USD** |
   | NAT Gateway (per private subnet) | ~1,50 USD (se configurato) | ~45 USD (se configurato) | ~1,50 USD (se configurato) | ~45 USD (se configurato) |
-  | **TOTALE + ALB + NAT** | **~5,6 USD** | **~169 USD** | **~6,6 USD** | **~202 USD** |
+  | **TOTALE + ALB + NAT** | **~6,0 USD** | **~181 USD** | **~7,0 USD** | **~214 USD** |
 
 
 ## ☁️ Esecuzione locale profilo Azure
@@ -944,7 +933,9 @@ Ho perso molte ore a capire come far funzionare CosmosDB in locale usando l'imma
 ```
 mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:mongodb
 ```
-ma alla fine ⚠️ **non funziona**. C'è una cartella `azure-onprem-non-funziona` dentro alla cartella `script` così come promemoria delle prove fatte e dei comandi eseguiti. Se in futuro la situazione cambierà sistemerò questo esempio.
+ma alla fine ⚠️ **non funziona** ⚠️
+
+C'è una cartella `azure-onprem-non-funziona` dentro alla cartella `script` così come promemoria delle prove fatte e dei comandi eseguiti. Se in futuro la situazione cambierà sistemerò questo esempio.
 
 
 L’emulatore Linux in Docker è pensato solo per test container-to-container, e non supporta SDK dal host o a volte neanche da container separati se non dal container ufficiale che lo avvia. **CosmosDB Emulator Linux in Docker non implementa correttamente tutte le API richieste dagli SDK esterni.** Funziona solo con richieste dal container stesso o dalla rete interna Docker dove gira l’emulatore.
@@ -1228,12 +1219,13 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
     - ✅ 💾 Implementazione in-memory per profilo sqlite
     - ✅ 🎯 Gestione eccezioni con HTTP 409 CONFLICT quando annotazione è già in modifica
     - ✅ 🔄 Api per bloccare una annotazione da un utente specifico
-    - ✅ 🛠️ Creazione script test specifo per il blocci di annotazioni e modifica test dei profili
-    - 🚧 ☁️ Modifica script profilo AWS per servizio redis on Cloud
+    - ✅ 🛠️ Creazione script test specifo per il blocci di annotazioni e integrazione degli script di test 
+    - ✅ ☁️ Modifica script profilo AWS per servizio redis on Cloud
     - 🚧 ☁️ Modifica script profilo Azure per servizio redis on Cloud
-    - 🚧 ⚙️ Modifica al frontend per bloccare una annotazione quando si entra nel dettaglio
+    - 🚧 ⚙️ Modifica al frontend per gestire le prenotazioni di una annotazione quando si entra nel dettaglio
+    - 🚧 ⚙️ Modifica al frontend per visualizzare l'errore specifico se qualcun'altro ha bloccato quella annotazione
     - 🚧 🔧 Nell'elenco delle annotazioni, indicare se una annotazione è bloccata da qualcuno, modifica del frontend
-    - 🚧 🤖 Test finali del frontend e modifica di tutti gli script di test
+    - 🚧 🤖 Test finali del frontend e conclusione processo di prenotazione delle annotazioni!
   - 🚧 🕸️ Gestione invio notifiche singolo se ci sono più istanze dell'applicazione in esecuzione (esempio minikube)
   - 🚧 🔄 Import annotazioni (JSON e/o CSV): creazione service per l'import di annotazioni con cambio di stato dopo averle importate con implementazioni su tutti gli adapter
   - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie annotazioni

@@ -22,23 +22,25 @@ echo "Usando Freelens/Openlens si può verificare lo stato dei servizi/pod..."
 cleanup() {
     ./script/minikube/stop-all.sh > /dev/null 2>&1
     minikube delete > /dev/null 2>&1
+    echo "Applicazione terminata e minikube eliminato."
 }
 trap cleanup EXIT
 
 sleep 10
 URL=$(minikube service gestioneannotazioni-app -n gestioneannotazioni --url)
 
-echo "Attesa avvio applicazione (max 60 secondi)..."
-for i in {1..30}; do
+echo "Attesa avvio applicazione (max 300 secondi)..."
+for i in {1..10}; do
     if curl -s $URL/actuator/health > /dev/null 2>&1; then
-        echo "Applicazione pronta dopo $((i*2)) secondi"
+        echo "Applicazione pronta dopo $((i*30)) secondi"
         break
     fi
-    if [ $i -eq 30 ]; then
-        echo "ERRORE: Timeout - L'applicazione non si è avviata in 60 secondi"
+    if [ $i -eq 10 ]; then
+        echo "ERRORE: Timeout - L'applicazione non si è avviata in tempo!"
         exit 1
     fi
-    sleep 2
+    echo "Attesa... ($((i*30)) secondi trascorsi)"
+    sleep 30
 done
 
 # Prendo il campo status e verifico se è UP
@@ -144,6 +146,13 @@ if [ "$found_in_kafka" = false ]; then
     echo "Ultimi messaggi ricevuti: $kafka_messages"
     exit 1
 fi
+
+
+#Avvio lo script dedicato per il test di prenotazione annotazione
+echo ""
+echo ""
+echo "Esecuzione test di prenotazione annotazione..."
+./script/automatic-test/test-prenotazione-annotazione.sh $URL
 
 # Terminazione applicazione (gestita da trap cleanup)
 echo "Terminazione applicazione"

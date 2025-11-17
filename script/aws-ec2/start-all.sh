@@ -172,6 +172,53 @@ if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
 fi
 echo "SQS Queue URL: $SQS_QUEUE_URL"
 
+# 4b. Crea subnet group per ElastiCache (richiesto per creare il cluster)
+CACHE_SUBNET_GROUP_NAME="gestioneannotazioni-redis-subnet-group"
+SUBNET_IDS=$(aws ec2 describe-subnets --region $REGION --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[*].SubnetId' --output text)
+aws elasticache create-cache-subnet-group \
+  --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
+  --cache-subnet-group-description "Subnet group for gestioneannotazioni Redis" \
+  --subnet-ids $SUBNET_IDS \
+  --region $REGION \
+  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
+  2>/dev/null || echo "Cache subnet group già esistente"
+
+# 4c. Crea ElastiCache Redis cluster
+REDIS_CLUSTER_ID="gestioneannotazioni-redis"
+aws elasticache create-cache-cluster \
+  --cache-cluster-id $REDIS_CLUSTER_ID \
+  --engine redis \
+  --cache-node-type cache.t3.micro \
+  --num-cache-nodes 1 \
+  --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
+  --security-group-ids $SG_ID \
+  --region $REGION \
+  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
+  2>/dev/null || echo "Redis cluster già esistente"
+
+# Aggiungi regola porta Redis (6379) al security group
+aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 6379 --cidr 0.0.0.0/0 --region $REGION 2>/dev/null || echo "Regola porta 6379 già esistente"
+
+# Attendi che Redis sia disponibile
+echo "Attendo che ElastiCache Redis sia disponibile (può richiedere 5-10 minuti)..."
+aws elasticache wait cache-cluster-available --cache-cluster-id $REDIS_CLUSTER_ID --region $REGION
+
+# Recupera endpoint Redis
+REDIS_ENDPOINT=$(aws elasticache describe-cache-clusters \
+  --cache-cluster-id $REDIS_CLUSTER_ID \
+  --show-cache-node-info \
+  --region $REGION \
+  --query 'CacheClusters[0].CacheNodes[0].Endpoint.Address' \
+  --output text)
+REDIS_PORT=$(aws elasticache describe-cache-clusters \
+  --cache-cluster-id $REDIS_CLUSTER_ID \
+  --show-cache-node-info \
+  --region $REGION \
+  --query 'CacheClusters[0].CacheNodes[0].Endpoint.Port' \
+  --output text)
+
+echo "Redis endpoint: $REDIS_ENDPOINT:$REDIS_PORT"
+
 # 4. Crea key pair parametrica
 aws ec2 create-key-pair --key-name $PARAM_KEY_NAME --region $REGION --query 'KeyMaterial' --output text > $PARAM_KEY_NAME.pem 2>/dev/null || {
   echo "Key pair $PARAM_KEY_NAME già esistente su AWS"
@@ -202,12 +249,15 @@ DB_PASS="${DB_PASS}"
 DB_NAME="${DB_NAME}"
 REGION="${REGION}"
 SQS_QUEUE_URL="${SQS_QUEUE_URL}"
+REDIS_HOST="${REDIS_ENDPOINT}"
+REDIS_PORT="${REDIS_PORT}"
 echo "Host=\$AURORA_HOST"
 echo "User=\$DB_USER"
 echo "Pass=\$DB_PASS"
 echo "Dbname=\$DB_NAME"
 echo "Region=\$REGION"
 echo "SQS_QUEUE_URL=\$SQS_QUEUE_URL"
+echo "Redis=\$REDIS_HOST:\$REDIS_PORT"
 
 # Test connessione diretta (Aurora dovrebbe essere gia pronto)
 for i in {1..3}; do
@@ -238,6 +288,8 @@ for i in {1..3}; do
     -e AWS_ACCESS_KEY_ID= \
     -e AWS_SECRET_ACCESS_KEY= \
     -e SQS_QUEUE_URL=\$SQS_QUEUE_URL \
+    -e REDIS_HOST=\$REDIS_HOST \
+    -e REDIS_PORT=\$REDIS_PORT \
     alnao/gestioneannotazioni:latest
   echo "Attendo 10 secondi per il lancio del container..."
   sleep 10
@@ -275,6 +327,7 @@ PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --region $REG
 
 echo "Stack avviato! EC2 IP: $PUBLIC_IP"
 echo "Aurora MySQL: $AURORA_ENDPOINT"
+echo "ElastiCache Redis: $REDIS_ENDPOINT:$REDIS_PORT"
 echo "SQS Queue: $SQS_QUEUE_URL" 
 echo "DynamoDB: annotazioni, annotazioni_storico, annotazioni_storicoStati"
 echo "Applicazione disponibile su: http://$PUBLIC_IP:8080"

@@ -127,11 +127,11 @@ services:
 
       KAFKA_BROKER_URL: kafka:29092
     ports:
-      - "8085:8080"
+      - "8082:8080"
     networks:
       - azure-network
     healthcheck:
-      test: curl -f http://localhost:8080/actuator/health || exit 1
+      test: curl -f http://localhost:8082/actuator/health || exit 1
       interval: 30s
       timeout: 10s
       retries: 3
