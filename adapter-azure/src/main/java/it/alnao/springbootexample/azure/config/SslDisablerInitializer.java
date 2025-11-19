@@ -6,6 +6,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Profile;
@@ -17,6 +19,7 @@ import org.springframework.context.annotation.Profile;
  */
 @Profile("azure")
 public class SslDisablerInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+    private static final Logger logger = LoggerFactory.getLogger(SslDisablerInitializer.class);
     public static final String AZURE_PROFILE = "azure";
 
     @Override
@@ -26,18 +29,18 @@ public class SslDisablerInitializer implements ApplicationContextInitializer<Con
         boolean isAzureProfile = Arrays.asList(activeProfiles).contains(AZURE_PROFILE);
         
         if (!isAzureProfile) {
-            System.out.println("Profilo Azure non attivo, skip SSL disabler");
+            logger.info("Profilo Azure non attivo, skip SSL disabler");
             return;
         }
         
         // Controlla se la variabile d'ambiente è impostata
         String disableSSL = applicationContext.getEnvironment().getProperty("AZURE_COSMOS_DISABLE_SSL_VERIFICATION");
         if (!"true".equalsIgnoreCase(disableSSL)) {
-            System.out.println("AZURE_COSMOS_DISABLE_SSL_VERIFICATION non è 'true', skip SSL disabler");
+            logger.info("AZURE_COSMOS_DISABLE_SSL_VERIFICATION non è 'true', skip SSL disabler");
             return;
         }
         
-        System.out.println("WARNING: Disabling SSL verification for CosmosDB (Development only!)");
+        logger.warn("WARNING: Disabling SSL verification for CosmosDB (Development only!)");
         disableSSLVerification();
     }
 
@@ -75,16 +78,15 @@ public class SslDisablerInitializer implements ApplicationContextInitializer<Con
             // 7. Disabilita validazione certificati in Netty
             System.setProperty("io.netty.ssl.noUnsafeMdAlgorithms", "false");
             
-            System.out.println("SSL verification disabled successfully");
-            System.out.println("   - Profilo: azure");
-            System.out.println("   - SSLContext.setDefault() configurato");
-            System.out.println("   - HostnameVerifier disabilitato");
-            System.out.println("   - Netty forzato a usare JDK SSL (noOpenSsl=true)");
-            System.out.println("   - System properties SSL configurate");
+            logger.info("SSL verification disabled successfully");
+            logger.info("   - Profilo: azure");
+            logger.info("   - SSLContext.setDefault() configurato");
+            logger.info("   - HostnameVerifier disabilitato");
+            logger.info("   - Netty forzato a usare JDK SSL (noOpenSsl=true)");
+            logger.info("   - System properties SSL configurate");
             
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            System.err.println("Errore durante la disabilitazione della verifica SSL: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Errore durante la disabilitazione della verifica SSL: " + e.getMessage(), e);
             throw new RuntimeException("Errore durante la disabilitazione della verifica SSL", e);
         }
     }

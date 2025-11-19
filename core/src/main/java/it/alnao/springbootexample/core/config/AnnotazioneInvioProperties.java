@@ -15,12 +15,21 @@ public class AnnotazioneInvioProperties {
     public static class Kafka {
         private String brokerUrl = "localhost:9092";
         private String topicName = "annotazioni-inviate";
+        private String saslMechanism = "";
+        private String saslJaasConfig = "";
+        private String securityProtocol = "";
         
         // getters and setters
         public String getBrokerUrl() { return brokerUrl; }
         public void setBrokerUrl(String brokerUrl) { this.brokerUrl = brokerUrl; }
         public String getTopicName() { return topicName; }
         public void setTopicName(String topicName) { this.topicName = topicName; }
+        public String getSaslMechanism() { return saslMechanism; }
+        public void setSaslMechanism(String saslMechanism) { this.saslMechanism = saslMechanism; }
+        public String getSaslJaasConfig() { return saslJaasConfig; }
+        public void setSaslJaasConfig(String saslJaasConfig) { this.saslJaasConfig = saslJaasConfig; }
+        public String getSecurityProtocol() { return securityProtocol; }
+        public void setSecurityProtocol(String securityProtocol) { this.securityProtocol = securityProtocol; }
     }
     
     public static class Sqlite {

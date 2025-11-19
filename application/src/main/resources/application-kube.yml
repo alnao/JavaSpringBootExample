@@ -76,5 +76,8 @@ gestione-annotazioni:
     kafka:
       broker-url: "${KAFKA_BROKER_URL:localhost:9092}"
       topic-name: "${KAFKA_TOPIC_NAME:annotazioni-export}"
+      sasl-mechanism: "${KAFKA_SASL_MECHANISM:}"
+      sasl-jaas-config: "${KAFKA_SASL_JAAS_CONFIG:}"
+      security-protocol: "${KAFKA_SECURITY_PROTOCOL:}"  
     #enabled: ${ANNOTAZIONE_INVIO_ENABLED:true}
     #cron-expression: "0 */5 * * * *"  # ogni 5 minuti

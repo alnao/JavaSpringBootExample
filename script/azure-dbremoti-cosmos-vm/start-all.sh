@@ -13,6 +13,7 @@ SQLSERVER_ADMIN="sqladmin"
 SQLSERVER_PASSWORD="P@ssw0rd123!"
 SERVICEBUS_NAMESPACE="gestioneannotazioni-servicebus"
 SERVICEBUS_QUEUE="eventbus-annotazioni"
+REDIS_NAME="gestioneannotazioni-redis"
 
 # Parametri VM
 VM_NAME="gestioneannotazioni-vm"
@@ -119,56 +120,94 @@ wait_for_sql_server() {
 
 # 3. Creazione Resource Group
 echo "📦 Creazione Resource Group..."
-az group create \
-  --name $RESOURCE_GROUP \
-  --location $LOCATION
-check_error "Resource Group creato"
+if az group exists --name $RESOURCE_GROUP | grep -q "true"; then
+  echo "   Resource Group già esistente, skip creazione"
+else
+  az group create \
+    --name $RESOURCE_GROUP \
+    --location $LOCATION
+  check_error "Resource Group creato"
+fi
 
 # 4. Avvio creazione CosmosDB con API SQL (tier Free)
-echo "🌐 Avvio creazione CosmosDB..."
-az cosmosdb create \
-  --name $COSMOSDB_ACCOUNT \
-  --resource-group $RESOURCE_GROUP \
-  --kind GlobalDocumentDB \
-  --default-consistency-level Session \
-  --enable-free-tier true \
-  --locations regionName=$LOCATION failoverPriority=0 isZoneRedundant=false 
-
-echo "✅ Creazione Cosmos DB avviata"
-
-# Attesa attiva che CosmosDB sia completamente disponibile
-wait_for_cosmos_db $COSMOSDB_ACCOUNT $RESOURCE_GROUP
-check_error "Cosmos DB disponibile"
+COSMOS_EXISTS=$(az cosmosdb check-name-exists --name $COSMOSDB_ACCOUNT --output tsv)
+if [ "$COSMOS_EXISTS" = "true" ]; then
+  echo "   CosmosDB già esistente, skip creazione"
+  wait_for_cosmos_db $COSMOSDB_ACCOUNT $RESOURCE_GROUP
+else
+  az cosmosdb create \
+    --name $COSMOSDB_ACCOUNT \
+    --resource-group $RESOURCE_GROUP \
+    --kind GlobalDocumentDB \
+    --default-consistency-level Session \
+    --enable-free-tier true \
+    --locations regionName=$LOCATION failoverPriority=0 isZoneRedundant=false 
+  
+  echo "✅ Creazione Cosmos DB avviata"
+  
+  # Attesa attiva che CosmosDB sia completamente disponibile
+  wait_for_cosmos_db $COSMOSDB_ACCOUNT $RESOURCE_GROUP
+  check_error "Cosmos DB disponibile"
+fi
 
 # 5. Creazione database SQL in CosmosDB
 echo "💾 Creazione database in CosmosDB..."
-az cosmosdb sql database create \
+DB_EXISTS=$(az cosmosdb sql database exists \
   --account-name $COSMOSDB_ACCOUNT \
   --resource-group $RESOURCE_GROUP \
-  --name $COSMOSDB_DATABASE
-check_error "Database Cosmos creato"
+  --name $COSMOSDB_DATABASE \
+  --output tsv 2>/dev/null || echo "false")
+if [ "$DB_EXISTS" = "true" ]; then
+  echo "   Database Cosmos già esistente, skip creazione"
+else
+  az cosmosdb sql database create \
+    --account-name $COSMOSDB_ACCOUNT \
+    --resource-group $RESOURCE_GROUP \
+    --name $COSMOSDB_DATABASE
+  check_error "Database Cosmos creato"
+fi
 
 # 6. Creazione container per annotazioni
 echo "📋 Creazione container annotazioni..."
-az cosmosdb sql container create \
+CONTAINER_EXISTS=$(az cosmosdb sql container exists \
   --account-name $COSMOSDB_ACCOUNT \
   --resource-group $RESOURCE_GROUP \
   --database-name $COSMOSDB_DATABASE \
   --name annotazioni \
-  --partition-key-path "/id" \
-  --throughput 400
-check_error "Container annotazioni creato"
+  --output tsv 2>/dev/null || echo "false")
+if [ "$CONTAINER_EXISTS" = "true" ]; then
+  echo "   Container annotazioni già esistente, skip creazione"
+else
+  az cosmosdb sql container create \
+    --account-name $COSMOSDB_ACCOUNT \
+    --resource-group $RESOURCE_GROUP \
+    --database-name $COSMOSDB_DATABASE \
+    --name annotazioni \
+    --partition-key-path "/id" \
+    --throughput 400
+  check_error "Container annotazioni creato"
+fi
 
 # 7. Creazione container per storico NON SERVE? non so!
 echo "📜 Creazione container storico..."
-az cosmosdb sql container create \
+CONTAINER_STORICO_EXISTS=$(az cosmosdb sql container exists \
   --account-name $COSMOSDB_ACCOUNT \
   --resource-group $RESOURCE_GROUP \
   --database-name $COSMOSDB_DATABASE \
   --name annotazione_storico_stati \
-  --partition-key-path "/id" \
-  --throughput 400
-check_error "Container storico creato"
+  --output tsv 2>/dev/null || echo "false")
+if [ "$CONTAINER_STORICO_EXISTS" = "true" ]; then
+  echo "   Container storico già esistente, skip creazione"
+else
+  az cosmosdb sql container create \
+    --account-name $COSMOSDB_ACCOUNT \
+    --resource-group $RESOURCE_GROUP \
+    --database-name $COSMOSDB_DATABASE \
+    --name annotazione_storico_stati \
+    --partition-key-path "/id" \
+    --throughput 400
+  check_error "Container storico creato"
+fi
 
 # 8. Recupero endpoint e key CosmosDB
 echo "🔑 Recupero credenziali CosmosDB..."
@@ -191,90 +230,155 @@ echo "Cosmos DB Key: ${AZURE_COSMOS_KEY:0:20}..."
 
 # 9. Creazione SQL Server (tier Free: Basic con 5 DTU, 2GB storage)
 echo "🗄️  Creazione SQL Server..."
-az sql server create \
-  --name $SQLSERVER_NAME \
+SQLSERVER_EXISTS=$(az sql server list \
   --resource-group $RESOURCE_GROUP \
-  --location $LOCATION \
-  --admin-user $SQLSERVER_ADMIN \
-  --admin-password $SQLSERVER_PASSWORD
-
-check_error "Creazione SQL Server avviata"
-
-# Attesa che SQL Server sia pronto
-wait_for_sql_server $SQLSERVER_NAME $RESOURCE_GROUP
-check_error "SQL Server disponibile"
+  --query "[?name=='$SQLSERVER_NAME'].name" \
+  --output tsv 2>/dev/null)
+if [ -n "$SQLSERVER_EXISTS" ]; then
+  echo "   SQL Server già esistente, skip creazione"
+  wait_for_sql_server $SQLSERVER_NAME $RESOURCE_GROUP
+else
+  az sql server create \
+    --name $SQLSERVER_NAME \
+    --resource-group $RESOURCE_GROUP \
+    --location $LOCATION \
+    --admin-user $SQLSERVER_ADMIN \
+    --admin-password $SQLSERVER_PASSWORD
+  
+  check_error "Creazione SQL Server avviata"
+  
+  # Attesa che SQL Server sia pronto
+  wait_for_sql_server $SQLSERVER_NAME $RESOURCE_GROUP
+  check_error "SQL Server disponibile"
+fi
 
 # 10. Configurazione firewall per accesso locale (IMPORTANTE!)
 echo "🔥 Configurazione firewall SQL Server..."
 MY_IP=$(curl -s ifconfig.me)
 echo "Il tuo IP pubblico: $MY_IP"
 
-az sql server firewall-rule create \
+FIREWALL_RULE_EXISTS=$(az sql server firewall-rule list \
   --resource-group $RESOURCE_GROUP \
   --server $SQLSERVER_NAME \
-  --name AllowMyIP \
-  --start-ip-address $MY_IP \
-  --end-ip-address $MY_IP
-check_error "Regola firewall per IP locale creata"
+  --query "[?name=='AllowMyIP'].name" \
+  --output tsv 2>/dev/null)
+if [ -n "$FIREWALL_RULE_EXISTS" ]; then
+  echo "   Regola firewall AllowMyIP già esistente, aggiornamento IP..."
+  az sql server firewall-rule update \
+    --resource-group $RESOURCE_GROUP \
+    --server $SQLSERVER_NAME \
+    --name AllowMyIP \
+    --start-ip-address $MY_IP \
+    --end-ip-address $MY_IP
+  check_error "Regola firewall per IP locale aggiornata"
+else
+  az sql server firewall-rule create \
+    --resource-group $RESOURCE_GROUP \
+    --server $SQLSERVER_NAME \
+    --name AllowMyIP \
+    --start-ip-address $MY_IP \
+    --end-ip-address $MY_IP
+  check_error "Regola firewall per IP locale creata"
+fi
 
 # 11. Abilitazione accesso servizi Azure
-az sql server firewall-rule create \
+FIREWALL_AZURE_EXISTS=$(az sql server firewall-rule list \
   --resource-group $RESOURCE_GROUP \
   --server $SQLSERVER_NAME \
-  --name AllowAzureServices \
-  --start-ip-address 0.0.0.0 \
-  --end-ip-address 0.0.0.0
-check_error "Regola firewall per servizi Azure creata"
+  --query "[?name=='AllowAzureServices'].name" \
+  --output tsv 2>/dev/null)
+if [ -n "$FIREWALL_AZURE_EXISTS" ]; then
+  echo "   Regola firewall AllowAzureServices già esistente, skip creazione"
+else
+  az sql server firewall-rule create \
+    --resource-group $RESOURCE_GROUP \
+    --server $SQLSERVER_NAME \
+    --name AllowAzureServices \
+    --start-ip-address 0.0.0.0 \
+    --end-ip-address 0.0.0.0
+  check_error "Regola firewall per servizi Azure creata"
+fi
 
 # 12. Creazione database SQL Server (tier Free: Basic con 5 DTU)
 echo "💾 Creazione database SQL Server..."
-az sql db create \
+SQLDB_EXISTS=$(az sql db list \
   --resource-group $RESOURCE_GROUP \
   --server $SQLSERVER_NAME \
-  --name $SQLSERVER_DATABASE \
-  --service-objective Basic \
-  --max-size 2GB
-check_error "Database SQL Server creato"
+  --query "[?name=='$SQLSERVER_DATABASE'].name" \
+  --output tsv 2>/dev/null)
+if [ -n "$SQLDB_EXISTS" ]; then
+  echo "   Database SQL Server già esistente, skip creazione"
+else
+  az sql db create \
+    --resource-group $RESOURCE_GROUP \
+    --server $SQLSERVER_NAME \
+    --name $SQLSERVER_DATABASE \
+    --service-objective Basic \
+    --max-size 2GB
+  check_error "Database SQL Server creato"
+fi
 
 # 13. Recupero connection string SQL Server
 SQLSERVER_HOST="${SQLSERVER_NAME}.database.windows.net"
 echo "SQL Server Host: $SQLSERVER_HOST"
 echo "SQL Server Connection String: Server=tcp:${SQLSERVER_HOST},1433;Database=${SQLSERVER_DATABASE};User ID=${SQLSERVER_ADMIN};Password=***;Encrypt=true;TrustServerCertificate=false;Connection Timeout=30;"
 # 12.3. Esecuzione script di inizializzazione SQL
-echo "📝 Esecuzione script di inizializzazione SQL..."
-
-INIT_SQL_PATH="./script/init-database/init-mssql.sql"
-# Leggi il contenuto dello script
-#SQL_CONTENT=$(cat $INIT_SQL_PATH)
-# Esegui tramite Docker con sqlcmd
-docker run --rm \
-    -v "$(pwd):/workspace" \
-    -w /workspace \
-    mcr.microsoft.com/mssql-tools \
-    /opt/mssql-tools/bin/sqlcmd \
-    -S $SQLSERVER_HOST \
-    -d $SQLSERVER_DATABASE \
-    -U $SQLSERVER_ADMIN \
-    -P "$SQLSERVER_PASSWORD" \
-    -i $INIT_SQL_PATH
-
-check_error "Script SQL eseguito con successo"
+if [ -n "$SQLDB_EXISTS" ]; then
+  echo "   Database SQL Server già esistente, skip creazione utenti con script SQL"
+else
+  echo "📝 Esecuzione script di inizializzazione SQL..."
+  INIT_SQL_PATH="./script/init-database/init-mssql.sql"
+  # Leggi il contenuto dello script
+  #SQL_CONTENT=$(cat $INIT_SQL_PATH)
+  # Esegui tramite Docker con sqlcmd
+  docker run --rm \
+      -v "$(pwd):/workspace" \
+      -w /workspace \
+      mcr.microsoft.com/mssql-tools \
+      /opt/mssql-tools/bin/sqlcmd \
+      -S $SQLSERVER_HOST \
+      -d $SQLSERVER_DATABASE \
+      -U $SQLSERVER_ADMIN \
+      -P "$SQLSERVER_PASSWORD" \
+      -i $INIT_SQL_PATH
+  check_error "Script SQL eseguito con successo"
+fi
 
 # 14. Creazione Service Bus namespace e coda EventBus
 echo "📨 Creazione Service Bus namespace e coda EventBus..."
 
-az servicebus namespace create \
-  --resource-group $RESOURCE_GROUP \
+SERVICEBUS_AVAILABLE=$(az servicebus namespace exists \
   --name $SERVICEBUS_NAMESPACE \
-  --location $LOCATION \
-  --sku Standard
-check_error "Service Bus namespace creato"
+  --query "nameAvailable" \
+  --output tsv 2>/dev/null || echo "false")
+  # Namespace name available        True    None
+SERVICEBUS_AVAILABLE=$(echo "$SERVICEBUS_AVAILABLE" | tr '[:upper:]' '[:lower:]')
 
-az servicebus queue create \
+if [ "$SERVICEBUS_AVAILABLE" = "true" ]; then 
+  az servicebus namespace create \
+    --resource-group $RESOURCE_GROUP \
+    --name $SERVICEBUS_NAMESPACE \
+    --location $LOCATION \
+    --sku Standard
+  check_error "Service Bus namespace creato"
+else
+  echo "   Service Bus namespace già esistente, skip creazione"
+fi
+
+QUEUE_EXISTS=$(az servicebus queue show \
   --resource-group $RESOURCE_GROUP \
   --namespace-name $SERVICEBUS_NAMESPACE \
-  --name $SERVICEBUS_QUEUE
-check_error "Service Bus queue creata"
+  --name $SERVICEBUS_QUEUE \
+  --output tsv 2>/dev/null)
+if [ -z "$QUEUE_EXISTS" ]; then
+  az servicebus queue create \
+    --resource-group $RESOURCE_GROUP \
+    --namespace-name $SERVICEBUS_NAMESPACE \
+    --name $SERVICEBUS_QUEUE
+  check_error "Service Bus queue creata"
+else
+  echo "   Service Bus queue già esistente, skip creazione"
+fi
 
 # Recupero connection string Service Bus
 AZURE_SERVICEBUS_CONNECTION_STRING=$(az servicebus namespace authorization-rule keys list \
@@ -284,6 +388,80 @@ AZURE_SERVICEBUS_CONNECTION_STRING=$(az servicebus namespace authorization-rule 
   --query 'primaryConnectionString' \
   --output tsv)
 check_error "Connection string Service Bus recuperata"
+
+# 14b. Creazione Azure Cache for Redis (tier Basic C0 - 250MB)
+echo "🔴 Creazione Azure Cache for Redis..."
+
+REDIS_EXISTS=$(az redis list \
+  --resource-group $RESOURCE_GROUP \
+  --query "[?name=='$REDIS_NAME'].name" \
+  --output tsv 2>/dev/null)
+if [ -n "$REDIS_EXISTS" ]; then
+  echo "   Azure Cache for Redis già esistente, skip creazione"
+else
+  echo "Parto la creazione di Azure Cache for Redis..."
+  az redis create \
+    --resource-group $RESOURCE_GROUP \
+    --name $REDIS_NAME \
+    --location $LOCATION \
+    --sku Basic \
+    --vm-size C0 \
+    --enable-non-ssl-port 
+  check_error "Azure Cache for Redis creato"
+fi
+
+# Attendi che Redis sia disponibile
+echo "⏳ Attesa che Redis sia disponibile..."
+MAX_ATTEMPTS=600
+ATTEMPT=0
+while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+  REDIS_STATE=$(az redis show \
+    --resource-group $RESOURCE_GROUP \
+    --name $REDIS_NAME \
+    --query 'provisioningState' \
+    --output tsv 2>/dev/null)
+  
+  if [ "$REDIS_STATE" = "Succeeded" ]; then
+    echo "✅ Redis disponibile!"
+    break
+  fi
+  
+  ATTEMPT=$((ATTEMPT + 1))
+  echo "   Tentativo $ATTEMPT/$MAX_ATTEMPTS - Stato: ${REDIS_STATE:-Creating}"
+  sleep 10
+done
+
+if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+  echo "❌ Timeout: Redis non è diventato disponibile"
+  exit 1
+fi
+
+# Recupero endpoint e chiavi Redis
+REDIS_HOST=$(az redis show \
+  --resource-group $RESOURCE_GROUP \
+  --name $REDIS_NAME \
+  --query 'hostName' \
+  --output tsv)
+check_error "Redis host recuperato"
+
+REDIS_PORT=$(az redis show \
+  --resource-group $RESOURCE_GROUP \
+  --name $REDIS_NAME \
+  --query 'sslPort' \
+  --output tsv)
+check_error "Redis SSL port recuperato"
+REDIS_SSL="true"
+
+REDIS_KEY=$(az redis list-keys \
+  --resource-group $RESOURCE_GROUP \
+  --name $REDIS_NAME \
+  --query 'primaryKey' \
+  --output tsv)
+check_error "Redis key recuperata"
+
+echo "Redis Host: $REDIS_HOST"
+echo "Redis Port: $REDIS_PORT"
+echo "Redis Key: ${REDIS_KEY:0:20}..."
 
 # 15. Verifica risorse create
 echo ""
@@ -309,7 +487,6 @@ AZURE_SERVICEBUS_CONNECTION_STRING=$AZURE_SERVICEBUS_CONNECTION_STRING
 SERVICEBUS_QUEUE=$SERVICEBUS_QUEUE
 SERVICEBUS_NAMESPACE=$SERVICEBUS_NAMESPACE
 COSMOSDB_DATABASE="annotazioni"
-
 MSSQL_SQLSERVER_HOST=$SQLSERVER_HOST
 MSSQL_SQLSERVER_PORT=1433
 MSSQL_SQLSERVER_ENCRYPT=true
@@ -321,6 +498,10 @@ AZURE_COSMOS_ENABLED=true
 AZURE_COSMOS_DISABLE_SSL_VERIFICATION=false
 ANNOTAZIONE_INVIO_ENABLED=true
 AZURE_SERVICEBUS_QUEUE_NAME=$SERVICEBUS_QUEUE
+REDIS_HOST=$REDIS_HOST
+REDIS_PORT=$REDIS_PORT
+REDIS_PASSWORD=$REDIS_KEY
+REDIS_SSL=$REDIS_SSL
 EOF
 echo "✅ File .env-azure-dbremoti-cosmos-vm creato"
 
@@ -331,9 +512,86 @@ echo "   SQL Server: $SQLSERVER_HOST"
 echo "   SQL Database: $SQLSERVER_DATABASE"
 echo "   Cosmos URI: $AZURE_COSMOS_URI"
 echo "   Cosmos Database: $COSMOSDB_DATABASE"
+echo "   Redis: $REDIS_HOST:$REDIS_PORT"
+echo "   Service Bus: $SERVICEBUS_NAMESPACE"
 echo ""
 
 # 18. Avvio servizio con i parametri corretti# Parametri VM Azure
+
+  # Verifica se la VM esiste e in caso la stoppa
+    echo "🔍 Verifica esistenza VM $VM_NAME..."
+    VM_EXISTS=$(az vm list \
+      --resource-group $RESOURCE_GROUP \
+      --query "[?name=='$VM_NAME'].name" \
+      --output tsv 2>/dev/null)
+
+    if [ -n "$VM_EXISTS" ]; then
+      echo "⏸️  VM $VM_NAME trovata, verifica stato..."
+      
+      VM_STATE=$(az vm get-instance-view \
+        --resource-group $RESOURCE_GROUP \
+        --name $VM_NAME \
+        --query "instanceView.statuses[1].displayStatus" \
+        --output tsv)
+      
+      echo "   Stato attuale: $VM_STATE"
+      
+      if [[ "$VM_STATE" == *"running"* ]]; then
+        echo "🛑 Arresto VM in corso..."
+        az vm deallocate \
+          --resource-group $RESOURCE_GROUP \
+          --name $VM_NAME \
+          --no-wait
+        
+        # Attendi che la VM sia completamente deallocata
+        echo "⏳ Attesa deallocazione VM..."
+        MAX_ATTEMPTS=60  # 10 minuti (60 * 10 secondi)
+        ATTEMPT=0
+        
+        while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+          VM_STATE=$(az vm get-instance-view \
+            --resource-group $RESOURCE_GROUP \
+            --name $VM_NAME \
+            --query "instanceView.statuses[1].displayStatus" \
+            --output tsv 2>/dev/null)
+          
+          if [[ "$VM_STATE" == *"deallocated"* ]] || [[ "$VM_STATE" == *"stopped"* ]]; then
+            echo "✅ VM deallocata con successo!"
+            break
+          fi
+          
+          ATTEMPT=$((ATTEMPT + 1))
+          echo "   Tentativo $ATTEMPT/$MAX_ATTEMPTS - Stato: $VM_STATE"
+          sleep 10
+        done
+        
+        if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+          echo "⚠️ Timeout: VM non completamente deallocata, procedo comunque"
+        fi
+      else
+        echo "✅ VM già ferma (stato: $VM_STATE)"
+      fi
+      
+      # Elimina la VM
+      echo "🗑️  Eliminazione VM $VM_NAME..."
+      az vm delete \
+        --resource-group $RESOURCE_GROUP \
+        --name $VM_NAME \
+        --yes \
+        --no-wait
+      
+      echo "⏳ Attesa eliminazione VM..."
+      az vm wait \
+        --resource-group $RESOURCE_GROUP \
+        --name $VM_NAME \
+        --deleted \
+        --timeout 600 2>/dev/null || echo "✅ VM eliminata"
+      
+      echo "✅ VM $VM_NAME eliminata con successo"
+    else
+      echo "✅ Nessuna VM esistente con nome $VM_NAME"
+    fi
+
 
 # --- AVVIO SU VM DEBIAN IN AZURE ---
   # 1. Crea la VM Debian (se non esiste già)
@@ -364,14 +622,30 @@ echo ""
 
   # 2.2 Configurazione firewall SQL Server per VM
   echo "🔥 Aggiunta IP della VM al firewall SQL Server..."
-  az sql server firewall-rule create \
+  FIREWALL_VM_RULE_EXISTS=$(az sql server firewall-rule list \
     --resource-group $RESOURCE_GROUP \
     --server $SQLSERVER_NAME \
-    --name AllowVMIP \
-    --start-ip-address $VM_PUBLIC_IP \
-    --end-ip-address $VM_PUBLIC_IP
-  check_error "Regola firewall per VM aggiunta a SQL Server"
+    --query "[?name=='AllowVMIP'].name" \
+    --output tsv 2>/dev/null)
 
+  if [ -n "$FIREWALL_VM_RULE_EXISTS" ]; then
+    echo "   Regola firewall AllowVMIP già esistente, aggiornamento IP..."
+    az sql server firewall-rule update \
+      --resource-group $RESOURCE_GROUP \
+      --server $SQLSERVER_NAME \
+      --name AllowVMIP \
+      --start-ip-address $VM_PUBLIC_IP \
+      --end-ip-address $VM_PUBLIC_IP
+    check_error "Regola firewall per VM aggiornata"
+  else
+    az sql server firewall-rule create \
+      --resource-group $RESOURCE_GROUP \
+      --server $SQLSERVER_NAME \
+      --name AllowVMIP \
+      --start-ip-address $VM_PUBLIC_IP \
+      --end-ip-address $VM_PUBLIC_IP
+    check_error "Regola firewall per VM creata"
+  fi
 
   # 3. Installa Docker sulla VM (se non già presente)
   echo "🔧 Installazione Docker su VM..."

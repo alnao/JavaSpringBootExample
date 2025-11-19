@@ -7,4 +7,5 @@ docker login
 docker build -t alnao/gestioneannotazioni:latest .
 docker push alnao/gestioneannotazioni:latest
 
-echo "Immagine Docker 'alnao/gestioneannotazioni:latest' pushata su Docker Hub con successo."
+echo "---------------------------------------------------------"
+echo "✅ Immagine Docker 'alnao/gestioneannotazioni:latest' pushata su Docker Hub con successo."

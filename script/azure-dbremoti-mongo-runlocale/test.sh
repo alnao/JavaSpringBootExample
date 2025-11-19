@@ -91,45 +91,73 @@ echo "Risposta invio annotazione: $RISPOSTA_INVIO2"
 
 
 
-
-# Verifica che l'annotazione sia stata inviata a Service Bus
-echo "Verifica invio annotazione a Service Bus (max 10 minuti)..."
+# Verifica che l'annotazione sia stata inviata a Event Hub
+echo "Verifica invio annotazione a Event Hub (max 10 minuti)..."
 max_attempts=40  # 40 tentativi x 15 secondi = 600 secondi (10 minuti)
 attempt=0
-found_in_servicebus=false
+found_in_eventhub=false  # Inizializza la variabile
 
-RESOURCE_GROUP="gestioneannotazioni-rg-cosmos-mssql"
-SERVICEBUS_NAMESPACE="gestioneannotazioni-servicebus"
-SERVICEBUS_QUEUE="gestioneannotazioni-queue"
+RESOURCE_GROUP="gestioneannotazioni-rg-mongo-postgres"
+EVENT_HUBS_NAMESPACE="gestioneannotazioni-eventhubs"
+EVENT_HUB_NAME="annotazioni-export"
+
+echo "🔑 Recupero connection string Event Hub..."
+EVENTHUBS_CONNECTION_STRING=$(az eventhubs namespace authorization-rule keys list \
+  --resource-group $RESOURCE_GROUP \
+  --namespace-name $EVENT_HUBS_NAMESPACE \
+  --name RootManageSharedAccessKey \
+  --query primaryConnectionString -o tsv)
+
+# Rimuovi "Endpoint=..." se presente
+#if [[ $EVENTHUBS_CONNECTION_STRING == Endpoint=* ]]; then
+#    EVENTHUBS_CONNECTION_STRING=$(echo "$EVENTHUBS_CONNECTION_STRING" | sed 's/^Endpoint=[^;]*;//')
+#fi
+KAFKA_URL="${EVENT_HUBS_NAMESPACE}.servicebus.windows.net:9093"
+echo "  Kafka URL: $KAFKA_URL"
+
+echo "📦 Verifica installazione kcat..."
+if ! command -v kcat &> /dev/null; then
+    echo "⚠️  kcat non installato. Deve essere installato con apt-get install -y kcat"
+    exit 1
+fi
 
 while [ $attempt -lt $max_attempts ]; do
-    echo "Controllo messaggi Service Bus, tentativo $((attempt + 1))..."
+    echo "🔍 Controllo messaggi Event Hub con kcat, tentativo $((attempt + 1))/$max_attempts..."
     
-    # Conta messaggi attivi nella coda
-    message_count=$(az servicebus queue show \
-        --resource-group $RESOURCE_GROUP \
-        --namespace-name $SERVICEBUS_NAMESPACE \
-        --name $SERVICEBUS_QUEUE \
-        --query "countDetails.activeMessageCount" \
-        --output tsv 2>/dev/null)
+    # Leggi ultimi messaggi dal topic
+    messages=$(kcat -b $KAFKA_URL \
+        -X security.protocol=SASL_SSL \
+        -X sasl.mechanisms=PLAIN \
+        -X sasl.username='$ConnectionString' \
+        -X sasl.password="$EVENTHUBS_CONNECTION_STRING" \
+        -C -t "$EVENT_HUB_NAME" \
+        -o beginning \
+        -c 1 \
+        2>/dev/null)
+
+    echo "$messages"
     
-    if [ -n "$message_count" ] && [ "$message_count" -gt 0 ]; then
-        echo "✅ Trovati $message_count messaggi nella coda Service Bus."
-        found_in_servicebus=true
+    if [ -n "$messages" ]; then
+        message_count=$(echo "$messages" | wc -l)
+        echo "✅ Trovati $message_count messaggi in Event Hub (Kafka)."
+        echo "📄 Esempio primo messaggio:"
+        echo "$messages" | head -1 | cut -c1-200
+        found_in_eventhub=true
         break
     else
-        echo "Nessun messaggio trovato in Service Bus (count: ${message_count:-N/A}). Attesa prima del prossimo tentativo..."
+        echo "   Nessun messaggio trovato. Attesa 15 secondi..."
     fi
     
     attempt=$((attempt + 1))
     sleep 15
 done
 
-if [ "$found_in_servicebus" = false ]; then
-    echo "❌ Nessun messaggio trovato in Service Bus dopo $max_attempts tentativi."
+if [ "$found_in_eventhub" = false ]; then
+    echo "❌ Nessun messaggio trovato in Event Hub dopo $max_attempts tentativi."
+    echo "ℹ️  Verifica manualmente i log del container:"
+    echo "   docker logs azure-dbremoti-mongo-runlocale | grep -i kafka"
     exit 1
 fi
-
 
 echo "✅ Tutti i test sono stati eseguiti con successo!"
 exit 0

@@ -1,5 +1,7 @@
 package it.alnao.springbootexample.azure.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
@@ -28,7 +30,7 @@ import java.io.File;
 @Profile("azure")
 @EnableCosmosRepositories(basePackages = "it.alnao.springbootexample.azure.repository")
 public class AzureCosmosConfiguration {
-
+    private static final Logger logger = LoggerFactory.getLogger(AzureCosmosConfiguration.class);
     private final AzureProperties azureProperties;
     
     @Autowired
@@ -46,19 +48,18 @@ public class AzureCosmosConfiguration {
             // Se SSL verification è disabilitata, ritorna null (usa default)
             boolean disable=Boolean.valueOf(azureProperties.getCosmos().getDisableSslVerification());
             if (disable) {
-                System.out.println("⚠️ SSL verification disabled - using default SSL context");
+                logger.warn("[CosmosConfig] SSL verification disabled - using default SSL context");
                 return null;
             }
 
             // Cerca il certificato CosmosDB
             File certFile = new File("/certs/cosmosdb-cert.crt");
             if (!certFile.exists()) {
-                System.out.println("⚠️ Certificate not found at /certs/cosmosdb-cert.crt - using default SSL context");
+                logger.warn("[CosmosConfig] Certificate not found at /certs/cosmosdb-cert.crt - using default SSL context");
                 return null;
             }
 
-            System.out.println("🔐 Loading custom certificate from: " + certFile.getAbsolutePath());
-
+            logger.info("[CosmosConfig] Loading custom certificate from: " + certFile.getAbsolutePath());
             // Carica il certificato
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
             X509Certificate caCert;
@@ -79,12 +80,11 @@ public class AzureCosmosConfiguration {
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, tmf.getTrustManagers(), new java.security.SecureRandom());
 
-            System.out.println("✅ Custom SSL context created successfully");
+            logger.info("[CosmosConfig] Custom SSL context created successfully");
             return sslContext;
 
         } catch (Exception e) {
-            System.err.println("❌ Failed to create custom SSL context: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("[CosmosConfig] Failed to create custom SSL context: " + e.getMessage(), e);
             return null;
         }
     }
@@ -92,7 +92,7 @@ public class AzureCosmosConfiguration {
     @Bean
     @ConditionalOnProperty(value = "azure.cosmos.enabled", havingValue = "true", matchIfMissing = false)
     public CosmosClientBuilder cosmosClientBuilder() {
-        System.out.println("🔧 Creating CosmosClientBuilder with URI: " + azureProperties.getCosmos().getUri());
+        logger.info("[CosmosConfig] Creating CosmosClientBuilder with URI: " + azureProperties.getCosmos().getUri());
         
         GatewayConnectionConfig gatewayConfig = new GatewayConnectionConfig()
             .setMaxConnectionPoolSize(1000)
@@ -111,7 +111,7 @@ public class AzureCosmosConfiguration {
         if (sslContext != null) {
             // Nota: Cosmos SDK potrebbe non supportare setSslContext direttamente
             // In questo caso usa -Dio.netty.handler.ssl.noOpenSsl=true
-            System.out.println("⚠️ Custom SSLContext created but may not be applied - use -Dio.netty.handler.ssl.noOpenSsl=true");
+            logger.warn("[CosmosConfig] Custom SSLContext created but may not be applied - use -Dio.netty.handler.ssl.noOpenSsl=true");
         }
 
         return builder;
@@ -120,21 +120,21 @@ public class AzureCosmosConfiguration {
     @Bean
     @ConditionalOnProperty(value = "azure.cosmos.enabled", havingValue = "true", matchIfMissing = false)
     public CosmosAsyncClient cosmosAsyncClient(CosmosClientBuilder cosmosClientBuilder) {
-        System.out.println("🔧 Creating CosmosAsyncClient");
+        logger.info("[CosmosConfig] Creating CosmosAsyncClient");
         return cosmosClientBuilder.buildAsyncClient();
     }
 
     @Bean
     @ConditionalOnProperty(value = "azure.cosmos.enabled", havingValue = "true", matchIfMissing = false)
     public CosmosClient cosmosClient(CosmosClientBuilder cosmosClientBuilder) {
-        System.out.println("🔧 Creating CosmosClient");
+        logger.info("[CosmosConfig] Creating CosmosClient");
         return cosmosClientBuilder.buildClient();
     }
 
     @Bean
     @ConditionalOnProperty(value = "azure.cosmos.enabled", havingValue = "true", matchIfMissing = false)
     public CosmosConfig cosmosConfig() {
-        System.out.println("🔧 Creating CosmosConfig");
+        logger.info("[CosmosConfig] Creating CosmosConfig");
         return CosmosConfig.builder()
                 .enableQueryMetrics(true)
                 .build();
@@ -143,15 +143,15 @@ public class AzureCosmosConfiguration {
     @Bean
     @ConditionalOnProperty(value = "azure.cosmos.enabled", havingValue = "true", matchIfMissing = false)
     public CosmosMappingContext cosmosMappingContext() {
-        System.out.println("🔧 Creating CosmosMappingContext");
+        logger.info("[CosmosConfig] Creating CosmosMappingContext");
         CosmosMappingContext mappingContext = new CosmosMappingContext();
         mappingContext.setApplicationContext(applicationContext);
         
         try {
             mappingContext.afterPropertiesSet();
-            System.out.println("✅ CosmosMappingContext initialized successfully");
+            logger.info("[CosmosConfig] CosmosMappingContext initialized successfully");
         } catch (Exception e) {
-            System.err.println("❌ Failed to initialize CosmosMappingContext: " + e.getMessage());
+            logger.error("[CosmosConfig] Failed to initialize CosmosMappingContext: " + e.getMessage(), e);
             throw new RuntimeException("Failed to initialize CosmosMappingContext", e);
         }
         
@@ -161,7 +161,7 @@ public class AzureCosmosConfiguration {
     @Bean
     @ConditionalOnProperty(value = "azure.cosmos.enabled", havingValue = "true", matchIfMissing = false)
     public MappingCosmosConverter mappingCosmosConverter(CosmosMappingContext cosmosMappingContext) {
-        System.out.println("🔧 Creating MappingCosmosConverter");
+        logger.info("[CosmosConfig] Creating MappingCosmosConverter");
         return new MappingCosmosConverter(cosmosMappingContext, null);
     }
 
@@ -172,7 +172,7 @@ public class AzureCosmosConfiguration {
             CosmosConfig cosmosConfig,
             MappingCosmosConverter mappingCosmosConverter) {
         
-        System.out.println("🔧 Creating CosmosTemplate with database: " + azureProperties.getCosmos().getDatabase());
+        logger.info("[CosmosConfig] Creating CosmosTemplate with database: " + azureProperties.getCosmos().getDatabase());
         
         CosmosTemplate template = new CosmosTemplate(
                 cosmosAsyncClient,
@@ -181,7 +181,7 @@ public class AzureCosmosConfiguration {
                 mappingCosmosConverter
         );
         
-        System.out.println("✅ CosmosTemplate created successfully");
+        logger.info("[CosmosConfig] CosmosTemplate created successfully");
         return template;
     }
 }

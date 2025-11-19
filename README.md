@@ -18,14 +18,14 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
 |--------|----------|-------------|-------------|----------|--------------------|
 | `kube` | ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white) | ![Kafka](https://img.shields.io/badge/Kafka-434F40?style=flat-square&logo=apachekafka&logoColor=white) | ![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | 
 | `sqlite` | ![Replit](https://img.shields.io/badge/Replit-F26207?style=flat-square&logo=replit&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![Java](https://img.shields.io/badge/ConcurrentHashMap-ED8B00?style=flat-square&logo=openjdk&logoColor=white) | 
-| `aws` | ![AWS](https://img.shields.io/badge/AWS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) | ![DynamoDB](https://img.shields.io/badge/DynamoDB-4053D6?style=flat-square&logo=amazondynamodb&logoColor=white) | ![SQS](https://img.shields.io/badge/SQS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![Redis](https://img.shields.io/badge/ElastiCache%20for%20Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | 
+| `aws` | ![AWS](https://img.shields.io/badge/AWS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) | ![DynamoDB](https://img.shields.io/badge/DynamoDB-4053D6?style=flat-square&logo=amazondynamodb&logoColor=white) | ![SQS](https://img.shields.io/badge/SQS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![Elasticache for Redis](https://img.shields.io/badge/ElastiCache%20for%20Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | 
 | `azure` | ![Azure](https://img.shields.io/badge/Azure-0078D4?style=flat-square&logo=microsoftazure&logoColor=white) | ![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?style=flat-square&logo=microsoftsqlserver&logoColor=white) | ![Cosmos DB](https://img.shields.io/badge/Cosmos%20DB-0089D6?style=flat-square&logo=azurecosmosdb&logoColor=white) | ![Service Bus](https://img.shields.io/badge/Service%20Bus-0089D6?style=flat-square&logo=microsoftazure&logoColor=white) | ![Azure Cache for Redis](https://img.shields.io/badge/Cache%20for%20Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | 
 
 
 ## 📚 Indice rapido
 
 - 🛠️ [Struttura progetto](#-struttura-progetto)
-  - ⚙️ [Esecuzione locale](#-Esecuzione-locale)
+  - ⚙️ [Esecuzione locale](#-esecuzione-locale)
   - 📡 [API Endpoints](#-api-endpoints)
   - 📊 [Monitoring con actuator](#-monitoring-con-actuator)
   - 📖 [Documentazione API con Swagger / OpenAPI](#-documentazione-api-con-swagger--openapi)
@@ -48,7 +48,7 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
   - ✅ [Test di non regressione](#-Test-di-non-regressione)
 
 
-## 🛠️ Struttura progetto:
+## 🛠️ Struttura progetto
 - Il progetto segue i principi dell'*Hexagonal Architecture* (Ports and Adapters) e si basa su un'architettura a microservizi modulare:
   ```
   📦 progetto
@@ -966,15 +966,17 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
   4. **Configura Firewall** per accesso locale e servizi Azure
   5. **Inizializza Database** con tabelle (`users`, `annotazione_metadata`, `storico_stati`) e utenti di test
   6. **Provisiona ServiceBus** come servizio per la gestione delle code di invio annotazioni
-  7. **Avvia Container Docker** nel sistema locale (non nel cloud) con configurazione automatica
+  7. **Azure Cache for Redis** come servizio di gestione delle prenotazioni delle annotazioni
+  8. **Avvia Container Docker** nel sistema locale (non nel cloud) con configurazione automatica
 - ▶️ Esecuzione
   ```bash
   ./script/azure-dbremoti-cosmos-runlocale/start-all.sh
   ```
   - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
-- Esecuzione script di test 
+- Esecuzione dei due script di test (in locale si può provare anche il sistema di prenotazione!)
   ```bash
   ./script/azure-dbremoti-cosmos-runlocale/test.sh
+  ./script/automatic-test/test-prenotazione-annotazione.sh
   ```
 - Rimozione completa
   ```bash
@@ -984,16 +986,19 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
   - CosmosDB Free Tier: Limitato a 1000 RU/s e 25GB storage. Solo 1 account Free per subscription.
   - SQL Server Basic: 5 DTU e 2GB storage. Costo stimato: ~5€/mese.
   - Firewall: Lo script configura l'accesso dal tuo IP. Aggiorna la regola se l'IP cambia.
-  - Password: Cambia P@ssw0rd123! con una password sicura prima di eseguire.
+  - Il tier Basic C0 è il minimo disponibile per Azure Cache for Redis
   - Connection String: Salva le connection string restituite dai comandi 8 e 13 in modo sicuro.
+    - Password: Cambia P@ssw0rd123! con una password sicura prima di eseguire.
+  - La tabella non include costi di bandwidth in/out (inclusi nei limiti Azure)
   - ⚠️ Costi: Anche con tier Free/Basic, SQL Server ha costi mensili. Monitorare sempre i costi ⚠️
     | Risorsa | Tier/SKU | Costo Orario | Costo Giornaliero | Costo Settimanale | Costo Mensile |
     |---------|----------|--------------|-------------------|-------------------|---------------|
     | **Cosmos DB SQL API** | Free Tier (1000 RU/s, 25GB) | €0.00 | €0.00 | €0.00 | **€0.00** |
     | **SQL Server Basic** | 5 DTU, 2GB | €0.0068 | €0.16 | €1.14 | **~€5.00** |
     | **Storage** | 2GB incluso | €0.00 | €0.00 | €0.00 | €0.00 |
+    | **Azure Cache for Redis** | Basic C0 (250MB) | €0.0168 | €0.40 | €2.82 | **~€12.10** |
     | **Egress Data** | <100GB/mese | ~€0.00 | ~€0.01 | ~€0.07 | **~€0.30** |
-    | **TOTALE 24/7** | | **€0.0068/h** | **€0.17/day** | **€1.21/week** | **~€5.30/mese** |
+    | **TOTALE 24/7** | | **€0.0236/h** | **€0.57/day** | **€4.03/week** | **~€17.40/mese** |
 
 
 ### 🚀 Esecuzione locale profilo Kube con db remoti su Azure
@@ -1010,14 +1015,51 @@ Script bash per la creazione automatica di risorse Azure con profilo *kube* (Cos
   3. **Provisiona Postgresql** con database per metadati e autenticazione
   4. **Configura Firewall** per accesso locale e servizi Azure
   5. **Inizializza Database** con tabelle (`users`, `annotazione_metadata`, `storico_stati`) e utenti di test
-  6. **Avvia Container Docker** con configurazione automatica
+  6. **Azure Cache for Redis** come servizio di gestione delle prenotazioni delle annotazioni
+  7. **Eventhubs Kafka**  come servizio per la gestione delle code di invio annotazioni
+    - tier Basic: non supporta Kafka, max 1 Consumer Group, retention 1 giorno
+    - tier Standard: supporta Kafka, max 20 Consumer Groups, retention fino a 7 giorni
+  8. **Avvia Container Docker** con configurazione automatica
 - ▶️ Esecuzione
   ```bash
   ./script/azure-dbremoti-mongo-runlocale/start-all.sh
   ```
-  - Esecuzione del test automatico
+  - Esecuzione dei due script di test (in locale si può provare anche il sistema di prenotazione!)
     ```bash
-    ./script/azure-dbremoti-cosmos-aci/test.sh
+    ./script/azure-dbremoti-mongo-runlocale/test.sh
+    ./script/automatic-test/test-prenotazione-annotazione.sh
+    ```
+    - Nota: questi script necessita `kcat` installato perchè azure-cli non ha un comando specifico per leggere dal eventhubs-kafka. Per esempio si può lanciare
+      ```
+      # Verificare la coda
+      kcat -b gestioneannotazioni-eventhubs.servicebus.windows.net:9093 \
+        -X security.protocol=SASL_SSL \
+        -X sasl.mechanisms=PLAIN \
+        -X sasl.username='$ConnectionString' \
+        -X sasl.password='xxxxxxxxxxxxxxxxxxxxxxxxxx' \
+        -L
+      # Consumare il primo messaggio dalla coda!
+      kcat -b gestioneannotazioni-eventhubs.servicebus.windows.net:9093 \
+        -X security.protocol=SASL_SSL \
+        -X sasl.mechanisms=PLAIN \
+        -X sasl.username='$ConnectionString' \
+        -X sasl.password='xxxxxxxxxxxxxxxxxxxxxxxxxx' \
+        -C -t "annotazioni-export" \
+        -o beginning
+        -c 1
+        -L
+      # Produrre un messaggio
+      echo "your message here" | kcat -b gestioneannotazioni-eventhubs.servicebus.windows.net:9093 \
+        -t annotazioni-export \
+        -X security.protocol=SASL_SSL \
+        -X sasl.mechanisms=PLAIN \
+        -X sasl.username='$ConnectionString' \
+        -X sasl.password='xxxxxxxxxxxxxxxxxxxxxxxxxx' \
+        -P 
+      ```
+  - Verifica che la coda kafka sia correttamente creata
+    ```
+    az eventhubs eventhub list --resource-group "gestioneannotazioni-rg-mongo-postgres" --namespace-name "gestioneannotazioni-eventhubs" --query "[].name"
     ```
 - Rimozione completa
   ```bash
@@ -1025,15 +1067,17 @@ Script bash per la creazione automatica di risorse Azure con profilo *kube* (Cos
   ```
 
 - ⚠️ Note importanti
-  - ⚠️ Costi: Anche con tier Free/Basic, i database hanno costi mensili. Monitorare sempre i costi ⚠️
-    | Risorsa | Tier/SKU | Costo Orario | Costo Giornaliero | Costo Settimanale | Costo Mensile |
-    |---------|----------|--------------|-------------------|-------------------|---------------|
-    | **Cosmos DB MongoDB API** | Free Tier (1000 RU/s, 25GB) | €0.00 | €0.00 | €0.00 | **€0.00** |
-    | **PostgreSQL Flexible** | Standard_B1ms | €0.0165 | €0.40 | €2.77 | **~€12.00** |
-    | **Storage PostgreSQL** | 32GB | €0.0048 | €0.12 | €0.81 | **~€3.50** |
-    | **Backup** | 32GB (7 giorni) | €0.0014 | €0.03 | €0.24 | **~€1.00** |
-    | **Egress Data** | <100GB/mese | ~€0.00 | ~€0.01 | ~€0.07 | **~€0.30** |
-    | **TOTALE 24/7** | | **€0.0227/h** | **€0.56/day** | **€3.89/week** | **~€16.80/mese** |
+  - ⚠️ Costi: Anche con tier Free/Basic, le risorse potrebbero avere dei costi. Monitorare sempre i costi ⚠️
+    | Risorsa                   | Tier/SKU                | Costo Orario | Costo Giornaliero | Costo Settimanale | Costo Mensile |
+    |---------------------------|-------------------------|--------------|-------------------|-------------------|---------------|
+    | **Cosmos DB MongoDB API** | Free Tier (1000 RU/s)   | €0.00   | €0.00            | €0.00            | **€0.00**     |
+    | **PostgreSQL Flexible**   | Standard_B1ms           | €0.0165      | €0.40             | €2.77            | **~€12.00**   |
+    | **Event Hubs (Kafka)**    | Standard (1 TU)         | €0.0337      | €0.81             | €5.65            | **~€24.30**   |
+    | **Azure Cache for Redis** | Basic C0 (250MB)        | €0.0168      | €0.40             | €2.82            | **~€12.10**   |
+    | **Storage PostgreSQL**    | 32GB                    | €0.0048      | €0.12             | €0.81            | **~€3.50**    |
+    | **Backup**                | 32GB (7 giorni)         | €0.0014      | €0.03             | €0.24            | **~€1.00**    |
+    | **Egress Data**           | <100GB/mese             | ~€0.00       | ~€0.01            | ~€0.07           | **~€0.30**    |
+    | **TOTALE 24/7**           |            | **€0.0732/h**| **€1.77/day**     | **€12.36/week**  | **~€53.20/mese** |
 
 
 ### 🚀 Esecuzione su VirtualMachine Azure del profilo Azure
@@ -1050,9 +1094,10 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
   3. **Provisiona SQL Server** (tier Basic) con database per metadati e autenticazione
   4. **Configura Firewall** per accesso locale e servizi Azure
   5. **Inizializza Database** con tabelle (`users`, `annotazione_metadata`, `storico_stati`) e utenti di test
-  6. **Provisiona ServiceBus** come servizio per la gestione delle code di invio annotazioni
-  7. **Virtual Machine** come macchine virtuale dove viene eseguito l'immagine docker del servizio
-  8. **Configurazione rete** per accesso della VM verso il database SQL
+  6. **Provisiona ServiceBus** come servizio di code per la gestione delle code di invio annotazioni
+  7. **Azure Cache for Redis** come servizio di cache per la gestione del sistema di prenotazioni delle annotazioni 
+  8. **Virtual Machine** come macchine virtuale dove viene eseguito l'immagine docker del servizio
+  9. **Configurazione rete** per accesso della VM verso il database SQL
 
 - ▶️ Esecuzione
   ```bash
@@ -1075,31 +1120,25 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
   - Connection String: Salva le connection string restituite dai comandi in modo sicuro.
   - SSH Key: La chiave SSH viene generata automaticamente in `$HOME/.ssh/azure-vm-key.pub`
   - ⚠️ Costi: Con l'aggiunta della VM, i costi aumentano. Spegni la VM quando non la usi per risparmiare. ⚠️
-
-  | Risorsa | Tier/SKU | Costo Orario | Costo Giornaliero | Costo Settimanale | Costo Mensile |
-  |---------|----------|--------------|-------------------|-------------------|---------------|
-  | **Cosmos DB SQL API** | Free Tier (1000 RU/s, 25GB) | €0.00 | €0.00 | €0.00 | **€0.00** |
-  | **SQL Server Basic** | 5 DTU, 2GB | €0.0068 | €0.16 | €1.14 | **~€5.00** |
-  | **VM Standard_B1s** | 1 vCPU, 1GB RAM | €0.0105 | €0.25 | €1.76 | **~€7.60** |
-  | **VM IP Pubblico Standard** | Static IP | €0.0043 | €0.10 | €0.72 | **~€3.10** |
-  | **VM OS Disk** | 32GB Standard HDD | €0.0006 | €0.01 | €0.10 | **~€0.40** |
-  | **Storage SQL** | 2GB incluso | €0.00 | €0.00 | €0.00 | €0.00 |
-  | **Egress Data** | <100GB/mese | ~€0.00 | ~€0.01 | ~€0.07 | **~€0.30** |
-  | **Service Bus Standard** | 12.5M ops/mese | €0.0118 | €0.28 | €1.99 | **~€8.50** |
-  | **TOTALE 24/7** | | **€0.0340/h** | **€0.81/day** | **€5.78/week** | **~€24.90/mese** |
+    | Risorsa | Tier/SKU | Costo Orario | Costo Giornaliero | Costo Settimanale | Costo Mensile |
+    |---------|----------|--------------|-------------------|-------------------|---------------|
+    | **Cosmos DB SQL API** | Free Tier (1000 RU/s, 25GB) | €0.00 | €0.00 | €0.00 | **€0.00** |
+    | **SQL Server Basic** | 5 DTU, 2GB | €0.0068 | €0.16 | €1.14 | **~€5.00** |
+    | **VM Standard_B1s** | 1 vCPU, 1GB RAM | €0.0105 | €0.25 | €1.76 | **~€7.60** |
+    | **VM IP Pubblico Standard** | Static IP | €0.0043 | €0.10 | €0.72 | **~€3.10** |
+    | **VM OS Disk** | 32GB Standard HDD | €0.0006 | €0.01 | €0.10 | **~€0.40** |
+    | **Storage SQL** | 2GB incluso | €0.00 | €0.00 | €0.00 | €0.00 |
+    | **Service Bus Standard** | 12.5M ops/mese | €0.0118 | €0.28 | €1.99 | **~€8.50** |
+    | **Azure Cache for Redis** | Basic C0 (250MB) | €0.0168 | €0.40 | €2.82 | **~€12.10** |
+    | **Egress Data** | <100GB/mese | ~€0.00 | ~€0.01 | ~€0.07 | **~€0.30** |
+    | **TOTALE 24/7** | | **€0.0508/h** | **€1.21/day** | **€8.60/week** | **~€37.00/mese** |
 
 
 ### 🚀 Esecuzione su Azure Container Instances del profilo Azure
 
 Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server) ed esecuzione dell'applicazione Spring Boot in un **Azure Container Instance (ACI)**
 
-
 - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
-  | Periodo | Costo Totale (senza free tier) | Costo Reale (con ottimizzazioni) |
-  |---------|--------------------------------|-----------------------------------|
-  | **Giornaliero** | **€1.49** | **€1.26** |
-  | **Settimanale** | **€10.43** | **€8.82** |
-  | **Mensile** | **€44.70** | **€37.80** |
 - 📋 **Prerequisiti**
   - Azure CLI installato e autenticato (`az login`)
   - Immagine Docker `alnao/gestioneannotazioni:latest`. Sostituito con Amazon Container Registry perchè: 
@@ -1115,6 +1154,7 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
   | gestioneannotazioniacisa | Microsoft.Storage/storageAccounts |
   | gestioneannotazioniacr | Microsoft.ContainerRegistry/registries |
   | gestioneannotazioni-servicebus | Microsoft.ServiceBus/namespaces |
+  | gestioneannotazioni-redis | Microsoft.Cache/Redis |
   | gestioneannotazioni-aci | Microsoft.ContainerInstance/containerGroups |
 
 - ▶️ **Esecuzione**
@@ -1147,10 +1187,12 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
     | **Azure Container Registry** | Basic | ⚠️ Primi 12 mesi | €0.17 | €1.19 | €5.10 | 10GB storage inclusi |
     | **Storage Account** | Standard LRS | ⚠️ Primi 12 mesi | €0.01 | €0.07 | €0.30 | Quota minima per share |
     | **Log Analytics Workspace** | Pay-as-you-go | ⚠️ 5GB/mese free | €0.03 | €0.21 | €0.90 | ~100MB/giorno stimati |
-    | **Service Bus** | Standard | ❌ No | €0.03 | €0.21 | €0.90 | 1M operazioni base incluse |
+    | **Service Bus** | Standard | ❌ No | €0.28 | €1.99 | €8.50 | 12.5M operazioni base incluse |
+    | **Azure Cache for Redis** | Basic C0 (250MB) | ❌ No | €0.40 | €2.82 | €12.10 | Cache distribuita, single node |
     | **Virtual Network** | Standard | ✅ Sempre gratuito | €0.00 | €0.00 | €0.00 | Solo se `CREATE_VNET=SI` |
     | **Network Security Group** | Standard | ✅ Sempre gratuito | €0.00 | €0.00 | €0.00 | Solo se `CREATE_VNET=SI` |
     | **Bandwidth (Egress)** | Zone 1 (EU) | ⚠️ 100GB/mese free | €0.05 | €0.35 | €1.50 | Stima 2GB/mese oltre free tier |
+    | **TOTALE STIMATO** | | | **€2.17/giorno** | **€15.31/settimana** | **~€65.40/mese** | |
 
 
 ## 📝 Roadmap & todo-list
@@ -1221,10 +1263,10 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
     - ✅ 🔄 Api per bloccare una annotazione da un utente specifico
     - ✅ 🛠️ Creazione script test specifo per il blocci di annotazioni e integrazione degli script di test 
     - ✅ ☁️ Modifica script profilo AWS per servizio redis on Cloud
-    - 🚧 ☁️ Modifica script profilo Azure per servizio redis on Cloud
+    - ✅ ☁️ Modifica script profilo Azure per servizio redis on Cloud
     - 🚧 ⚙️ Modifica al frontend per gestire le prenotazioni di una annotazione quando si entra nel dettaglio
     - 🚧 ⚙️ Modifica al frontend per visualizzare l'errore specifico se qualcun'altro ha bloccato quella annotazione
-    - 🚧 🔧 Nell'elenco delle annotazioni, indicare se una annotazione è bloccata da qualcuno, modifica del frontend
+    - 🚧 🔧 Modifica al frontend per nascondere bottone modifica se una annotazione è bloccata da altri
     - 🚧 🤖 Test finali del frontend e conclusione processo di prenotazione delle annotazioni!
   - 🚧 🕸️ Gestione invio notifiche singolo se ci sono più istanze dell'applicazione in esecuzione (esempio minikube)
   - 🚧 🔄 Import annotazioni (JSON e/o CSV): creazione service per l'import di annotazioni con cambio di stato dopo averle importate con implementazioni su tutti gli adapter
@@ -1288,73 +1330,80 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
   ```bash
   docker volume rm $(docker volume ls -q)
   ```
-- Script generale per eseguire tutti i gli script di test *automatici*
+- Script generale per eseguire tutti i gli script di test *automatici* su profili sqlite, kube e aws in locale
   ```
   ./script/automatic-test/test-all.sh
   ```
-  - Che esegue gli script
-    ```
-    # Script per eseguire il profilo `sqlite` eseguito in locale (con solo sqlite) senza docker
-    ./script/automatic-test/test-sqlite-onprem.sh
-    # Script per eseguire il profilo `kube` eseguito in locale (con Postgresql e MongoDB) con docker compose
-    ./script/automatic-test/test-aws-onprem.sh
-    # Script per eseguire il profilo `kube` eseguito in locale con **minikube** e **kubernetes**
-    ./script/automatic-test/test-minikube.sh
-    ```
-
 - Profilo `aws` in Cloud AWS con MySql e MySql ed esecuzione su EC2
+  ```bash
+  ./script/aws-ec2/start-all.sh
+
+  # Recupero indirizzo IP ed esecuzione test sistema prenotazione
+  EC2_PUBLIC_IP=$(aws ec2 describe-instances --region "eu-central-1" \
+    --filters "Name=tag:gestioneannotazioni-app,Values=true" \
+              "Name=instance-state-name,Values=running" \
+    --query 'Reservations[0].Instances[0].PublicIpAddress' \
+    --output text)
+  EC2_PUBLIC_URL="$EC2_PUBLIC_IP:8080"
+  ./script/automatic-test/test-prenotazione-annotazione.sh $EC2_PUBLIC_URL
+
+  # Verifica coda SQS
+  SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
+  SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
+  aws sqs receive-message --queue-url "$SQS_QUEUE_URL" --region eu-central-1 --attribute-names All --message-attribute-names All
+
+  # Eliminazione di tutte le risorse!
+  ./script/aws-ec2/stop-all.sh
+  ```
   - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
-  - Script per creare lo stack in AWS (RDS, Dynamo e EC2)
-    ```bash
-    ./script/aws-ec2/start-all.sh
-    ```
-    - L'output finale dello script mostra l'IP pubblico EC2 e la porta applicativa (default 8080)
-      - Accedi da browser: `http://<EC2_PUBLIC_IP>:8080`
-  - L'invio delle annotazioni avviene in una coda SQS reale, le istruzioni per leggere
-    ```bash
-    SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
-    SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
-    aws sqs receive-message --queue-url "$SQS_QUEUE_URL" --region eu-central-1 --attribute-names All --message-attribute-names All
-    ```
-  - Rimozione dello stack
-    ```
-    ./script/aws-ec2/stop-all.sh
-    ```
 - Profilo `azure` in Cloud Azure con MySql e MySql ed esecuzione in locale
+  ```bash
+  ./script/azure-dbremoti-cosmos-runlocale/start-all.sh
+
+  ./script/azure-dbremoti-cosmos-runlocale/test.sh
+
+  ./script/azure-dbremoti-cosmos-runlocale/stop-all.sh
+  ```
   - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
-  - Script per creare lo stack in Azure (Cosmos e MsSql) ma esecuzione del microservizio in locale
-    ```bash
-    ./script/azure-dbremoti-cosmos-runlocale/start-all.sh
-    ```
-  - Verifica che le annotazioni sono correttamente inviate nella console web del servizio ServiceBus
-  - L'applicazione web sarà disponibile in locale all'url [http://localhost:8082](http://localhost:8082)
-  - Rimozione dello stack
-    ```bash
-    ./script/azure-dbremoti-cosmos-runlocale/stop-all.sh
-    ```
 - Profilo `azure` in Cloud Azure con MySql e MySql ed esecuzione in VirtualMachine su azure
-  - Script per creare lo stack in Azure (Cosmos e MsSql) e l'esecuzione del microservizio una VistualMachine su Azure
-    ```bash
-    ./script/azure-dbremoti-cosmos-vm/start-all.sh
-    ```
-  - L'applicazione web sarà disponibile all'url ritornato dallo script
-  - Verifica che le annotazioni sono correttamente inviate nella console web del servizio ServiceBus
-  - Rimozione dello stack
-    ```bash
-    ./script/azure-dbremoti-cosmos-runlocale/stop-all.sh
-    ```
-- Profilo `kube` in cloud Azure con Postgresql e MongoDB ed esecuzione in locale
+  ```bash
+  ./script/azure-dbremoti-cosmos-vm/start-all.sh
+
+  # Recupero indirizzo IP ed esecuzione test sistema prenotazione
+  SERVICE_URL=$(az vm show -d -g gestioneannotazioni-rg-cosmos-mssql \
+    -n gestioneannotazioni-vm --query publicIps --output tsv)
+  SERVICE_PUBLIC_URL="$SERVICE_URL:8082"
+  ./script/automatic-test/test-prenotazione-annotazione.sh $SERVICE_PUBLIC_URL
+
+  ./script/azure-dbremoti-cosmos-aci/test.sh
+
+  ./script/azure-dbremoti-cosmos-vm/stop-all.sh
+  ```
   - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
-  - Script per creare lo stack in Azure (Postgresql e Cosmos-Mongo) ma esecuzione del microservizio in locale
-    ```bash
-    ./script/azure-dbremoti-mongo-runlocale/start-all.sh
-    ```
-    - In questo script è stata disattivata l'esportazione delle annotazioni
-  - L'applicazione web sarà disponibile in locale all'url [http://localhost:8082](http://localhost:8082)
-    - Rimozione dello stack
-    ```bash
-    ./script/azure-dbremoti-mongo-runlocale/stop-all.sh
-    ```
+- Profilo `kube` in cloud Azure con Postgresql e MongoDB ed esecuzione in locale
+  ```bash
+  ./script/azure-dbremoti-mongo-runlocale/start-all.sh
+
+  ./script/automatic-test/test-prenotazione-annotazione.sh 
+  ./script/azure-dbremoti-mongo-runlocale/test.sh
+
+  ./script/azure-dbremoti-mongo-runlocale/stop-all.sh
+  ```
+  - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
+- Profilo `azure` in CLoud Azure con Azure Container Images
+  ```
+  ./script/azure-dbremoti-cosmos-aci/start-all.sh
+
+  CONTAINER_IP=$(az container show --resource-group "gestioneannotazioni-aci-rg" \
+    --name "gestioneannotazioni-aci" --query "ipAddress.ip" --output tsv 2>/dev/null || echo "")
+  SERVICE_URL="$CONTAINER_IP:8080"
+  ./script/automatic-test/test-prenotazione-annotazione.sh $SERVICE_URL
+
+  ./script/azure-dbremoti-cosmos-aci/test.sh
+
+  ./script/azure-dbremoti-cosmos-aci/stop-all.sh
+  ```
+  - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
 - Pulizia finale del sistema docker locale
   ```
   minikube delete

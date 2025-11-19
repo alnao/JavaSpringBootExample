@@ -40,6 +40,9 @@ LOG_ANALYTICS_WORKSPACE="gestioneannotazioni-logs"
 SERVICEBUS_NAMESPACE="gestioneannotazioni-servicebus"
 SERVICEBUS_QUEUE="gestioneannotazioni-queue"
 
+#REDIS
+REDIS_NAME="gestioneannotazioni-redis"
+
 # NUOVA VARIABILE: Abilita VNet/Subnet: se valozziata con SI crea la VNet/Subnet per ACI
 CREATE_VNET="${CREATE_VNET:-NO}"  # Default: NO, può essere impostato a SI tramite: export CREATE_VNET=SI
 # NOTA: la versione con "SI" non è mai stata testate completamente, usala con cautela!
@@ -746,6 +749,82 @@ wait_for_sql_server() {
   check_error "Connection string Service Bus recuperata"
   echo "Service Bus Connection String: ${AZURE_SERVICEBUS_CONNECTION_STRING:0:100}..."
 
+# 13b. Creazione Azure Cache for Redis (tier Basic C0 - 250MB)
+  echo "🔴 Creazione Azure Cache for Redis..."
+
+  REDIS_EXISTS=$(az redis list \
+    --resource-group $RESOURCE_GROUP \
+    --query "[?name=='$REDIS_NAME'].name" \
+    --output tsv 2>/dev/null)
+  if [ -n "$REDIS_EXISTS" ]; then
+    echo "   Azure Cache for Redis già esistente, skip creazione"
+  else
+    echo "Parto la creazione di Azure Cache for Redis..."
+    az redis create \
+      --resource-group $RESOURCE_GROUP \
+      --name $REDIS_NAME \
+      --location $LOCATION \
+      --sku Basic \
+      --vm-size C0 \
+      --enable-non-ssl-port 
+    check_error "Azure Cache for Redis creato"
+  fi
+
+  # Attendi che Redis sia disponibile
+  echo "⏳ Attesa che Redis sia disponibile..."
+  MAX_ATTEMPTS=600
+  ATTEMPT=0
+  while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+    REDIS_STATE=$(az redis show \
+      --resource-group $RESOURCE_GROUP \
+      --name $REDIS_NAME \
+      --query 'provisioningState' \
+      --output tsv 2>/dev/null)
+    
+    if [ "$REDIS_STATE" = "Succeeded" ]; then
+      echo "✅ Redis disponibile!"
+      break
+    fi
+    
+    ATTEMPT=$((ATTEMPT + 1))
+    echo "   Tentativo $ATTEMPT/$MAX_ATTEMPTS - Stato: ${REDIS_STATE:-Creating}"
+    sleep 10
+  done
+
+  if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+    echo "❌ Timeout: Redis non è diventato disponibile"
+    exit 1
+  fi
+
+  # Recupero endpoint e chiavi Redis
+  REDIS_HOST=$(az redis show \
+    --resource-group $RESOURCE_GROUP \
+    --name $REDIS_NAME \
+    --query 'hostName' \
+    --output tsv)
+  check_error "Redis host recuperato"
+
+  REDIS_PORT=$(az redis show \
+    --resource-group $RESOURCE_GROUP \
+    --name $REDIS_NAME \
+    --query 'sslPort' \
+    --output tsv)
+  check_error "Redis SSL port recuperato"
+  REDIS_SSL="true"
+
+  REDIS_KEY=$(az redis list-keys \
+    --resource-group $RESOURCE_GROUP \
+    --name $REDIS_NAME \
+    --query 'primaryKey' \
+    --output tsv)
+  check_error "Redis key recuperata"
+
+  echo "Redis Host: $REDIS_HOST"
+  echo "Redis Port: $REDIS_PORT"
+  echo "Redis Key: ${REDIS_KEY:0:20}..."
+
+
+
 # 14. Creazione/Aggiornamento Container Instance
   echo "🐳 Gestione Azure Container Instance..."
   # Verifica se il container esiste già
@@ -811,6 +890,10 @@ wait_for_sql_server() {
       MSSQL_SPRING_DATASOURCE_PASSWORD="$SQLSERVER_PASSWORD" \
       AZURE_SERVICEBUS_CONNECTION_STRING="$AZURE_SERVICEBUS_CONNECTION_STRING" \
       AZURE_SERVICEBUS_QUEUE_NAME="$SERVICEBUS_QUEUE" \
+      REDIS_HOST=$REDIS_HOST \
+      REDIS_PORT=$REDIS_PORT \
+      REDIS_PASSWORD=$REDIS_KEY \
+      REDIS_SSL=$REDIS_SSL \
     --azure-file-volume-account-name $STORAGE_ACCOUNT \
     --azure-file-volume-account-key $STORAGE_KEY \
     --azure-file-volume-share-name aci-logs \
@@ -912,6 +995,14 @@ wait_for_sql_server() {
   echo "   | where Name_s == \"$CONTAINER_NAME\""
   echo "   | order by TimeGenerated desc"
   echo ""
+  echo "📨 Service Bus :"
+  echo "   • Namespace:      $SERVICEBUS_NAMESPACE"
+  echo "   • Queue:          $SERVICEBUS_QUEUE"
+  echo ""  
+  echo "🔴 Azure Cache for Redis:"
+  echo "   • Host:            $REDIS_HOST"
+  echo "   • Port:            $REDIS_PORT"
+  echo "" 
   echo "🔒 Sicurezza:"
   echo "   • NSG Name:            $NSG_NAME"
   echo "   • VNet Name:           $VNET_NAME"
