@@ -1,6 +1,6 @@
 package it.alnao.springbootexample.core.service.auth.impl;
 
-import it.alnao.springbootexample.core.config.SecurityConfig;
+import it.alnao.springbootexample.core.config.JwtConfig;
 import it.alnao.springbootexample.core.domain.auth.RefreshToken;
 import it.alnao.springbootexample.core.domain.auth.User;
 import it.alnao.springbootexample.core.repository.auth.RefreshTokenRepository;
@@ -20,18 +20,18 @@ import java.util.*;
 
 /**
  * Default, profile-agnostic implementation of JwtService living in core.
- * Uses SecurityConfig.JwtConfig for secret/expiration and optionally persists refresh tokens
+ * Uses JwtConfig.JwtConfigBean for secret/expiration and optionally persists refresh tokens
  * if a RefreshTokenRepository is available.
  */
 @Service
 @Primary
 public class JwtServiceDefault implements JwtService {
 
-    private final SecurityConfig.JwtConfig jwtConfig;
+    private final JwtConfig.JwtConfigBean jwtConfig;
     private final Optional<RefreshTokenRepository> refreshTokenRepository;
 
     @Autowired
-    public JwtServiceDefault(SecurityConfig.JwtConfig jwtConfig, Optional<RefreshTokenRepository> refreshTokenRepository) {
+    public JwtServiceDefault(JwtConfig.JwtConfigBean jwtConfig, Optional<RefreshTokenRepository> refreshTokenRepository) {
         this.jwtConfig = jwtConfig;
         this.refreshTokenRepository = refreshTokenRepository;
     }

@@ -2,7 +2,7 @@ package it.alnao.springbootexample.core.config;
 
 import it.alnao.springbootexample.core.security.JwtAuthenticationEntryPoint;
 import it.alnao.springbootexample.core.security.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -11,8 +11,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -23,50 +21,19 @@ import java.util.Arrays;
 
 /**
  * Configurazione Spring Security per JWT Authentication.
- * Configurazione standard che può essere riutilizzata in tutti gli adapter.
+ * Configurazione standard che può essere riutilizzata in tutti gli adapter web.
+ * Attiva solo in applicazioni web grazie a @ConditionalOnWebApplication.
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
+@ConditionalOnWebApplication
 public class SecurityConfig {
-    public static class JwtConfig {
-        private final String secret;
-        private final Long expiration;
-        private final Long refreshExpiration;
-
-        public JwtConfig(String secret, Long expiration, Long refreshExpiration) {
-            this.secret = secret;
-            this.expiration = expiration;
-            this.refreshExpiration = refreshExpiration;
-        }
-        public String getSecret() { return secret; }
-        public Long getExpiration() { return expiration; }
-        public Long getRefreshExpiration() { return refreshExpiration; }
-    }
-
-    @Value("${gestione-annotazioni.jwt.secret:mySecretKey1234567890abcdefghijklmnopqrstuvwxyz}")
-    private String jwtSecret;
-
-    @Value("${gestione-annotazioni.jwt.expiration:86400}")
-    private Long jwtExpiration;
-
-    @Value("${gestione-annotazioni.jwt.refresh-expiration:604800}")
-    private Long jwtRefreshExpiration;
-
-    @Bean
-    public JwtConfig jwtConfig() {
-        return new JwtConfig(jwtSecret, jwtExpiration, jwtRefreshExpiration);
-    }
 
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     public SecurityConfig(JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) {
         this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
     @Bean

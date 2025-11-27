@@ -31,6 +31,7 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
   - 📖 [Documentazione API con Swagger / OpenAPI](#-documentazione-api-con-swagger--openapi)
   - 📈 [Analisi qualità e coverage con SonarQube](#-analisi-qualità-e-coverage-con-sonarqube)
   - ⏰ [Sistema di lock distribuito con Redis](#-Redis)
+  - 📖 [Frontend con JavaFx](#-Frontend-con-JavaFx)
   - 🔒 [Sistema di autenticazione](#-Sistema-di-autenticazione)
 - 🐳 [Deploy ed esecuzione con DockerHub](#-deploy-ed-esecuzione-con-dockerhub)
   - 🐳 [Esecuzione completa con Docker Compose (con Mongo e Postgresql)](#-Esecuzione-completa-con-Docker-Compose)
@@ -372,6 +373,30 @@ Redis è integrato nell'applicazione come sistema di **lock distribuito** per ge
     ```
     docker exec gestioneannotazioni-redis redis-cli MONITOR
     ```
+
+### 📖 Frontend con JavaFx
+L'adapter JavaFX fornisce un'interfaccia desktop nativa per la gestione delle annotazioni, completamente integrata con l'architettura esagonale del progetto. Utilizza JavaFX 21 per la UI, Spring Boot per dependency injection e SQLite come database embedded.
+- ⚠️ L'esecuzione di questo frontend funziona solo con sqlite, non è stato testato su altri profili! ⚠️
+
+**Caratteristiche:**
+- Interfaccia grafica desktop con login e CRUD completo
+- TableView per visualizzare tutte le annotazioni con filtri dinamici
+- Form dettaglio con validazione per creazione/modifica
+- Pattern MVVM con ViewModel per binding JavaFX properties
+- Database SQLite locale con Hibernate auto-DDL
+- Nessuna dipendenza da server web esterni
+
+**Esecuzione:**
+```bash
+# Da root del progetto
+mvn javafx:run -pl adapter-javafx
+
+# Oppure compilare e eseguire il JAR
+mvn clean package -pl adapter-javafx -DskipTests
+java -jar adapter-javafx/target/adapter-javafx-0.0.2.jar
+```
+
+**Configurazione:** Il file `adapter-javafx/src/main/resources/application.properties` permette di personalizzare il path del database SQLite e altre impostazioni. La documentazione completa è disponibile nel `adapter-javafx/README.md`. Di default è configato il path locale `adapter-javafx/data/gestione_annotazioni_javafx.db`.
 
 
 ## 🔒 Sistema di autenticazione
@@ -1203,6 +1228,7 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server)
     - ✅ ☁️ Sviluppo script per esecuzione profilo sqlite in sistema Replit
     - ✅ ⚙️ Sviluppo script per esecuzione profilo sqlite in sistema AWS-EC2 con Docker senza RDS e Dynamo
     - ✅ 🧿 Script per creazione di tre profili in ogni ambiente per adapter sqlite
+    - ✅ 📖 Sviluppo adapter-frontend con JavaFx per solo profilo sqlite
   - ✅ 🤖 Gestione dell'applicazione in *gestione annotazioni* e test applicazione web di esempio
     - ✅ 🛠️ Test applicazione web di esempio anche su AWS
     - ✅ 🔧 Modifica nome adapter "app" e "port" in "application" e "core"

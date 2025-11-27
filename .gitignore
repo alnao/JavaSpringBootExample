@@ -10,6 +10,8 @@ application/data/gestione_annotazioni.db
 .env-azure-dbremoti-cosmos-runlocale
 .env-azure-dbremoti-mongo-runlocale
 
+adapter-javafx/data/gestione_annotazioni_javafx.db
+
 .vscode
 .vscode/settings.json
 

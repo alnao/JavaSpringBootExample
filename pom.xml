@@ -42,6 +42,7 @@
     <modules>
         <module>adapter-api</module>
         <module>adapter-web</module>
+        <module>adapter-javafx</module>
         <module>adapter-aws</module>
         <module>adapter-mongodb</module>
         <module>adapter-postgresql</module>
@@ -69,6 +70,11 @@
             <dependency>
                 <groupId>it.alnao.springbootexample</groupId>
                 <artifactId>adapter-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>it.alnao.springbootexample</groupId>
+                <artifactId>adapter-javafx</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

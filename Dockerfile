@@ -24,6 +24,7 @@ COPY adapter-sqlite/pom.xml adapter-sqlite/
 COPY adapter-kafka/pom.xml adapter-kafka/
 COPY adapter-azure/pom.xml adapter-azure/
 COPY adapter-redis/pom.xml adapter-redis/
+COPY adapter-javafx/pom.xml adapter-javafx/
 COPY application/pom.xml application/
 
 # Download delle dipendenze (layer cache optimization)
