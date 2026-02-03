@@ -2,6 +2,7 @@
 const ANNOTATIONS_API_BASE_URL = '/api/annotazioni';
 let allAnnotations = [];
 let currentEditingId = null;
+let currentLockedAnnotationId = null; // ID dell'annotazione attualmente prenotata
 
 // Inizializzazione quando la pagina è caricata
 document.addEventListener('DOMContentLoaded', function() {
@@ -501,6 +502,12 @@ async function handleCreateAnnotation(event) {
                 },
                 body: JSON.stringify(formData)
             });
+            
+            // Rilascia la prenotazione dopo la modifica
+            if (currentLockedAnnotationId) {
+                await rilasciaPrenotazione(currentLockedAnnotationId);
+            }
+            
             showAlert('Annotazione aggiornata con successo!', 'success');
         } else {
             // Modalità creazione
@@ -521,12 +528,23 @@ async function handleCreateAnnotation(event) {
         
     } catch (error) {
         console.error('Errore nell\'operazione:', error);
-        showAlert('Errore nell\'operazione', 'danger');
+        
+        // Gestione errore specifico per annotazione bloccata
+        if (error.message && error.message.includes('409')) {
+            showAlert('Annotazione bloccata da un altro utente. Riprova più tardi.', 'danger');
+        } else {
+            showAlert('Errore nell\'operazione: ' + (error.message || 'Errore sconosciuto'), 'danger');
+        }
     }
 }
 
 // Reset del form
 function resetForm() {
+    // Rilascia la prenotazione se presente
+    if (currentLockedAnnotationId) {
+        rilasciaPrenotazione(currentLockedAnnotationId);
+    }
+    
     const createForm = document.getElementById('create-annotation-form');
     if (createForm) {
         createForm.reset();
@@ -658,6 +676,32 @@ async function showAnnotationDetails(id) {
     try {
         const annotation = await fetchAnnotationsAPI(`/${id}`);
         
+        // Verifica lo stato di prenotazione
+        const statoPrenotazione = await verificaStatoPrenotazione(id);
+        const isPrenotata = statoPrenotazione.prenotata;
+        const proprietario = statoPrenotazione.utenteProprietario;
+        
+        // Determina se il pulsante modifica deve essere disabilitato
+        const isPrenotataDaAltri = isPrenotata && proprietario !== currentUser;
+        const disableEdit = isPrenotataDaAltri ? 'disabled' : '';
+        const editButtonClass = isPrenotataDaAltri ? 'btn-secondary' : 'btn-primary';
+        
+        // Messaggio di stato prenotazione
+        let prenotazioneInfo = '';
+        if (isPrenotata) {
+            if (proprietario === currentUser) {
+                prenotazioneInfo = `
+                    <div class="alert alert-success mt-2">
+                        <i class="bi bi-lock-fill"></i> Annotazione attualmente prenotata da te
+                    </div>`;
+            } else {
+                prenotazioneInfo = `
+                    <div class="alert alert-warning mt-2">
+                        <i class="bi bi-lock-fill"></i> Annotazione in modifica da: <strong>${escapeHtml(proprietario)}</strong>
+                    </div>`;
+            }
+        }
+        
         const modalHtml = `
             <div class="modal fade" id="viewAnnotationModal" tabindex="-1">
                 <div class="modal-dialog modal-lg">
@@ -665,10 +709,12 @@ async function showAnnotationDetails(id) {
                         <div class="modal-header">
                             <h5 class="modal-title">
                                 <i class="bi bi-journal-text"></i> ${escapeHtml(annotation.descrizione)}
+                                ${isPrenotata ? '<span class="badge bg-warning text-dark ms-2"><i class="bi bi-lock-fill"></i> Prenotata</span>' : ''}
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
+                            ${prenotazioneInfo}
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Contenuto:</label>
                                 <div class="border p-3 bg-light rounded">
@@ -719,7 +765,10 @@ async function showAnnotationDetails(id) {
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
-                            <button type="button" class="btn btn-primary" onclick="editAnnotation('${annotation.id}')">
+                            <button type="button" class="btn ${editButtonClass}" 
+                                    onclick="editAnnotation('${annotation.id}')" 
+                                    ${disableEdit}
+                                    ${isPrenotataDaAltri ? 'title="Annotazione in modifica da ' + escapeHtml(proprietario) + '"' : ''}>
                                 <i class="bi bi-pencil"></i> Modifica
                             </button>
                         </div>
@@ -757,6 +806,14 @@ function editAnnotation(id) {
 
 async function loadAnnotationForEdit(id) {
     try {
+        // Prima tenta di prenotare l'annotazione
+        const prenotazioneRiuscita = await prenotaAnnotazione(id);
+        
+        if (!prenotazioneRiuscita) {
+            // Se la prenotazione non riesce, non caricare il form
+            return;
+        }
+        
         const annotation = await fetchAnnotationsAPI(`/${id}`);
         
         // Imposta modalità modifica
@@ -775,7 +832,7 @@ async function loadAnnotationForEdit(id) {
         // Cambia il titolo della sezione
         const sectionTitle = document.querySelector('#crea-section h2');
         if (sectionTitle) {
-            sectionTitle.innerHTML = '<i class="bi bi-pencil"></i> Modifica Annotazione';
+            sectionTitle.innerHTML = '<i class="bi bi-pencil"></i> Modifica Annotazione <span class="badge bg-warning text-dark"><i class="bi bi-lock-fill"></i> Prenotata</span>';
         }
         
         // Cambia il testo del bottone
@@ -944,6 +1001,132 @@ function logout() {
         window.location.href = 'login.html';
     }
 }
+
+// ===== GESTIONE PRENOTAZIONI ANNOTAZIONI =====
+
+/**
+ * Prenota un'annotazione per la modifica
+ * @param {string} annotazioneId - ID dell'annotazione da prenotare
+ * @returns {Promise<boolean>} - true se la prenotazione è riuscita, false altrimenti
+ */
+async function prenotaAnnotazione(annotazioneId) {
+    try {
+        console.log('Tentativo di prenotazione annotazione:', annotazioneId);
+        
+        const response = await window.authUtils.authenticatedFetch(
+            `${ANNOTATIONS_API_BASE_URL}/${annotazioneId}/prenota`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    utente: currentUser,
+                    secondi: 300 // 5 minuti di default
+                })
+            }
+        );
+        
+        if (response.ok) {
+            const data = await response.json();
+            currentLockedAnnotationId = annotazioneId;
+            console.log('Prenotazione riuscita:', data);
+            showAlert(`Annotazione prenotata per 5 minuti`, 'success');
+            return true;
+        } else if (response.status === 409) {
+            // Annotazione già bloccata
+            const errorData = await response.json();
+            const message = errorData.message || 'Annotazione già in modifica da un altro utente';
+            showAlert(message, 'warning');
+            console.warn('Prenotazione fallita - già bloccata:', errorData);
+            // Se il messaggio contiene "Annotazione già in modifica da:" torna alla lista
+            if (message && message.startsWith('Annotazione già in modifica da')) {
+                setTimeout(() => {
+                    showSection('annotazioni');
+                }, 500);
+            }
+            return false;
+        } else {
+            const errorData = await response.json();
+            showAlert('Impossibile prenotare l\'annotazione: ' + (errorData.message || 'Errore sconosciuto'), 'danger');
+            console.error('Errore prenotazione:', errorData);
+            return false;
+        }
+    } catch (error) {
+        console.error('Errore nella prenotazione:', error);
+        showAlert('Errore nella comunicazione con il server', 'danger');
+        return false;
+    }
+}
+
+/**
+ * Rilascia la prenotazione di un'annotazione
+ * @param {string} annotazioneId - ID dell'annotazione da rilasciare
+ */
+async function rilasciaPrenotazione(annotazioneId) {
+    try {
+        console.log('Rilascio prenotazione annotazione:', annotazioneId);
+        
+        const response = await window.authUtils.authenticatedFetch(
+            `${ANNOTATIONS_API_BASE_URL}/${annotazioneId}/prenota`,
+            {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    utente: currentUser
+                })
+            }
+        );
+        
+        if (response.ok || response.status === 204) {
+            currentLockedAnnotationId = null;
+            console.log('Prenotazione rilasciata con successo');
+        } else {
+            console.warn('Errore nel rilascio della prenotazione:', response.status);
+        }
+    } catch (error) {
+        console.error('Errore nel rilascio della prenotazione:', error);
+    }
+}
+
+/**
+ * Verifica lo stato di prenotazione di un'annotazione
+ * @param {string} annotazioneId - ID dell'annotazione da verificare
+ * @returns {Promise<Object>} - Oggetto con stato della prenotazione
+ */
+async function verificaStatoPrenotazione(annotazioneId) {
+    try {
+        const response = await window.authUtils.authenticatedFetch(
+            `${ANNOTATIONS_API_BASE_URL}/${annotazioneId}/prenota/stato`
+        );
+        
+        if (response.ok) {
+            const data = await response.json();
+            return data;
+        } else {
+            console.error('Errore nella verifica dello stato:', response.status);
+            return { prenotata: false, utenteProprietario: null };
+        }
+    } catch (error) {
+        console.error('Errore nella verifica dello stato della prenotazione:', error);
+        return { prenotata: false, utenteProprietario: null };
+    }
+}
+
+// Aggiungi event listener per rilasciare la prenotazione quando si lascia la pagina
+window.addEventListener('beforeunload', function(e) {
+    if (currentLockedAnnotationId) {
+        // Usa sendBeacon per inviare la richiesta in modo affidabile
+        const url = `${ANNOTATIONS_API_BASE_URL}/${currentLockedAnnotationId}/prenota`;
+        const data = JSON.stringify({ utente: currentUser });
+        
+        // Nota: sendBeacon non supporta DELETE, quindi potresti dover usare un endpoint diverso
+        // o gestirlo lato server. Per ora lasciamo che scada automaticamente.
+        console.log('Pagina in chiusura - prenotazione verrà rilasciata automaticamente');
+    }
+});
 
 // Assicuriamoci che le funzioni principali siano disponibili globalmente
 window.showSection = showSection;
