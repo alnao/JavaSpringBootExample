@@ -44,7 +44,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable()) //TODO: ToRemove! Make sure disabling Spring Security's CSRF protection is safe here.
                 .authorizeHttpRequests(authz -> authz
                         // Static resources (CSS, JS, images, etc.)
                         .requestMatchers("/", "/index.html", "/*.html").permitAll()

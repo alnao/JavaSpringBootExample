@@ -1,6 +1,6 @@
 package it.alnao.springbootexample.redis.service;
 
-import it.alnao.springbootexample.core.service.LockService;
+import it.alnao.springbootexample.core.service.AnnotazioneLockService;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit;
  */
 @Service
 @Profile({"kube", "aws", "azure"})
-public class RedisLockService implements LockService {
+public class AnnotazioneRedisLockService implements AnnotazioneLockService {
     
-    private static final Logger logger = LoggerFactory.getLogger(RedisLockService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AnnotazioneRedisLockService.class);
     private static final String LOCK_PREFIX = "annotation:lock:";
     private static final String OWNER_MAP = "annotation:lock:owners";
     

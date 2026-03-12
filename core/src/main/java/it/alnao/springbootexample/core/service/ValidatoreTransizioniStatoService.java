@@ -35,9 +35,9 @@ public class ValidatoreTransizioniStatoService {
      */
     @PostConstruct
     public void initTransizioni() {
-        logger.info("Inizializzazione transizioni di stato...");
+        logger.info("[ValidatoreTransizioniStatoService] Inizializzazione transizioni di stato...");
         this.transizioniPermesse = caricaTransizioniDaYaml();
-        logger.info("Caricate {} transizioni di stato", transizioniPermesse.size());
+        logger.info("[ValidatoreTransizioniStatoService] Caricate {} transizioni di stato", transizioniPermesse.size());
     }
 
     /**
@@ -56,8 +56,8 @@ public class ValidatoreTransizioniStatoService {
                     .collect(Collectors.toList());
             }
         } catch (Exception e) {
-            logger.error("Errore nel caricamento delle transizioni da YAML: {}", e.getMessage());
-            logger.warn("Utilizzo transizioni di default");
+            logger.error("[ValidatoreTransizioniStatoService] Errore nel caricamento delle transizioni da YAML: {}", e.getMessage());
+            logger.warn("[ValidatoreTransizioniStatoService] Utilizzo transizioni di default");
             return Arrays.asList(
             // Transizioni per USER ADMIN per errore!
             new TransizioneStato(StatoAnnotazione.ERRORE, StatoAnnotazione.ERRORE, UserRole.ADMIN, 

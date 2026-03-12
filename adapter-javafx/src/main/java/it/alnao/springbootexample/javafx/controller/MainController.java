@@ -168,7 +168,6 @@ public class MainController {
             updateStatus("Caricate " + annotazioni.size() + " annotazioni");
         } catch (Exception e) {
             showError("Errore nel caricamento delle annotazioni: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -277,7 +276,6 @@ public class MainController {
             
         } catch (Exception e) {
             showError("Errore nel salvataggio: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 

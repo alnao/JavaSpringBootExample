@@ -7,7 +7,7 @@ import it.alnao.springbootexample.core.domain.TransizioneStato;
 import it.alnao.springbootexample.core.exception.AnnotationLockedException;
 import it.alnao.springbootexample.core.service.AnnotazioneService;
 import it.alnao.springbootexample.core.service.AnnotazioneStoricoStatiService;
-import it.alnao.springbootexample.core.service.LockService;
+import it.alnao.springbootexample.core.service.AnnotazioneLockService;
 import it.alnao.springbootexample.core.service.ValidatoreTransizioniStatoService;
 import it.alnao.springbootexample.core.service.auth.UserService;
 import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
@@ -37,7 +37,7 @@ public class AnnotazioniPortServiceImpl implements AnnotazioniPortService {
     private AnnotazioneStoricoStatiService annotazioneStoricoStatiService;
     
     @Autowired(required = false)
-    private LockService lockService;
+    private AnnotazioneLockService lockService;
 
         public AnnotazioneCompleta creaAnnotazione(AnnotazioneCompleta annotazione, String utente) {
             logger.info("AnnotazioniPortServiceImpl Creazione annotazione per utente: {}, valore: {}", utente, annotazione.getAnnotazione().getValoreNota());

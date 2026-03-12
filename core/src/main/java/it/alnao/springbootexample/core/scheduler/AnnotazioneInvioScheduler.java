@@ -5,6 +5,7 @@ import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.service.AnnotazioneInvioService;
 import it.alnao.springbootexample.core.service.AnnotazioneStoricoStatiService;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 
 import java.util.List;
 
@@ -33,29 +34,34 @@ public class AnnotazioneInvioScheduler {
     }
     
     @Scheduled(cron = "#{@annotazioneInvioProperties.cronExpression}")
+    @SchedulerLock(
+        name           = "scheduler-send-annotations",   // unique lock name in the table
+        lockAtLeastFor = "PT1M",              // ISO 8601 lock min duration = 1 minute
+        lockAtMostFor  = "PT3M"             // ISO 8601 lock max duration = 3 minutes
+    )
     public void inviaAnnotazioni() {
         if (!annotazioneInvioService.isEnabled()) {
-            logger.debug("Servizio di invio annotazioni disabilitato");
+            logger.debug("[AnnotazioneInvioScheduler] Servizio di invio annotazioni disabilitato");
             return;
         }
-        
+        logger.debug("[AnnotazioneInvioScheduler] Inizio invio annotazioni tramite scheduler");
         try {
             List<AnnotazioneCompleta> annotazioniInviate = annotazioneInvioService.inviaAnnotazioni();
             annotazioniInviate.forEach(annotazione -> {
-                //logger.debug("Annotazione inviata: {}", annotazione)
+                //logger.debug("[AnnotazioneInvioScheduler] Annotazione inviata: {}", annotazione)
                 annotazioneStoricoStatiService.inserisciCambioStato(
                     annotazione.getId().toString(),
                     annotazione.getAnnotazione().getVersioneNota(),
                     StatoAnnotazione.INVIATA.getValue(),
                     annotazione.getMetadata().getStato(),
                     "CRON Scheduler",
-                    "Invio automatico tramite scheduler " + System.currentTimeMillis()
+                    "[AnnotazioneInvioScheduler] Invio automatico tramite scheduler " + System.currentTimeMillis()
                 );
             });
-            logger.info("Inviate {} annotazioni", annotazioniInviate.size());
+            logger.info("[AnnotazioneInvioScheduler] Inviate {} annotazioni", annotazioniInviate.size());
            
         } catch (Exception e) {
-            logger.error("Errore durante l'invio delle annotazioni", e);
+            logger.error("[AnnotazioneInvioScheduler] Errore durante l'invio delle annotazioni", e);
         }
     }
 }

@@ -1,3 +1,4 @@
+*.pem
 annotazioni-key.pem
 bastion-key.pem
 gestionepersonale-bastion-key.pem

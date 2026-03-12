@@ -82,7 +82,6 @@ public class LoginController {
             
         } catch (Exception e) {
             showError("Errore nell'apertura della finestra principale: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 

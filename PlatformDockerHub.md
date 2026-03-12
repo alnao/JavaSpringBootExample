@@ -1,8 +1,15 @@
 # Sistema di Gestione annotazioni - platform DockerHub
 
   <p align="center">
-    <img src="https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=black"  height=60/>
-    <img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=for-the-badge&logo=SpringBoot&logoColor=white"  height=60/>
+    <img src="https://img.shields.io/badge/Java-ED8B00?&logo=openjdk&logoColor=black"  height=32/>
+    <img src="https://img.shields.io/badge/SpringBoot-6DB33F?&logo=SpringBoot&logoColor=white"  height=32/>
+    <img src="https://img.shields.io/badge/Docker-326CE5?&logo=Docker&logoColor=white" height=32 />
+    <img src="https://img.shields.io/badge/Kubernetes-326CE5?&logo=kubernetes&logoColor=white" height=32 />
+    <br />
+    <img src="https://img.shields.io/badge/PostgreSQL-4169E1?&logo=postgresql&logoColor=white" height=32 /> 
+    <img src="https://img.shields.io/badge/MongoDB-47A248?&logo=mongodb&logoColor=white" height=32 />
+    <img src="https://img.shields.io/badge/Kafka-434F40?&logo=apachekafka&logoColor=white"height=32 />
+    <img src="https://img.shields.io/badge/Redis-DC382D?&logo=redis&logoColor=white" height=32 />
   </p>
 
 Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: consente di creare, modificare e visualizzare annotazioni, utenti con privilegi da moderatore possono confermare le annotazioni e utenti con privilegi da amministratori possono confermare e *inviare* annotazioni a sistemi esterni.
@@ -25,7 +32,9 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
     docker pull alnao/gestioneannotazioni:latest
     ```
     L'immagine viene aggiornata con le ultime versioni *stabili*.
-- **Esecuzione rapida** (della versione sqlite):
+    - L'immagine non contiene dati sensibili quindi non c'è problema se viene pubblicata
+    - Utilizzare sempre variabili d'ambiente sicure per le password e le connessioni DB in produzione.
+- **Esecuzione rapida** del profilo sqlite con l'immagine:
     ```bash
     docker run --rm -p 8082:8082 \
       -e SPRING_PROFILES_ACTIVE=sqlite \
@@ -33,97 +42,26 @@ L'immagine ufficiale dell'applicazione è pubblicata su [DockerHub](https://hub.
       -e SERVER_PORT=8082 \
       alnao/gestioneannotazioni:latest
     ```
-    Nota: si può avviare il profilo *sqlite* per eseguire l'immagine senza altri servizi, oppure l'applicazione con il profilo *kube* se nel sistema sono avviati anche i servizi MongoDb, Postgresql e Kafka come nel prossimo punto.
-- **Esecuzione completa** 🔌 Rete Docker condivisa, alternativa robusta ma senza docker-compose:
-    Possibile eseguire tutto con docker (senza docker-compose):
+    Nota: si può avviare il profilo *sqlite* per eseguire l'immagine senza altri servizi, l'applicazione con il profilo *kube* funziona solo se sono disponibili anche i servizi MongoDb, Postgresql e Kafka come nel prossimo punto.
+
+- **Esecuzione completa** 🔌 del profilo kube facendo partire i servizi necessari con docker (senza docker-compose)
+    Possibile eseguire I server necessari con docker (senza docker-compose) con lo script:
     ```bash
-    # Creazione rete
-    docker network create annotazioni-network
-
-    # Esecuzione mongo
-    docker run -d --name annotazioni-mongo \
-      --network annotazioni-network \
-      -p 27017:27017 \
-      -e MONGO_INITDB_DATABASE=gestioneannotazioni \
-      -e MONGO_INITDB_ROOT_USERNAME=admin \
-      -e MONGO_INITDB_ROOT_PASSWORD=admin123 \
-      mongo:4.4
-    # Creazione document dentro Mongo
-    docker cp script/init-database/init-mongodb.js annotazioni-mongo:/init-mongodb.js
-    docker exec -it annotazioni-mongo mongo -u demo -p demo --authenticationDatabase admin /init-mongodb.js
-
-    # Esecuzione postgresql
-    docker run -d --name annotazioni-postgres \
-      --network annotazioni-network \
-      -p 5432:5432 \
-      -e POSTGRES_DB=gestioneannotazioni \
-      -e POSTGRES_USER=gestioneannotazioni_user \
-      -e POSTGRES_PASSWORD=gestioneannotazioni_pass \
-      postgres:13
-    # Creazione database nel postgresql
-    docker cp script/init-database/init-postgres.sql annotazioni-postgres:/init-postgres.sql
-    docker exec -it annotazioni-postgres psql -U demo -d annotazioni -f /init-postgres.sql
-
-    # Esecuzione di Kafka e Zookeeper
-    docker run  --rm \
-      --network annotazioni-network \
-      --name annotazioni-zookeeper \
-      -e ZOOKEEPER_CLIENT_PORT=2181 \
-      -e ZOOKEEPER_TICK_TIME=2000 \
-      -p 2181:2181 \
-      confluentinc/cp-zookeeper:7.4.0
-
-    # Zookeeper
-    docker run  --rm \
-      --network annotazioni-network \
-      --name annotazioni-kafka \
-      -p 9092:9092 \
-      -e KAFKA_BROKER_ID=1 \
-      -e KAFKA_ZOOKEEPER_CONNECT=annotazioni-zookeeper:2181 \
-      -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://annotazioni-kafka:9092 \
-      -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 \
-      confluentinc/cp-kafka:7.4.0
-
-    # Kafka-ui
-    docker run  --rm -p 8085:8080 \
-      --name annotazioni-kafka-ui \
-      --network annotazioni-network \
-      -e KAFKA_CLUSTERS_0_NAME=gestioneannotazioni-cluster \
-      -e KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=annotazioni-kafka:9092 \
-      -e KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181 \
-      provectuslabs/kafka-ui:latest
-
-    # Esecuzione servizio 
-    docker run  --rm -p 8082:8080 --name gestioneannotazioni-app \
-      --network javaspringbootexample_gestioneannotazioni-network \
-      -e SPRING_PROFILES_ACTIVE="kube" \
-      -e POSTGRES_URL="jdbc:postgresql://postgres:5432/gestioneannotazioni" \
-      -e POSTGRES_USERNAME="gestioneannotazioni_user" \
-      -e POSTGRES_PASSWORD="gestioneannotazioni_pass" \
-      -e MONGODB_URI="mongodb://admin:admin123@mongodb:27017/gestioneannotazioni_db?authSource=admin" \
-      -e KAFKA_BROKER_URL="kafka-server:29092" \
-      alnao/gestioneannotazioni:latest
-
-    # Applicazione disponibile al url
-    http://localhost:8082
-    # Kafka-ui disponibile al u rl
-    http://localhost:8085
-
-    # Per vedere i container nella rete
-    docker network inspect annotazioni-network
-
-    # Per fermare tutto e rimuovere la rete
-    docker stop annotazioni-app annotazioni-mongo annotazioni-postgres annotazioni-kafka annotazioni-kafka-ui
-    docker rm annotazioni-app annotazioni-mongo annotazioni-postgres annotazioni-kafka annotazioni-kafka-ui
-    docker network rm annotazioni-network
-    docker network prune -f
-    docker volume rm $(docker volume ls -q)
-    docker rmi $(docker images -q)
+    ./script/docker-run-kube-profile.sh
     ```
-- **Note**:
-  - L'immagine non contiene dati sensibili quindi non c'è problema se viene pubblicata
-  - Utilizzare sempre variabili d'ambiente sicure per le password e le connessioni DB in produzione.
-  - Tutto questo enorme casino può essere evitato con docker-compose,minikube e kubernetes. Vedere le sezioni dedicate.
+    - L'applicazione disponibile al url `http://localhost:8082`
+    - Kafka-ui disponibile al url `http://localhost:8085`
+    - Per ispezionare i container nella rete `docker network inspect annotazioni-network`
+    - Per fermare tutte i servizi e rimuere tutte le immagini eseguire:
+      ```bash
+      docker stop annotazioni-app annotazioni-mongo annotazioni-postgres annotazioni-kafka annotazioni-kafka-ui annotazioni-zookeeper annotazioni-redis
+      docker rm annotazioni-app annotazioni-mongo annotazioni-postgres annotazioni-kafka annotazioni-kafka-ui annotazioni-zookeeper annotazioni-redis
+      docker network rm annotazioni-network
+      docker network prune -f
+      docker volume rm $(docker volume ls -q)
+      docker rmi $(docker images -q)
+      ```
+    - Tutto questo enorme casino può essere evitato con docker-compose, kubernetes e minikube.
 
 
 ### 🐳 Esecuzione completa con Docker Compose
@@ -203,7 +141,7 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
       e visitando [http://annotazioni.local](http://annotazioni.local)
     - Oppure usando il NodePort:
       ```bash
-      minikube service annotazioni-app
+      minikube service gestioneannotazioni-app -n gestioneannotazioni
       ```
       e visitando [http://localhost:30080](http://localhost:30080)
     - Oppure con *freelens* si può creare l'endpoint selezionado il service specifico.
@@ -217,8 +155,8 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
       minikube delete
       ```
 
-## 📦 Versione SQLite per Replit
-Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessarie al corretto funzionamento del servizio, studiato per funzionare anche nel cloud Replit.
+## 📦 Versione SQLite per Cloud
+Sviluppato un adapter specifico per usare **sqlite** per tutte le basi dati necessarie al corretto funzionamento del servizio, studiato per funzionare anche nel cloud Replit.
 - La versione che usa SqLite ha una classe che crea tre utenti di prova partendo dai dati dell'application YAML, è presente proprietà per disattivare questa funzionalità. Il componente è stato creato per velocizzare gli sviluppi e i test, questo componente va rimosso in un sistema di produzione. In alternatica è sempre possibile creare gli utenti con le API:
     ```
     curl -X POST http://localhost:8082/api/auth/register \
@@ -287,7 +225,7 @@ Sviluppato un adapter specifico per usare sqlite per tutte le basi dati necessar
     https://replit.com/@alnao84/JavaSpringBootExample
     ```
 - Versione **Sqlite** su **AWS-EC2**: è stata sviluppata anche uno script per eseguire il microservizio in una istanza EC2 con il profilo sqlite con docker e senza bisogno di RDS, Dynamo e ECS. 
-  - Script di creazione dello stack (Key, SecurityGroup e avvio istanza EC2):
+  - Script di creazione dello stack (lo script crea la Key, il SecurityGroup e avvia una istanza EC2):
     ```
     ./script/sqlite-ec2/start-all.sh 
     ```

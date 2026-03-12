@@ -93,6 +93,20 @@
             <artifactId>snakeyaml</artifactId>
             <version>2.2</version>
         </dependency>
+
+        <!-- ShedLock core -->
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-spring</artifactId>
+            <version>5.16.0</version>
+        </dependency>
+
+        <!-- Provider in-memory (NON usare in produzione/cluster!) -->
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-provider-inmemory</artifactId>
+            <version>5.16.0</version>
+        </dependency>
     </dependencies>
 
     <build>

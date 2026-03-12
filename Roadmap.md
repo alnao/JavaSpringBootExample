@@ -78,7 +78,22 @@ Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: c
     - ✅ ⚙️ Modifica al frontend per visualizzare l'errore specifico se qualcun'altro ha bloccato quella annotazione
     - 🚧 🤖 Test finali del frontend e conclusione processo di prenotazione delle annotazioni!
   - 🚧 🕸️ Gestione invio notifiche singolo se ci sono più istanze dell'applicazione in esecuzione (esempio minikube)
-  - 🚧 🔄 Import annotazioni (JSON e/o CSV): creazione service per l'import di annotazioni con cambio di stato dopo averle importate con implementazioni su tutti gli adapter
+    - ✅ 🛠️ Rinominare l'attuale sistema di lock in "AnnotazioneRedisLockService"
+    - ✅ ⚙️ Aggiunta libreria shedlock nel core e creazione classe config nel adapter redis
+    - ✅ 🕸️ Gestione con lock schedulazione nei profili cloud
+    - ✅ 🔧 Gestione senza lock schedulazione nei profili sqlite
+    - ✅ 🎯 Test con profilo sqlite e kube
+    - 🚧 🤖 Test con profilo AWS e Azure
+  - 🚧 🛠️ Refactor e rimozione del `@Autowired` a favore del injectiont tramite costruttore!
+  - 🚧 🔄 Import annotazioni: sistemi di import dati
+    - 🚧 📖 Consumer Kafka che legge da un topic e inserisce annotazioni
+    - 🚧 📝 Nuovo stato annotazioni "Importata"
+    - 🚧 ⚙️ Import annotazioni da un CSV
+    - 🚧 🛠️ Import annotazioni da un Json 
+    - 🚧 🔧 Sistema di backup and restore tramite export json (che salva in mongo? o db postgres)
+    - 🚧 🎯 Test con profilo sqlite e kube
+    - 🚧 🤖 Test con profilo AWS e Azure
+  - 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.3.0
   - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie annotazioni
     - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
   - 🚧 🧭 Sistema che gestisce la scadenza di una annotazione con spring-batch che elabora tutte le annotazioni rifiutate o scadute, con nuovo stato scadute.
@@ -89,7 +104,7 @@ Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: c
   - 🚧 🔒 Gestione password tramite AWS Secret manager nel profilo aws
   - 🚧 🔒 Gestione password tramite Azure key vault nel profilo azure
   - 🚧 🔒 Gestione password tramite File statici nel profilo sqlite
-- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.2.0
+- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.3.0
 - 🚧 ☸️ Esecuzione su Cloud in infrastruttura Kubernetes
   - 🚧 🤖 Deploy su AWS su EKS del profilo Kube
   - 🚧 📦 Deploy su Azure con Azure Container Apps (ACA non è Kubernetes *ma quasi*)

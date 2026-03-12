@@ -1,6 +1,6 @@
 package it.alnao.springbootexample.sqlite.service;
 
-import it.alnao.springbootexample.core.service.LockService;
+import it.alnao.springbootexample.core.service.AnnotazioneLockService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 @Profile("sqlite")
-public class InMemoryLockService implements LockService {
+public class InMemoryLockService implements AnnotazioneLockService {
     
     private static final Logger logger = LoggerFactory.getLogger(InMemoryLockService.class);
     

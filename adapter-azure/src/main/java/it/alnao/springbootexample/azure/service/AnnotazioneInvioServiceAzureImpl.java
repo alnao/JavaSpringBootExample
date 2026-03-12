@@ -79,7 +79,6 @@ public class AnnotazioneInvioServiceAzureImpl implements AnnotazioneInvioService
                 logger.info("Annotazione con ID {} inviata con successo", ann.getMetadata().getId());
             } catch (Exception e) {
                 logger.error("Errore durante l'invio dell'annotazione con ID {}: {}", ann.getMetadata().getId(), e.getMessage());
-                e.printStackTrace();
                 // Gestione errore: puoi loggare o impostare stato errore
                 var meta = ann.getMetadata();
                 meta.setStato(StatoAnnotazione.ERRORE.name());

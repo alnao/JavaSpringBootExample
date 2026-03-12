@@ -8,7 +8,7 @@ import it.alnao.springbootexample.core.exception.AnnotationLockedException;
 import it.alnao.springbootexample.core.repository.AnnotazioneRepository;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import it.alnao.springbootexample.core.service.AnnotazioneService;
-import it.alnao.springbootexample.core.service.LockService;
+import it.alnao.springbootexample.core.service.AnnotazioneLockService;
 import it.alnao.springbootexample.core.utils.AnnotazioniUtils;
 import it.alnao.springbootexample.mongodb.entity.AnnotazioneStoricoEntity;
 import it.alnao.springbootexample.mongodb.repository.AnnotazioneStoricoMongoRepository;
@@ -71,7 +71,7 @@ public class AnnotazioneServiceImpl implements AnnotazioneService {
     private AnnotazioneStoricoMongoRepository storicoMongoRepository;
 
     @Autowired
-    private LockService lockService;
+    private AnnotazioneLockService lockService;
 
     @Override
     public AnnotazioneCompleta creaAnnotazione(String valoreNota, String descrizione, String utente) {

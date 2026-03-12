@@ -1,28 +1,39 @@
 # Sistema di Gestione annotazioni
 
   <p align="center">
-    <img src="https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=black"  height=60/>
-    <img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=for-the-badge&logo=SpringBoot&logoColor=white"  height=60/>
+    <img src="https://img.shields.io/badge/Java-ED8B00?&logo=openjdk&logoColor=black"  height=32/>
+    <img src="https://img.shields.io/badge/SpringBoot-6DB33F?&logo=SpringBoot&logoColor=white"  height=32/>
+    <img src="https://img.shields.io/badge/Docker-326CE5?&logo=Docker&logoColor=white" height=32 />
+    <img src="https://img.shields.io/badge/Kubernetes-326CE5?&logo=kubernetes&logoColor=white" height=32 />
+    <br />
+    <img src="https://img.shields.io/badge/PostgreSQL-4169E1?&logo=postgresql&logoColor=white" height=32 /> 
+    <img src="https://img.shields.io/badge/MongoDB-47A248?&logo=mongodb&logoColor=white" height=32 />
+    <img src="https://img.shields.io/badge/Kafka-434F40?&logo=apachekafka&logoColor=white"height=32 />
+    <img src="https://img.shields.io/badge/Redis-DC382D?&logo=redis&logoColor=white" height=32 />
+    <br />
+    <img src="https://img.shields.io/badge/AWS-FF9900?logo=amazonaws&logoColor=white" height=32/>
+    <img src="https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white" height=32/>
+    <img src="https://img.shields.io/badge/Azure-0078D4?logo=Azure&logoColor=white" height=32/>
+    <img src="https://img.shields.io/badge/SQL%20Server-CC2927?logo=microsoftsqlserver&logoColor=white" height=32/>
   </p>
-
 Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: consente di creare, modificare e visualizzare annotazioni, utenti con privilegi da moderatore possono confermare le annotazioni e utenti con privilegi da amministratori possono confermare e *inviare* annotazioni a sistemi esterni.
 
 
-La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’architettura esagonale ([Hexagonal Architecture](https://en.wikipedia.org/wiki/Hexagonal_architecture_(software))), con pieno supporto al deployment sia in ambienti on-premise che su cloud come AWS e Azure sfruttando Docker e Kubernetes.
+La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’architettura esagonale ([Hexagonal Architecture](https://en.wikipedia.org/wiki/Hexagonal_architecture_(software))), con pieno supporto al deployment sia in ambienti on-premise che su cloud come AWS e Azure usando Docker e Kubernetes con l'immagine disponibile pubblicamente nel [repository docker hub](https://hub.docker.com/repository/docker/alnao/gestioneannotazioni/general).
 
 
 Il progetto è pensato per essere agnostico rispetto al cloud provider: sono sviluppate implementazioni per Replit, AWS e Azure. Il DBMS utilizzato dipende dal profilo selezionato:
 
 
-| Profilo | Sistema/Cloud | DBMS Sql | DBMS No-Sql | Export | Lock annotazioni |
-|--------|----------|-------------|-------------|----------|--------------------|
-| `kube` | ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white) | ![Kafka](https://img.shields.io/badge/Kafka-434F40?style=flat-square&logo=apachekafka&logoColor=white) | ![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | 
-| `sqlite` | ![Replit](https://img.shields.io/badge/Replit-F26207?style=flat-square&logo=replit&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![Java](https://img.shields.io/badge/ConcurrentHashMap-ED8B00?style=flat-square&logo=openjdk&logoColor=white) | 
-| `aws` | ![AWS](https://img.shields.io/badge/AWS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) | ![DynamoDB](https://img.shields.io/badge/DynamoDB-4053D6?style=flat-square&logo=amazondynamodb&logoColor=white) | ![SQS](https://img.shields.io/badge/SQS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![Elasticache for Redis](https://img.shields.io/badge/ElastiCache%20for%20Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | 
-| `azure` | ![Azure](https://img.shields.io/badge/Azure-0078D4?style=flat-square&logo=microsoftazure&logoColor=white) | ![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?style=flat-square&logo=microsoftsqlserver&logoColor=white) | ![Cosmos DB](https://img.shields.io/badge/Cosmos%20DB-0089D6?style=flat-square&logo=azurecosmosdb&logoColor=white) | ![Service Bus](https://img.shields.io/badge/Service%20Bus-0089D6?style=flat-square&logo=microsoftazure&logoColor=white) | ![Azure Cache for Redis](https://img.shields.io/badge/Cache%20for%20Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | 
+| Profilo | Cloud | DBMS Sql | DBMS No-Sql | Export | Lock annotazioni | Docs |
+|--------|----------|-------------|-------------|----------|--------------------|--------|
+| `sqlite` | ![Replit](https://img.shields.io/badge/Replit-F26207?style=flat-square&logo=replit&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![Java](https://img.shields.io/badge/ConcurrentHashMap-ED8B00?style=flat-square&logo=openjdk&logoColor=white) | |
+| `kube` | ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white) | ![Kafka](https://img.shields.io/badge/Kafka-434F40?style=flat-square&logo=apachekafka&logoColor=white) | ![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | [Docker](./PlatformDockerHub.md) |
+| `aws` | ![AWS](https://img.shields.io/badge/AWS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) | ![DynamoDB](https://img.shields.io/badge/DynamoDB-4053D6?style=flat-square&logo=amazondynamodb&logoColor=white) | ![SQS](https://img.shields.io/badge/SQS-FF9900?style=flat-square&logo=amazonaws&logoColor=white) | ![Elasticache for Redis](https://img.shields.io/badge/ElastiCache%20for%20Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | [AWS](./PlatformAws.md) |
+| `azure` | ![Azure](https://img.shields.io/badge/Azure-0078D4?style=flat-square&logo=microsoftazure&logoColor=white) | ![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?style=flat-square&logo=microsoftsqlserver&logoColor=white) | ![Cosmos DB](https://img.shields.io/badge/Cosmos%20DB-0089D6?style=flat-square&logo=azurecosmosdb&logoColor=white) | ![Service Bus](https://img.shields.io/badge/Service%20Bus-0089D6?style=flat-square&logo=microsoftazure&logoColor=white) | ![Azure Cache for Redis](https://img.shields.io/badge/Cache%20for%20Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | [Azure](./PlatformAzure.md) |
 
 
-## 📚 Indice rapido
+## 📚 Indice contenuti
 - 📝 [Roadmap & todo-list](./Roadmap.md)
   - 📖 [Test di non regressione](./Roadmap.md#-Test-di-non-regressione) ad ogni rilascio *bisognerebbe* eseguire un test di non regressione completo!
 - 🛠️ [Struttura progetto](#-struttura-progetto)
@@ -34,19 +45,9 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
   - ⏰ [Sistema di lock distribuito con Redis](#-Redis)
   - 📖 [Frontend con JavaFx](#-Frontend-con-JavaFx)
   - 🔒 [Sistema di autenticazione](#-Sistema-di-autenticazione)
-- 🐳 [Deploy ed esecuzione con DockerHub](./PlatformDockerHub.md/#-deploy-ed-esecuzione-con-dockerhub)
-  - 🐳 [Esecuzione completa con Docker Compose (con Mongo e Postgresql)](./PlatformDockerHub.md#-Esecuzione-completa-con-Docker-Compose)
-  - ☸️ [Esecuzione su Minikube e Kubernetes locale](./PlatformDockerHub.md#-Esecuzione-su-Minikube-e-Kubernetes-locale)
-  - 📦 [Versione SQLite per Replit](./PlatformDockerHub.md#-Versione-SQLite-per-Replit)
-- ☁️ [Esecuzione del profilo AWS (con MySql e Dynamo)](./PlatformDockerAws.md#-Esecuzione-del-profilo-AWS-in-locale)
-  - 🚀 [Esecuzione su AWS EC2](./PlatformDockerAws.md#-Esecuzione-su-AWS-EC2)
-  - 🐳 [Esecuzione su AWS ECS Fargate](./PlatformDockerAws.md#-Esecuzione-su-aws-ecs-fargate)
-- ☁️ [Esecuzione locale profilo Azure (con CosmosDB e SqlServer)](./PlatformDockerAzure.md#-Esecuzione-locale-profilo-Azure)
-  - 🚀 [Esecuzione locale profilo Azure con db remoti su Azure](./PlatformDockerAzure.md#-Esecuzione-locale-profilo-Azure-con-db-remoti-su-Azure)
-  - 🐳 [Esecuzione locale profilo Kube con db remoti su Azure](./PlatformDockerAzure.md#-Esecuzione-locale-profilo-Kube-con-db-remoti-su-Azure)
-  - 🚀 [Esecuzione su VirtualMachine Azure del profilo Azure](./PlatformDockerAzure.md#-Esecuzione-su-VirtualMachine-Azure-del-profilo-Azure)
-  - 🚀 [Esecuzione su Azure Container Instances del profilo Azure](./PlatformDockerAzure.md#-Esecuzione-su-Azure-Container-Instances-del-profilo-Azure)
-
+- 📦 [Docker & Kubernetes & Minikube](./PlatformDockerHub.md) vedi file dedicato
+- ☁️ [AWS (EC2 o ECS Fargate con MySql e Dynamo)](./PlatformAws.md) vedi file dedicato
+- ☁️ [Azure (Virtual o Container con CosmosDB e SqlServer)](./PlatformAzure.md) vedi file dedicato
 
 
 ## 🛠️ Struttura progetto
@@ -63,7 +64,7 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
   ├── 📁 adapter-redis         # Sistema di lock distribuiti con Redis
   ├── 📁 adapter-sqlite        # Implementazione SQLite (con solo il database SQLite locale)
   ├── 📁 adapter-web           # Risorse statiche e mini-sito di prova
-  ├── 📁 adapter-javafx        # Componenti di un front-end sviluppato con JavaFX (compatibile solo con Sqlite)
+  ├── 📁 adapter-javafx        # Componenti di un front-end sviluppato con JavaFX (solo Sqlite)
   └── 📁 application           # Applicazione principale Spring Boot
   ```
 - **Caratteristiche**:
@@ -102,14 +103,7 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
     --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
     --server.port=8082
   ```
-  - Comando utile per creare un nuovo utente
-    ```
-    curl -X POST http://localhost:8082/api/auth/register   -H "Content-Type: application/json"   -d '{
-      "username": "alnao2",
-      "password": "$2b$12$hFoVfPak5m77PJD0cIIe8u1Yo5out7B.h8PWvwfbaloys/ndX9Zpi",
-      "email": "admin@example.com"
-    }'
-    ```
+  - il sistema è disponibile all'indirizzo `localhost:8082`
 - Esecuzione profilo On-Premise con il docker-compose che avvia anche i servizi DBMS
     ```bash
     docker-compose up -d --build
@@ -301,7 +295,7 @@ L'applicazione supporta l'analisi statica del codice, la code coverage e la qual
 - **Esecuzione analisi Maven con coverage**:
     ```bash
     mvn clean verify sonar:sonar \
-      -Dsonar.login=sqa_96b98122159fb242ae6b85a0f0ba42d82c41e06d \
+      -Dsonar.login=squ_25f65a4aba6446b0e388389e27fc9ca808980d33 \
       -Dsonar.host.url=http://localhost:9000 \
       -Pkube
     ```
@@ -374,6 +368,15 @@ Redis è integrato nell'applicazione come sistema di **lock distribuito** per ge
     ```
     docker exec gestioneannotazioni-redis redis-cli MONITOR
     ```
+- Per gestire le schedulazioni nel microservizio in caso di più istanze in esecuzione (altrimenti partirebbero più task nello stesso momento), si usa **ShedLock** che crea un lock distribuito (su Redis) usando il nome `scheduler-send-annotations` come chiave univoca. Quando arriva l'orario impostato nel metodo indicato come `@Scheduled`:
+  - Tutte le istanze provano ad acquisire il lock
+  - Solo UNA vince e aggiorna il record nel lock store con lock_until nel futuro
+  - Le altre 2 saltano l'esecuzione immediatamente (non aspettano)
+    - `lockAtLeastFor`: Il job occupa il lock per almeno 1 minuto (utile per job frequenti)
+    - `lockAtMostFor`: Se l'istanza crasha, il lock scade dopo 3m → failover sicuro
+  - Il lock ha un timeout, fino allo scadere solo il vincitore procederà all'esecuzione.
+
+
 
 ### 📖 Frontend con JavaFx
 L'adapter JavaFX fornisce un'interfaccia desktop nativa per la gestione delle annotazioni, completamente integrata con l'architettura esagonale del progetto. Utilizza JavaFX 21 per la UI, Spring Boot per dependency injection e SQLite come database embedded.

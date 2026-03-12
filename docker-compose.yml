@@ -13,7 +13,7 @@ version: '3.8'
 # - Adminer (PostgreSQL UI): http://localhost:8083
 # - Mongo Express (MongoDB UI): http://localhost:8084
 # - Kafka UI: http://localhost:8085
-
+# - Redis7: localhost:6379
 
 services:
   # PostgreSQL per metadati

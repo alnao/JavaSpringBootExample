@@ -7,7 +7,7 @@ import java.util.UUID;
  * Porta per il servizio di gestione lock distribuiti.
  * Previene modifiche concorrenti alla stessa annotazione.
  */
-public interface LockService {
+public interface AnnotazioneLockService {
     
     /**
      * Acquisisce un lock su un'annotazione per un utente specifico

@@ -19,7 +19,7 @@ import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.exception.AnnotationLockedException;
 import it.alnao.springbootexample.core.portService.AnnotazioniPortService;
-import it.alnao.springbootexample.core.service.LockService;
+import it.alnao.springbootexample.core.service.AnnotazioneLockService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,18 +40,18 @@ import java.util.UUID;
 @RequestMapping("/api/annotazioni")
 @CrossOrigin(origins = "*")
 @Tag(name = "Annotazioni", description = "API per la gestione delle annotazioni")
-public class AnnotazioneController {
+public class AnnotazioniController {
     //predo da una properties o config
     @Value("${gestione-annotazioni.prenotazione-lock.lock-expiration-seconds:42}")
     Integer lockNumeroSecondiDefault;
     
-    private static final Logger logger = LoggerFactory.getLogger(AnnotazioneController.class);
+    private static final Logger logger = LoggerFactory.getLogger(AnnotazioniController.class);
     
     @Autowired
     private AnnotazioniPortService annotazioniPortService;
     
     @Autowired
-    private LockService lockService;
+    private AnnotazioneLockService lockService;
     
     @Operation(summary = "Crea una nuova annotazione")
     @ApiResponses(value = {
@@ -61,11 +61,11 @@ public class AnnotazioneController {
     @PostMapping
     public ResponseEntity<AnnotazioneResponse> creaAnnotazione(
             @Valid @RequestBody CreaAnnotazioneRequest request) {
-        logger.info("POST /api/annotazioni - Creazione annotazione per utente: {}, valore: {}", request.getUtente(), request.getValoreNota());
+        logger.info("[AnnotazioniController] [POST /api/annotazioni] - Creazione annotazione per utente: {}, valore: {}", request.getUtente(), request.getValoreNota());
         
         AnnotazioneCompleta annotazioneCompleta = annotazioniPortService.creaAnnotazione(AnnotazioneMapper.fromCreateRequest(request),request.getUtente());
 
-        logger.info("POST /api/annotazioni - Annotazione creata con successo, ID: {}", annotazioneCompleta.getId());
+        logger.info("[AnnotazioniController] [POST /api/annotazioni] - Annotazione creata con successo, ID: {}", annotazioneCompleta.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(AnnotazioneMapper.toResponse(annotazioneCompleta));
     }
@@ -73,7 +73,7 @@ public class AnnotazioneController {
     @Operation(summary = "Ottieni tutte le annotazioni")
     @GetMapping
     public ResponseEntity<List<AnnotazioneResponse>> ottieniTutteLeAnnotazioni() {
-        logger.info("GET /api/annotazioni - Richiesta tutte le annotazioni");
+        logger.info("[AnnotazioniController] [GET /api/annotazioni] - Richiesta tutte le annotazioni");
         List<AnnotazioneCompleta> annotazioni = annotazioniPortService.trovaTutte();
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
@@ -84,7 +84,7 @@ public class AnnotazioneController {
             @Parameter(description = "ID dell'annotazione")
             @PathVariable UUID id) {
         
-        logger.info("GET /api/annotazioni/{} - Richiesta annotazione per ID", id);
+        logger.info("[AnnotazioniController] [GET /api/annotazioni/{}] - Richiesta annotazione per ID", id);
         return annotazioniPortService.trovaPerID(id)
                 .map(annotazione -> ResponseEntity.ok(AnnotazioneMapper.toResponse(annotazione)))
                 .orElse(ResponseEntity.notFound().build());
@@ -97,23 +97,23 @@ public class AnnotazioneController {
         @ApiResponse(responseCode = "404", description = "Annotazione non trovata")
     })
     @PutMapping("/{id}")
-    public ResponseEntity<?> aggiornaAnnotazione(
+    public ResponseEntity<AnnotazioneResponse> aggiornaAnnotazione(
             @Parameter(description = "ID dell'annotazione")
             @PathVariable UUID id,
             @Valid @RequestBody AggiornaAnnotazioneRequest request) {
-        logger.info("PUT /api/annotazioni/{} - Aggiornamento annotazione per utente: {}", id, request.getUtente());
+        logger.info("[AnnotazioniController] [PUT /api/annotazioni/{}] - Aggiornamento annotazione per utente: {}", id, request.getUtente());
         
         try {
             request.setId(id);
             AnnotazioneCompleta annotazioneAggiornata = annotazioniPortService.aggiornaAnnotazione(
                 AnnotazioneMapper.fromUpdateRequest(request), request.getUtente());
-            logger.info("PUT /api/annotazioni/{} - Annotazione aggiornata con successo", id);
+            logger.info("[AnnotazioniController] [PUT /api/annotazioni/{}] - Annotazione aggiornata con successo", id);
             return ResponseEntity.ok(AnnotazioneMapper.toResponse(annotazioneAggiornata));
             
         } catch (AnnotationLockedException e) {
-            logger.warn("PUT /api/annotazioni/{} - Lock non acquisito: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ErrorResponse(e.getMessage(), "ANNOTATION_LOCKED"));
+            logger.warn("[AnnotazioniController] [PUT /api/annotazioni/{}] - Lock non acquisito: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);  
+                //ex new ErrorResponse(e.getMessage(), "ANNOTATION_LOCKED")
         }
     }
     
@@ -122,9 +122,9 @@ public class AnnotazioneController {
     public ResponseEntity<Void> eliminaAnnotazione(
             @Parameter(description = "ID dell'annotazione")
             @PathVariable UUID id) {
-        logger.info("DELETE /api/annotazioni/{} - Eliminazione annotazione", id);
+        logger.info("[AnnotazioniController] [DELETE /api/annotazioni/{}] - Eliminazione annotazione", id);
         annotazioniPortService.eliminaAnnotazione(id);
-        logger.info("DELETE /api/annotazioni/{} - Annotazione eliminata con successo", id);
+        logger.info("[AnnotazioniController] [DELETE /api/annotazioni/{}] - Annotazione eliminata con successo", id);
         return ResponseEntity.noContent().build();
     }
     
@@ -134,7 +134,7 @@ public class AnnotazioneController {
             @Parameter(description = "Testo da cercare")
             @RequestParam String testo) {
         
-        logger.info("GET /api/annotazioni/cerca?testo={} - Ricerca annotazioni per testo", testo);
+        logger.info("[AnnotazioniController] [GET /api/annotazioni/cerca?testo={}] - Ricerca annotazioni per testo", testo);
         List<AnnotazioneCompleta> annotazioni = annotazioniPortService.cercaPerTesto(testo);
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
@@ -145,7 +145,7 @@ public class AnnotazioneController {
             @Parameter(description = "Nome utente")
             @PathVariable String utente) {
         
-        logger.info("GET /api/annotazioni/utente/{} - Richiesta annotazioni per utente", utente);
+        logger.info("[AnnotazioniController] [GET /api/annotazioni/utente/{}] - Richiesta annotazioni per utente", utente);
         List<AnnotazioneCompleta> annotazioni = annotazioniPortService.trovaPerUtente(utente);
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
@@ -156,7 +156,7 @@ public class AnnotazioneController {
             @Parameter(description = "Nome categoria")
             @PathVariable String categoria) {
         
-        logger.info("GET /api/annotazioni/categoria/{} - Richiesta annotazioni per categoria", categoria);
+        logger.info("[AnnotazioniController] [GET /api/annotazioni/categoria/{}] - Richiesta annotazioni per categoria", categoria);
         List<AnnotazioneCompleta> annotazioni = annotazioniPortService.trovaPerCategoria(categoria);
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
@@ -164,7 +164,7 @@ public class AnnotazioneController {
     @Operation(summary = "Ottieni annotazioni pubbliche")
     @GetMapping("/pubbliche")
     public ResponseEntity<List<AnnotazioneResponse>> ottieniAnnotazioniPubbliche() {
-        logger.info("GET /api/annotazioni/pubbliche - Richiesta annotazioni pubbliche");
+        logger.info("[AnnotazioniController] [GET /api/annotazioni/pubbliche] - Richiesta annotazioni pubbliche");
         List<AnnotazioneCompleta> annotazioni = annotazioniPortService.trovaPubbliche();
         return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
     }
@@ -175,13 +175,13 @@ public class AnnotazioneController {
             @Parameter(description = "Stato delle annotazioni")
             @PathVariable String stato) {
         
-        logger.info("GET /api/annotazioni/stato/{} - Richiesta annotazioni per stato", stato);
+        logger.info("[AnnotazioniController] [GET /api/annotazioni/stato/{}] - Richiesta annotazioni per stato", stato);
         try {
             StatoAnnotazione statoEnum = StatoAnnotazione.valueOf(stato.toUpperCase());
             List<AnnotazioneCompleta> annotazioni = annotazioniPortService.trovaPerStato(statoEnum);
             return ResponseEntity.ok(AnnotazioneMapper.toResponseList(annotazioni));
         } catch (IllegalArgumentException e) {
-            logger.error("GET /api/annotazioni/stato/{} - Stato non valido: {}", stato, e.getMessage());
+            logger.error("[AnnotazioniController] [GET /api/annotazioni/stato/{}] - Stato non valido: {}", stato, e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -189,7 +189,7 @@ public class AnnotazioneController {
     @Operation(summary = "Ottieni statistiche delle annotazioni")
     @GetMapping("/statistiche")
     public ResponseEntity<StatisticheResponse> ottieniStatistiche() {
-        logger.info("GET /api/annotazioni/statistiche - Richiesta statistiche annotazioni");
+        logger.info("[AnnotazioniController] [GET /api/annotazioni/statistiche] - Richiesta statistiche annotazioni");
         long totaleAnnotazioni = annotazioniPortService.contaAnnotazioni();
         
         StatisticheResponse statistiche = new StatisticheResponse();
@@ -206,18 +206,18 @@ public class AnnotazioneController {
     })
     @GetMapping("/transizioni-stato")
     public ResponseEntity<List<TransizioneStatoResponse>> ottieniTransizioniStato() {
-        //logger.info("GET /api/annotazioni/transizioni-stato - Richiesta lista transizioni di stato");
+        //logger.info("[AnnotazioniController] [GET /api/annotazioni/transizioni-stato] - Richiesta lista transizioni di stato");
         
         try {
             List<TransizioneStatoResponse> transizioni = TransizioneStatoMapper.toResponseList(
                 annotazioniPortService.listaCambiamentiStati()
             );
             
-            //logger.info("GET /api/annotazioni/transizioni-stato - Restituiti {} possibili cambi di stato", transizioni.size());
+            //logger.info("[AnnotazioniController] [GET /api/annotazioni/transizioni-stato] - Restituiti {} possibili cambi di stato", transizioni.size());
             return ResponseEntity.ok(transizioni);
             
         } catch (Exception e) {
-            logger.error("GET /api/annotazioni/transizioni-stato - Errore: {}", e.getMessage());
+            logger.error("[AnnotazioniController] [GET /api/annotazioni/transizioni-stato] - Errore: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -235,7 +235,7 @@ public class AnnotazioneController {
             @PathVariable UUID id,
             @Valid @RequestBody CambiaStatoAnnotazioneRequest request) {
         
-        logger.info("PATCH /api/annotazioni/{}/stato - Cambio stato da {} a {} per utente: {}", 
+        logger.info("[AnnotazioniController] [PATCH /api/annotazioni/{}/stato] - Cambio stato da {} a {} per utente: {}", 
                    id, request.getVecchioStato(), request.getNuovoStato(), request.getUtente());
         
         try {
@@ -246,19 +246,19 @@ public class AnnotazioneController {
                 id, vecchioStato, nuovoStato, request.getUtente()
             );
             
-            logger.info("PATCH /api/annotazioni/{}/stato - Stato cambiato con successo da {} a {}", 
+            logger.info("[AnnotazioniController] [PATCH /api/annotazioni/{}/stato] - Stato cambiato con successo da {} a {}", 
                        id, request.getVecchioStato(), request.getNuovoStato());
             
             return ResponseEntity.ok(AnnotazioneMapper.toResponse(annotazioneAggiornata));
             
         } catch (IllegalArgumentException e) {
-            logger.error("PATCH /api/annotazioni/{}/stato - Errore validazione: {}", id, e.getMessage());
+            logger.error("[AnnotazioniController] [PATCH /api/annotazioni/{}/stato] - Errore validazione: {}", id, e.getMessage());
             return ResponseEntity.badRequest().build();
         } catch (IllegalStateException e) {
-            logger.error("PATCH /api/annotazioni/{}/stato - Transizione non permessa: {}", id, e.getMessage());
+            logger.error("[AnnotazioniController] [PATCH /api/annotazioni/{}/stato] - Transizione non permessa: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (Exception e) {
-            logger.error("PATCH /api/annotazioni/{}/stato - Errore interno: {}", id, e.getMessage());
+            logger.error("[AnnotazioniController] [PATCH /api/annotazioni/{}/stato] - Errore interno: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -276,11 +276,11 @@ public class AnnotazioneController {
             @PathVariable UUID id,
             @Valid @RequestBody PrenotaAnnotazioneRequest request) {
         
-        logger.info("POST /api/annotazioni/{}/prenota - Prenotazione annotazione per utente: {}", id, request.getUtente());
+        logger.info("[AnnotazioniController] [POST /api/annotazioni/{}/prenota] - Prenotazione annotazione per utente: {}", id, request.getUtente());
         
         // Verifica che l'annotazione esista
         if (annotazioniPortService.trovaPerID(id).isEmpty()) {
-            logger.warn("POST /api/annotazioni/{}/prenota - Annotazione non trovata", id);
+            logger.warn("[AnnotazioniController] [POST /api/annotazioni/{}/prenota] - Annotazione non trovata", id);
             return ResponseEntity.notFound().build();
         }
         
@@ -292,7 +292,7 @@ public class AnnotazioneController {
             
             // Se è bloccata dallo stesso utente, considera la prenotazione già attiva
             if (owner.equals(request.getUtente())) {
-                logger.info("POST /api/annotazioni/{}/prenota - Annotazione già prenotata dallo stesso utente", id);
+                logger.info("[AnnotazioniController] [POST /api/annotazioni/{}/prenota] - Annotazione già prenotata dallo stesso utente", id);
                 PrenotaAnnotazioneResponse response = new PrenotaAnnotazioneResponse(
                     id, 
                     request.getUtente(), 
@@ -305,7 +305,7 @@ public class AnnotazioneController {
             }
             
             // Bloccata da altro utente
-            logger.warn("POST /api/annotazioni/{}/prenota - Annotazione già bloccata da: {}", id, owner);
+            logger.warn("[AnnotazioniController] [POST /api/annotazioni/{}/prenota] - Annotazione già bloccata da: {}", id, owner);
             return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(
                     "Annotazione già in modifica da: " + owner, 
@@ -317,7 +317,7 @@ public class AnnotazioneController {
         boolean lockAcquired = lockService.acquireLock(id, request.getUtente(), numeroSecondi);
         
         if (lockAcquired) {
-            logger.info("POST /api/annotazioni/{}/prenota - Lock acquisito per {} secondi da utente: {}", 
+            logger.info("[AnnotazioniController] [POST /api/annotazioni/{}/prenota] - Lock acquisito per {} secondi da utente: {}", 
                 id, numeroSecondi, request.getUtente());
             
             PrenotaAnnotazioneResponse response = new PrenotaAnnotazioneResponse(
@@ -331,7 +331,7 @@ public class AnnotazioneController {
             
             return ResponseEntity.ok(response);
         } else {
-            logger.warn("POST /api/annotazioni/{}/prenota - Impossibile acquisire lock per utente: {}", 
+            logger.warn("[AnnotazioniController] [POST /api/annotazioni/{}/prenota] - Impossibile acquisire lock per utente: {}", 
                 id, request.getUtente());
             
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -355,11 +355,11 @@ public class AnnotazioneController {
             @PathVariable UUID id,
             @Valid @RequestBody PrenotaAnnotazioneRequest request) {
         
-        logger.info("DELETE /api/annotazioni/{}/prenota - Rilascio prenotazione per utente: {}", id, request.getUtente());
+        logger.info("[AnnotazioniController] [DELETE /api/annotazioni/{}/prenota] - Rilascio prenotazione per utente: {}", id, request.getUtente());
         
         // Verifica che l'annotazione esista
         if (annotazioniPortService.trovaPerID(id).isEmpty()) {
-            logger.warn("DELETE /api/annotazioni/{}/prenota - Annotazione non trovata", id);
+            logger.warn("[AnnotazioniController] [DELETE /api/annotazioni/{}/prenota] - Annotazione non trovata", id);
             return ResponseEntity.notFound().build();
         }
         
@@ -368,7 +368,7 @@ public class AnnotazioneController {
             String owner = lockService.getOwner(id).orElse("unknown");
             
             if (!owner.equals(request.getUtente())) {
-                logger.warn("DELETE /api/annotazioni/{}/prenota - Tentativo di rilascio lock da utente non proprietario. Owner: {}, Richiedente: {}", 
+                logger.warn("[AnnotazioniController] [DELETE /api/annotazioni/{}/prenota] - Tentativo di rilascio lock da utente non proprietario. Owner: {}, Richiedente: {}", 
                     id, owner, request.getUtente());
                 
                 return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -381,7 +381,7 @@ public class AnnotazioneController {
         
         // Rilascia il lock
         lockService.releaseLock(id, request.getUtente());
-        logger.info("DELETE /api/annotazioni/{}/prenota - Lock rilasciato con successo da utente: {}", 
+        logger.info("[AnnotazioniController] [DELETE /api/annotazioni/{}/prenota] - Lock rilasciato con successo da utente: {}", 
             id, request.getUtente());
         
         return ResponseEntity.noContent().build();
@@ -397,7 +397,7 @@ public class AnnotazioneController {
             @Parameter(description = "ID dell'annotazione")
             @PathVariable UUID id) {
         
-        logger.info("GET /api/annotazioni/{}/prenota/stato - Verifica stato prenotazione", id);
+        logger.info("[AnnotazioniController] [GET /api/annotazioni/{}/prenota/stato] - Verifica stato prenotazione", id);
         // Verifica che l'annotazione esista
         if (annotazioniPortService.trovaPerID(id).isEmpty()) {
             return ResponseEntity.notFound().build();
