@@ -19,6 +19,20 @@ transizioni:
     ruoloRichiesto: "ADMIN"
     descrizione: "Admin può modificare annotazione"
 
+  # Transizioni duplicate per IMPORTATA (come MODIFICATA)
+  - statoPartenza: "INSERITA"
+    statoArrivo: "IMPORTATA"
+    ruoloRichiesto: "USER"
+    descrizione: "Utente può importare la propria annotazione"
+  - statoPartenza: "INSERITA"
+    statoArrivo: "IMPORTATA"
+    ruoloRichiesto: "MODERATOR"
+    descrizione: "Moderatore può importare annotazione"
+  - statoPartenza: "INSERITA"
+    statoArrivo: "IMPORTATA"
+    ruoloRichiesto: "ADMIN"
+    descrizione: "Admin può importare annotazione"
+
   # Transizioni per MODERATOR
   - statoPartenza: "INSERITA"
     statoArrivo: "CONFERMATA"
@@ -29,6 +43,11 @@ transizioni:
     statoArrivo: "CONFERMATA"
     ruoloRichiesto: "MODERATOR"
     descrizione: "Moderatore può confermare annotazione modificata"
+
+  - statoPartenza: "IMPORTATA"
+    statoArrivo: "CONFERMATA"
+    ruoloRichiesto: "MODERATOR"
+    descrizione: "Moderatore può confermare annotazione importata"
 
   #- statoPartenza: "INSERITA"
   #  statoArrivo: "RIFIUTATA"
@@ -49,6 +68,11 @@ transizioni:
     statoArrivo: "BANNATA"
     ruoloRichiesto: "MODERATOR"
     descrizione: "Moderatore può bannare annotazione modificata"
+
+  - statoPartenza: "IMPORTATA"
+    statoArrivo: "BANNATA"
+    ruoloRichiesto: "MODERATOR"
+    descrizione: "Moderatore può bannare annotazione importata"
 
   # Transizioni per ADMIN
   - statoPartenza: "CONFERMATA"

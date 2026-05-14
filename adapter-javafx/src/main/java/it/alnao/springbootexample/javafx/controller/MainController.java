@@ -98,6 +98,7 @@ public class MainController {
             "TUTTI",
             StatoAnnotazione.INSERITA.getValue(),
             StatoAnnotazione.MODIFICATA.getValue(),
+            StatoAnnotazione.IMPORTATA.getValue(),
             StatoAnnotazione.CONFERMATA.getValue(),
             StatoAnnotazione.RIFIUTATA.getValue(),
             StatoAnnotazione.DAINVIARE.getValue(),
@@ -125,6 +126,7 @@ public class MainController {
         statoComboBox.setItems(FXCollections.observableArrayList(
             StatoAnnotazione.INSERITA.getValue(),
             StatoAnnotazione.MODIFICATA.getValue(),
+            StatoAnnotazione.IMPORTATA.getValue(),
             StatoAnnotazione.CONFERMATA.getValue(),
             StatoAnnotazione.RIFIUTATA.getValue(),
             StatoAnnotazione.DAINVIARE.getValue(),

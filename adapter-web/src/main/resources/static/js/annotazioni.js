@@ -384,7 +384,7 @@ function displayAnnotations(annotations, container = document.getElementById('an
                             </button>
                             <button class="btn btn-outline-secondary btn-sm" 
                                     onclick="editAnnotation('${annotation.id}')"
-                                    ${annotation.stato && !['INSERITA', 'MODIFICATA'].includes(annotation.stato) ? 'disabled title="Modifica non consentita per annotazioni in stato ' + annotation.stato + '"' : ''}>
+                                    ${annotation.stato && !['INSERITA', 'MODIFICATA', 'IMPORTATA'].includes(annotation.stato) ? 'disabled title="Modifica non consentita per annotazioni in stato ' + annotation.stato + '"' : ''}>
                                 <i class="bi bi-pencil"></i> Modifica
                             </button>
                             <button class="btn btn-outline-danger btn-sm" onclick="confirmDeleteAnnotation('${annotation.id}')">
@@ -615,6 +615,7 @@ function getStatoClass(stato) {
     switch(stato) {
         case 'INSERITA': return 'bg-light text-dark';
         case 'MODIFICATA': return 'bg-info';
+        case 'IMPORTATA': return 'bg-info';
         case 'CONFERMATA': return 'bg-primary';
         case 'RIFIUTATA': return 'bg-warning text-dark';
         case 'DAINVIARE': return 'bg-success';
@@ -630,6 +631,7 @@ function getStatoText(stato) {
     switch(stato) {
         case 'INSERITA': return 'Inserita';
         case 'MODIFICATA': return 'Modificata';
+        case 'IMPORTATA': return 'Importata';
         case 'CONFERMATA': return 'Confermata';
         case 'RIFIUTATA': return 'Rifiutata';
         case 'DAINVIARE': return 'DaInviare';
