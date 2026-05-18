@@ -4,6 +4,13 @@
 
 # Script di test per la funzionalità di prenotazione annotazioni
 
+# --- Logging: scrive su automatic-test-YYYYMMDD.log
+if [ -z "$LOG_FILE" ]; then
+  LOG_FILE="./automatic-test-$(date +%Y%m%d).log"
+  exec > >(tee -a "$LOG_FILE") 2>&1
+fi
+export LOG_FILE
+
 BASE_URL="http://localhost:8082/api"
 #se mi arriva un parametro lo uso come base url
 if [ ! -z "$1" ]; then
@@ -20,7 +27,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}Test Prenotazione Annotazioni${NC}"
+echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] Test Prenotazione Annotazioni${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
@@ -293,5 +300,5 @@ fi
 echo ""
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}✓ Test completati${NC} ✓"
+echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] ✓ Test Prenotazione completati${NC} ✓"
 echo -e "${BLUE}========================================${NC}"

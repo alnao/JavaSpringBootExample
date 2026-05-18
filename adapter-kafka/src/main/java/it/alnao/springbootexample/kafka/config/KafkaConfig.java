@@ -3,14 +3,20 @@ package it.alnao.springbootexample.kafka.config;
 import it.alnao.springbootexample.core.config.AnnotazioneInvioProperties;
 
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.kafka.annotation.EnableKafka;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.core.ConsumerFactory;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
@@ -20,6 +26,7 @@ import java.util.Map;
 
 @Configuration
 @Profile("kube")
+@EnableKafka
 public class KafkaConfig {
     
     private static final Logger logger = LoggerFactory.getLogger(KafkaConfig.class);
@@ -75,6 +82,47 @@ public class KafkaConfig {
         }
 
         return new DefaultKafkaProducerFactory<>(configProps);
+    }
+
+    @Bean
+    public ConsumerFactory<String, String> consumerFactory() {
+        Map<String, Object> configProps = new HashMap<>();
+
+        String brokerUrl = properties.getKafka().getBrokerUrl();
+        logger.info("[KafkaConfig] Configurazione Kafka Consumer - Broker URL: {}", brokerUrl);
+
+        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerUrl);
+        configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "annotazioni-import-consumer");
+        configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+
+        String saslMechanism = properties.getKafka().getSaslMechanism();
+        String saslJaasConfig = properties.getKafka().getSaslJaasConfig();
+        String securityProtocol = properties.getKafka().getSecurityProtocol();
+
+        if (saslMechanism != null && !saslMechanism.isEmpty()) {
+            configProps.put(SaslConfigs.SASL_MECHANISM, saslMechanism);
+        }
+
+        if (saslJaasConfig != null && !saslJaasConfig.isEmpty()) {
+            configProps.put(SaslConfigs.SASL_JAAS_CONFIG, saslJaasConfig);
+        }
+
+        if (securityProtocol != null && !securityProtocol.isEmpty()) {
+            configProps.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, securityProtocol);
+        }
+
+        return new DefaultKafkaConsumerFactory<>(configProps);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+            new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory());
+        return factory;
     }
     
     @Bean

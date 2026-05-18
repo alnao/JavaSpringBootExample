@@ -3,6 +3,7 @@ package it.alnao.springbootexample.core.domain;
 public enum StatoAnnotazione {
     INSERITA("INSERITA"),
     MODIFICATA("MODIFICATA"),
+    IMPORTATA("IMPORTATA"),
     CONFERMATA("CONFERMATA"),
     RIFIUTATA("RIFIUTATA"),
     DAINVIARE("DAINVIARE"),

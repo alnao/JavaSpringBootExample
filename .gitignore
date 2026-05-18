@@ -1,3 +1,6 @@
+automatic-test-*.log
+**/automatic-test-*.log
+
 *.pem
 annotazioni-key.pem
 bastion-key.pem

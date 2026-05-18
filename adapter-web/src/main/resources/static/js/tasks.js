@@ -12,6 +12,7 @@ let selectedTransition = null;
 const STATE_COLORS = {
     'INSERITA': 'bg-info',
     'MODIFICATA': 'bg-warning',
+    'IMPORTATA': 'bg-warning',
     'CONFERMATA': 'bg-success',
     'RIFIUTATA': 'bg-danger',
     'DAINVIARE': 'bg-primary',
@@ -25,6 +26,7 @@ const STATE_COLORS = {
 const STATE_ICONS = {
     'INSERITA': 'bi-plus-circle',
     'MODIFICATA': 'bi-pencil-square',
+    'IMPORTATA': 'bi-pencil-square',
     'CONFERMATA': 'bi-check-circle',
     'RIFIUTATA': 'bi-x-circle',
     'DAINVIARE': 'bi-globe',
@@ -256,7 +258,7 @@ function getPossibleTransitions(currentState, user) {
     
     return availableTransitions.filter(transition => {
         // Regola speciale: INSERITA non può andare a MODIFICATA
-        if (currentState === 'INSERITA' && transition.statoArrivo === 'MODIFICATA') {
+        if (currentState === 'INSERITA' && ['MODIFICATA', 'IMPORTATA'].includes(transition.statoArrivo)) {
             return false;
         }
         
@@ -343,6 +345,7 @@ function getButtonColorForState(state) {
     const colors = {
         'INSERITA': 'info',
         'MODIFICATA': 'warning',
+        'IMPORTATA': 'warning',
         'CONFERMATA': 'success',
         'RIFIUTATA': 'danger',
         'DAINVIARE': 'primary',

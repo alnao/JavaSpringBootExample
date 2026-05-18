@@ -6,8 +6,8 @@ LABEL description="Sistema Gestione Annotazioni - Build Stage"
 
 # Installa Maven
 RUN apt-get update && \
-    apt-get install -y maven && \
-    rm -rf /var/lib/apt/lists/*
+  apt-get install -y maven && \
+  rm -rf /var/lib/apt/lists/*
 
 # Directory di lavoro per il build
 WORKDIR /workspace
@@ -36,6 +36,8 @@ COPY . .
 # Compila il progetto
 RUN mvn clean package -DskipTests -B
 
+
+######################################################################################################
 # Stage 2: Runtime con JRE
 #FROM openjdk:17-jre-slim AS runtime
 #FROM openjdk:8u342-jre AS runtime

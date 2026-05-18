@@ -38,7 +38,6 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/annotazioni")
-@CrossOrigin(origins = "*")
 @Tag(name = "Annotazioni", description = "API per la gestione delle annotazioni")
 public class AnnotazioniController {
     //predo da una properties o config

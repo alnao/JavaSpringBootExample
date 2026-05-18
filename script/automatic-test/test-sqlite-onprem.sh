@@ -2,6 +2,14 @@
 # Script per eseguire tutti i test dell'applicazione con il profilo "sqlite"
 # set -e 
 
+# --- Logging: scrive su automatic-test-YYYYMMDD.log
+if [ -z "$LOG_FILE" ]; then
+  LOG_FILE="./automatic-test-$(date +%Y%m%d).log"
+  exec > >(tee -a "$LOG_FILE") 2>&1
+fi
+export LOG_FILE
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] === INIZIO: test-sqlite-onprem.sh ==="
+
 #cd ..
 #echo "Costruzione immagine Docker..."
 #./script/docker-build.sh 
@@ -171,6 +179,7 @@ echo "Terminazione applicazione (PID: $APP_PID)..."
 kill $APP_PID 2>/dev/null || true
 
 echo "✅ Test con profilo 'sqlite' superati!"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] === FINE: test-sqlite-onprem.sh ==="
 
 echo "✅ Tutti i test sono stati eseguiti con successo!"
 exit 0
