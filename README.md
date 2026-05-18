@@ -3,13 +3,13 @@
   <p align="center">
     <img src="https://img.shields.io/badge/Java-ED8B00?&logo=openjdk&logoColor=black"  height=32/>
     <img src="https://img.shields.io/badge/SpringBoot-6DB33F?&logo=SpringBoot&logoColor=white"  height=32/>
-    <img src="https://img.shields.io/badge/Docker-326CE5?&logo=Docker&logoColor=white" height=32 />
-    <img src="https://img.shields.io/badge/Kubernetes-326CE5?&logo=kubernetes&logoColor=white" height=32 />
+    <img src="https://img.shields.io/badge/Docker-326CE5?&logo=Docker&logoColor=white" height=32/>
+    <img src="https://img.shields.io/badge/Kubernetes-326CE5?&logo=kubernetes&logoColor=white" height=32/>
     <br />
-    <img src="https://img.shields.io/badge/PostgreSQL-4169E1?&logo=postgresql&logoColor=white" height=32 /> 
-    <img src="https://img.shields.io/badge/MongoDB-47A248?&logo=mongodb&logoColor=white" height=32 />
-    <img src="https://img.shields.io/badge/Kafka-434F40?&logo=apachekafka&logoColor=white"height=32 />
-    <img src="https://img.shields.io/badge/Redis-DC382D?&logo=redis&logoColor=white" height=32 />
+    <img src="https://img.shields.io/badge/PostgreSQL-4169E1?&logo=postgresql&logoColor=white" height=32/> 
+    <img src="https://img.shields.io/badge/MongoDB-47A248?&logo=mongodb&logoColor=white" height=32/>
+    <img src="https://img.shields.io/badge/Kafka-434F40?&logo=apachekafka&logoColor=white"height=32/>
+    <img src="https://img.shields.io/badge/Redis-DC382D?&logo=redis&logoColor=white" height=32/>
     <br />
     <img src="https://img.shields.io/badge/AWS-FF9900?logo=amazonaws&logoColor=white" height=32/>
     <img src="https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white" height=32/>
