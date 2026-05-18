@@ -25,7 +25,7 @@ La soluzione è strutturata in moduli multipli, basata su Spring Boot e sull’a
 Il progetto è pensato per essere agnostico rispetto al cloud provider: sono sviluppate implementazioni per Replit, AWS e Azure. Il DBMS utilizzato dipende dal profilo selezionato:
 
 
-| Profilo | Cloud | DBMS Sql | DBMS No-Sql | Export | Lock annotazioni | Docs |
+| Profilo | Cloud | DBMS Sql | DBMS No-Sql | Import/Export | Lock annotazioni | Docs |
 |--------|----------|-------------|-------------|----------|--------------------|--------|
 | `sqlite` | ![Replit](https://img.shields.io/badge/Replit-F26207?style=flat-square&logo=replit&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) | ![Java](https://img.shields.io/badge/ConcurrentHashMap-ED8B00?style=flat-square&logo=openjdk&logoColor=white) | |
 | `kube` | ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white) | ![Kafka](https://img.shields.io/badge/Kafka-434F40?style=flat-square&logo=apachekafka&logoColor=white) | ![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | [Docker](./PlatformDockerHub.md) |
@@ -95,45 +95,48 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
   # Build senza test
   mvn clean package -DskipTests
   ```
-- Esecuzione profilo SQLite in locale con database locale, senza bisogno di nessun server DBMS
-  ```
-  mvn clean package
-  java -jar application/target/application-*.jar \
-    --spring.profiles.active=sqlite \
-    --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
-    --server.port=8082
-  ```
-  - il sistema è disponibile all'indirizzo `localhost:8082`
+  - Esecuzione profilo SQLite in locale con database locale, senza bisogno di nessun server DBMS
+    ```
+    mvn clean package
+    java -jar application/target/application-*.jar \
+      --spring.profiles.active=sqlite \
+      --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
+      --server.port=8082
+    ```
+    - il sistema è disponibile all'indirizzo `localhost:8082`
 - Esecuzione profilo On-Premise con il docker-compose che avvia anche i servizi DBMS
+  - Comando per la creazione di tutti i demoni/server con docker compose:
     ```bash
     docker-compose up -d --build
     ```
-    - l'applicazione web di esempio viene resa disponibile al endpoint
-      ```
-      http://localhost:8082/
-      ```
-    - per rimuovere tutto 
-      ```bash
-      docker-compose down --remove-orphans
-      docker network prune -f
-      docker volume rm $(docker volume ls -q)
-      docker rmi $(docker images -q)
-      ```
-    - comandi utili
-        ```bash
-        # Accesso ai log della applicazione
-        docker logs gestioneannotazioni-app --tail 500
-        # Esecuzione di query nel database postgres
-        docker exec -it gestioneannotazioni-postgres psql -U gestioneannotazioni_user -d gestioneannotazioni -c "\d users;"
-        docker exec -it gestioneannotazioni-postgres psql -U gestioneannotazioni_user -d gestioneannotazioni -c "SELECT username, email, account_type FROM users;"
-        docker exec -it gestioneannotazioni-postgres psql -U gestioneannotazioni_user -d gestioneannotazioni -c "SELECT username, password FROM users WHERE username='alnao';"
-
-        node -c adapter-web/src/main/resources/static/js/annotazioni.js
-        ```
-    - il monitor di kafka è disponibile al
-      ```
-      http://localhost:8085/
-      ```
+  - Riferimenti web
+    - `http://localhost:8082/` applicazione principale
+    - `http://localhost:8083/` database postgres explorer (adminer)
+    - `http://localhost:8084/` database mongo explorer
+    - `http://localhost:8085/` kafka-ui
+  - Rimozione di tutti gli elementi
+    ```bash
+    docker-compose down --remove-orphans
+    docker network prune -f
+    docker volume rm $(docker volume ls -q)
+    docker rmi $(docker images -q)
+    ```
+  - comandi utili
+    ```bash
+    # Accesso ai log della applicazione
+    docker logs gestioneannotazioni-app --tail 500
+    # Esecuzione di query nel database postgres
+    docker exec -it gestioneannotazioni-postgres psql -U gestioneannotazioni_user -d gestioneannotazioni -c "\d users;"
+    docker exec -it gestioneannotazioni-postgres psql -U gestioneannotazioni_user -d gestioneannotazioni -c "SELECT username, email, account_type FROM users;"
+    docker exec -it gestioneannotazioni-postgres psql -U gestioneannotazioni_user -d gestioneannotazioni -c "SELECT username, password FROM users WHERE username='alnao';"
+    # Elenco di tutte le annotazioni su postgres
+    docker exec -it gestioneannotazioni-postgres psql -U gestioneannotazioni_user -d gestioneannotazioni -c "SELECT * from  annotazioni_metadata;"
+    # Import di una annotazione via kafka 
+    echo '{"annotazione":{"id":"550e8400-e29b-41d4-a716-446655440000","versioneNota":"1.0","valoreNota":"Testo annotazione importata"},"metadata":{"id":"550e8400-e29b-41d4-a716-446655440000","versioneNota":"1.0","utenteCreazione":"alnao","descrizione":"Test import","categoria":"test","tags":"kafka","pubblica":true,"priorita":1,"stato":"INVIATA","dataInserimento":"2026-05-18T08:00:00","dataUltimaModifica":"2026-05-18T08:00:00"}}' | docker exec -i gestioneannotazioni-kafka kafka-console-producer --broker-list localhost:29092 --topic annotazioni-import
+    # Node ??
+    node -c adapter-web/src/main/resources/static/js/annotazioni.js
+    ```
+  
 
 ### 📡 API Endpoints
 - Eseguendo il sistema in locale la base degli URL è `http://localhost:8080` (8081/8082 nel caso di esecuzione tramite docker-compose su Minikube o AWS)
@@ -291,11 +294,12 @@ L'applicazione supporta l'analisi statica del codice, la code coverage e la qual
 - **Creazione token personale**:
     1. Vai su [http://localhost:9000/account/security](http://localhost:9000/account/security)
     2. Crea un nuovo token (esempio: `sqa_xxxxxxxxxxxxxxxxxxxx`)
+    3. Crea variabile `SONAR_LOCAL_KEY="sqa_xxxxxxxxxxxxxxxxxxxx"`
 
 - **Esecuzione analisi Maven con coverage**:
     ```bash
     mvn clean verify sonar:sonar \
-      -Dsonar.login=squ_25f65a4aba6446b0e388389e27fc9ca808980d33 \
+      -Dsonar.login=$SONAR_LOCAL_KEY \
       -Dsonar.host.url=http://localhost:9000 \
       -Pkube
     ```
@@ -315,6 +319,9 @@ L'applicazione supporta l'analisi statica del codice, la code coverage e la qual
       2025.09.01 13:25:11 WARN  es[][o.e.c.r.a.DiskThresholdMonitor] flood stage disk watermark [95%] exceeded on [txaoVj8zTtCfBRE4_SfPVQ][sonarqube][/opt/sonarqube/data/es7/nodes/0] free: 3gb[3.3%], all indices on this node will be marked read-only
       ```
     - Puoi personalizzare le regole di qualità e i badge direttamente dalla dashboard SonarQube.
+    - Possibile chiamare le API di sonar con il comando 
+      ```curl -s -u "sqa_xxxxxxxx:" "http://localhost:9000/api/measures/component?component=it.alnao.springbootexample%3Aspringbootexample-parent&metricKeys=coverage,duplicated_lines_density,duplicated_blocks,duplicated_lines,ncloc,uncovered_lines,uncovered_conditions" | python3 -m json.tool```
+
 
 ### ⏰ Redis
 Redis è integrato nell'applicazione come sistema di **lock distribuito** per gestire la prenotazione delle annotazioni e prevenire modifiche concorrenti. L'integrazione utilizza `Redisson` come client Redis per Spring Boot.

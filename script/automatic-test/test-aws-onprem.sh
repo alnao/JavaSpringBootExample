@@ -2,6 +2,14 @@
 # Script per eseguire tutti i test dell'applicazione con il profilo "kube"
 # set -e 
 
+# --- Logging: scrive su automatic-test-YYYYMMDD.log
+if [ -z "$LOG_FILE" ]; then
+  LOG_FILE="./automatic-test-$(date +%Y%m%d).log"
+  exec > >(tee -a "$LOG_FILE") 2>&1
+fi
+export LOG_FILE
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] === INIZIO: test-aws-onprem.sh ==="
+
 #cd ..
 #./script/push-image-docker-hub.sh 
 
@@ -194,6 +202,7 @@ echo "Esecuzione test di prenotazione annotazione..."
 docker-compose -f script/aws-onprem/docker-compose.yml down
 
 echo "✅ Test con profilo 'KUBE' superati!"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] === FINE: test-aws-onprem.sh ==="
 
 echo "✅ Tutti i test sono stati eseguiti con successo!"
 exit 0

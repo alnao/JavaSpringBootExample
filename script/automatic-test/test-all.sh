@@ -2,12 +2,19 @@
 #!/bin/bash
 # set -e 
 
+# --- Logging: scrive su automatic-test-YYYYMMDD.log
+if [ -z "$LOG_FILE" ]; then
+  LOG_FILE="./automatic-test-$(date +%Y%m%d).log"
+  exec > >(tee -a "$LOG_FILE") 2>&1
+fi
+export LOG_FILE
+
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}Test All Gestione Annotazioni${NC}"
+echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] Test All Gestione Annotazioni - LOG: $LOG_FILE${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}Posizione script: $(dirname "$0")${NC}"
 echo -e "${BLUE}Directory di lavoro: $(pwd)${NC}"
@@ -37,5 +44,5 @@ docker volume rm $(docker volume ls -q)  > /dev/null 2>&1
 docker rmi $(docker images -q)  > /dev/null 2>&1
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}✓ Test completati con successo! ${NC} ✓"
+echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] ✓ Test completati con successo! ${NC} ✓"
 echo -e "${BLUE}========================================${NC}"

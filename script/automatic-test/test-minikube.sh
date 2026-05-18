@@ -2,6 +2,14 @@
 # Script per eseguire tutti i test dell'applicazione con il profilo "kube"
 # set -e 
 
+# --- Logging: scrive su automatic-test-YYYYMMDD.log
+if [ -z "$LOG_FILE" ]; then
+  LOG_FILE="./automatic-test-$(date +%Y%m%d).log"
+  exec > >(tee -a "$LOG_FILE") 2>&1
+fi
+export LOG_FILE
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] === INIZIO: test-minikube.sh ==="
+
 #cd ..
 #./script/push-image-docker-hub.sh 
 
@@ -151,8 +159,12 @@ fi
 #Avvio lo script dedicato per il test di prenotazione annotazione
 echo ""
 echo ""
-echo "Esecuzione test di prenotazione annotazione..."
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Esecuzione test di prenotazione annotazione..."
 ./script/automatic-test/test-prenotazione-annotazione.sh $URL
+
+echo ""
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Esecuzione test import/export Kafka..."
+./script/automatic-test/test-import-kafka.sh $URL kube
 
 # Terminazione applicazione (gestita da trap cleanup)
 echo "Terminazione applicazione"
@@ -160,6 +172,7 @@ echo "Terminazione applicazione"
 minikube delete
 
 echo "✅ Test con profilo 'KUBE' superati!"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] === FINE: test-minikube.sh ==="
 
 echo "✅ Tutti i test sono stati eseguiti con successo!"
 exit 0
