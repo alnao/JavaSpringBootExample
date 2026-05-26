@@ -45,10 +45,19 @@ aws:
     endpoint: ${DYNAMODB_ENDPOINT:}
   sqs:
     endpoint: ${SQS_ENDPOINT:}
-    queue-url: ${SQS_QUEUE_URL:}
+    export-queue-url: ${SQS_EXPORT_QUEUE_URL:}
+    import-queue-url: ${SQS_IMPORT_QUEUE_URL:}
 
 # Configurazione export annotazioni via SQS
 gestione-annotazioni:
   export-annotazioni:
 #    enabled: true
 #    cron-expression: "0 */5 * * * *"  # ogni 5 minuti
+
+  import-annotazioni:
+    enabled: ${IMPORT_ANNOTAZIONI_ENABLED:true}
+    cron-expression: ${IMPORT_ANNOTAZIONI_CRON_EXPRESSION:0 1-59/2 * * * *}
+#    aws:
+#      sqs:
+#        max-number-of-messages: ${IMPORT_SQS_MAX_MESSAGES:10}
+#        wait-time-seconds: ${IMPORT_SQS_WAIT_TIME_SECONDS:5}

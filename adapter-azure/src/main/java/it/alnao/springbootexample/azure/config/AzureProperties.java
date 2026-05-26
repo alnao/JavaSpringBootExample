@@ -33,6 +33,7 @@ public class AzureProperties {
     public static class ServiceBusProperties {
         private String connectionString = "Endpoint=sb://your-servicebus-namespace.servicebus.windows.net/;SharedAccessKeyName=your-key-name;SharedAccessKey=your-key";
         private String queueName = "annotazioni-queue";
+        private String importQueueName = "annotazioni-import";
 
         // Getters and Setters
         public String getConnectionString() {
@@ -49,6 +50,14 @@ public class AzureProperties {
 
         public void setQueueName(String queueName) {
             this.queueName = queueName;
+        }
+
+        public String getImportQueueName() {
+            return importQueueName;
+        }
+
+        public void setImportQueueName(String importQueueName) {
+            this.importQueueName = importQueueName;
         }
     }
 

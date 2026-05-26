@@ -46,7 +46,9 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
   3. **Provisiona SQL Server** (tier Basic) con database per metadati e autenticazione
   4. **Configura Firewall** per accesso locale e servizi Azure
   5. **Inizializza Database** con tabelle (`users`, `annotazione_metadata`, `storico_stati`) e utenti di test
-  6. **Provisiona ServiceBus** come servizio per la gestione delle code di invio annotazioni
+  6. **Provisiona ServiceBus** come servizio per la gestione delle code di annotazioni:
+      - coda `gestioneannotazioni-queue` per l'*invio/export* delle annotazioni confermate
+      - coda `annotazioni-import` per l'*import* delle annotazioni da sistemi esterni
   7. **Azure Cache for Redis** come servizio di gestione delle prenotazioni delle annotazioni
   8. **Avvia Container Docker** nel sistema locale (non nel cloud) con configurazione automatica
 - ▶️ Esecuzione
@@ -175,7 +177,9 @@ Script bash per la creazione automatica di risorse Azure (CosmosDB + SQL Server 
   3. **Provisiona SQL Server** (tier Basic) con database per metadati e autenticazione
   4. **Configura Firewall** per accesso locale e servizi Azure
   5. **Inizializza Database** con tabelle (`users`, `annotazione_metadata`, `storico_stati`) e utenti di test
-  6. **Provisiona ServiceBus** come servizio di code per la gestione delle code di invio annotazioni
+  6. **Provisiona ServiceBus** come servizio di code per la gestione delle annotazioni:
+      - coda `eventbus-annotazioni` per l'*invio/export* delle annotazioni confermate
+      - coda `annotazioni-import` per l'*import* delle annotazioni da sistemi esterni
   7. **Azure Cache for Redis** come servizio di cache per la gestione del sistema di prenotazioni delle annotazioni 
   8. **Virtual Machine** come macchine virtuale dove viene eseguito l'immagine docker del servizio
   9. **Configurazione rete** per accesso della VM verso il database SQL

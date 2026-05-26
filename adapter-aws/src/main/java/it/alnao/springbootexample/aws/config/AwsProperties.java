@@ -82,7 +82,8 @@ public class AwsProperties {
     // Classe nested per configurazione SQS
     public static class SqsConfig {
         private String endpoint = "http://localstack:4566";
-        private String queueUrl = "http://localstack:4566/000000000000/annotazioni";
+        private String exportQueueUrl = "http://localstack:4566/000000000000/annotazioni-export";
+        private String importQueueUrl = "http://localstack:4566/000000000000/annotazioni-import";
 
         public String getEndpoint() {
             return endpoint;
@@ -92,12 +93,20 @@ public class AwsProperties {
             this.endpoint = endpoint;
         }
 
-        public String getQueueUrl() {
-            return queueUrl;
+        public String getExportQueueUrl() {
+            return exportQueueUrl;
         }
 
-        public void setQueueUrl(String queueUrl) {
-            this.queueUrl = queueUrl;
+        public void setExportQueueUrl(String exportQueueUrl) {
+            this.exportQueueUrl = exportQueueUrl;
+        }
+
+        public String getImportQueueUrl() {
+            return importQueueUrl;
+        }
+
+        public void setImportQueueUrl(String importQueueUrl) {
+            this.importQueueUrl = importQueueUrl;
         }
 
     }

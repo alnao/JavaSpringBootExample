@@ -86,8 +86,9 @@ Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: c
   - 🚧 🔄 Import annotazioni: sistemi di import dati
     - ✅ 📝 Nuovo stato annotazioni "Importata"
     - ✅ 📖 Consumer Kafka che legge da un topic e inserisce annotazioni (import annotazioni)
-    - 🚧 ⚙️ Sistema di import da coda SQS e servizio Azure
-    - 🚧 🔧 Sistema di backup and restore tramite export json (dove salva tutto? import sempre con stato IMPORTA o RESTORED)
+    - ✅ ⚙️ Sistema di import da coda SQS e test su AWS-Ec2
+    - ✅ ⚙️ Sistema di import da coda Azure
+    - 🚧 🔧 Sistema di backup and restore tramite export json (dove salva tutto? import con stato RESTORED?)
     - 🚧 🎯 Test con profilo sqlite e kube
     - 🚧 🤖 Test con profilo AWS e Azure
   - 🚧 🛠️ Refactor e rimozione del `@Autowired` a favore del injectiont tramite costruttore! (segnalazione sonar)
@@ -157,11 +158,12 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
   ./script/docker-build.sh 
   ./script/push-image-docker-hub.sh 
   ```
-  risultato atteso: nessun errore
+  - risultato atteso: nessun errore
 - Pulizia globale prima di partire (meglio partire da situazione pulita con volumi vuoti!)
   ```bash
   docker volume rm $(docker volume ls -q)
   ```
+  - ritorna un errore se non c'è nessun volume già presente `docker volume ls -q'
 - Script generale per eseguire tutti i gli script di test *automatici* su profili sqlite, kube e aws in locale
   ```
   ./script/automatic-test/test-all.sh
@@ -170,16 +172,10 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
   ```bash
   ./script/aws-ec2/start-all.sh
 
-  # Recupero indirizzo IP ed esecuzione test sistema prenotazione
-  EC2_PUBLIC_IP=$(aws ec2 describe-instances --region "eu-central-1" \
-    --filters "Name=tag:gestioneannotazioni-app,Values=true" \
-              "Name=instance-state-name,Values=running" \
-    --query 'Reservations[0].Instances[0].PublicIpAddress' \
-    --output text)
-  EC2_PUBLIC_URL="$EC2_PUBLIC_IP:8080"
-  ./script/automatic-test/test-prenotazione-annotazione.sh $EC2_PUBLIC_URL
+  # Test di creazione, export e import di una annotazione
+  ./script/aws-ec2/test-aws-ec2.sh
 
-  # Verifica coda SQS
+  # Verifica coda SQS delle annotazioni esportate!
   SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
   SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
   aws sqs receive-message --queue-url "$SQS_QUEUE_URL" --region eu-central-1 --attribute-names All --message-attribute-names All

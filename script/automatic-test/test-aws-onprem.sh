@@ -113,7 +113,9 @@ RISPOSTA_INVIO2=$(curl -s -X PATCH $URL/api/annotazioni/$id_creato/stato \
 echo "Risposta invio annotazione: $RISPOSTA_INVIO2"
 
 
-SQS=$(aws sqs list-queues --endpoint-url=http://localhost:4566 --region=eu-central-1)
+SQS=$(aws sqs list-queues --endpoint-url=http://localhost:4566 --region=eu-central-1 \
+    --queue-name-prefix=annotazioni-export 
+)
 QUEUE_URL=$(echo $SQS | jq -r '.QueueUrls[]')
 if [ -z "$QUEUE_URL" ]; then
     echo "❌ ERRORE: Coda SQS 'GestioneAnnotazioniQueue' non trovata."
@@ -195,6 +197,102 @@ echo ""
 echo ""
 echo "Esecuzione test di prenotazione annotazione..."
 ./script/automatic-test/test-prenotazione-annotazione.sh
+
+
+# Test import da SQS: invia un messaggio nella coda di import e verifica che l'annotazione venga importata con stato IMPORTATA
+echo ""
+echo "=== TEST IMPORT ANNOTAZIONE DA SQS ==="
+
+IMPORT_QUEUE_URL=$(aws sqs list-queues \
+    --endpoint-url=http://localhost:4566 \
+    --region=eu-central-1 \
+    --queue-name-prefix=annotazioni-import \
+    | jq -r '.QueueUrls[0]')
+
+if [ -z "$IMPORT_QUEUE_URL" ] || [ "$IMPORT_QUEUE_URL" == "null" ]; then
+    echo "❌ ERRORE: Coda SQS 'annotazioni-import' non trovata."
+    exit 1
+fi
+echo "Coda SQS import trovata: $IMPORT_QUEUE_URL"
+
+# Genera un UUID univoco per l'annotazione da importare
+IMPORT_UUID=$(cat /proc/sys/kernel/random/uuid)
+echo "UUID annotazione da importare: $IMPORT_UUID"
+
+# Costruisce il payload JSON nel formato AnnotazioneCompleta atteso dal SqsAnnotazioneImportService
+IMPORT_PAYLOAD=$(cat <<PAYLOAD
+{
+  "annotazione": {
+    "id": "$IMPORT_UUID",
+    "titolo": "Annotazione Importata da SQS",
+    "descrizione": "Test import automatico da coda SQS",
+    "valoreNota": "Valore importato",
+    "dataCreazione": "2024-06-01T10:00:00Z"
+  },
+  "metadata": {
+    "id": "$IMPORT_UUID",
+    "stato": "DAINVIARE",
+    "utente": "admin",
+    "descrizione": "Test import automatico",
+    "pubblica": false,
+    "priorita": 1
+  }
+}
+PAYLOAD
+)
+
+echo "Invio messaggio nella coda SQS import..."
+SEND_RESULT=$(aws sqs send-message \
+    --endpoint-url=http://localhost:4566 \
+    --region=eu-central-1 \
+    --queue-url="$IMPORT_QUEUE_URL" \
+    --message-body "$IMPORT_PAYLOAD" 2>&1)
+
+SEND_MSG_ID=$(echo "$SEND_RESULT" | jq -r '.MessageId' 2>/dev/null)
+if [ -z "$SEND_MSG_ID" ] || [ "$SEND_MSG_ID" == "null" ]; then
+    echo "❌ ERRORE: Invio messaggio SQS import fallito."
+    echo "   Risposta: $SEND_RESULT"
+    exit 1
+fi
+echo "✅ Messaggio inviato nella coda import. MessageId: $SEND_MSG_ID"
+
+# Attende che lo scheduler processi il messaggio (cron ogni 30 secondi, max 3 minuti)
+echo "Attesa elaborazione import da parte dello scheduler (max 3 minuti)..."
+max_import_attempts=18  # 18 tentativi x 10 secondi = 180 secondi (3 minuti)
+import_attempt=0
+import_found=false
+
+while [ $import_attempt -lt $max_import_attempts ]; do
+    import_attempt=$((import_attempt + 1))
+    elapsed_import=$((import_attempt * 10))
+    echo "⏳ Tentativo $import_attempt/$max_import_attempts - Verifica annotazione importata (${elapsed_import}s/180s)..."
+
+    RISPOSTA_IMPORT=$(curl -s $URL/api/annotazioni/$IMPORT_UUID \
+        -H "Authorization: Bearer $token")
+
+    stato_importata=$(echo "$RISPOSTA_IMPORT" | jq -r '.stato' 2>/dev/null)
+
+    if [ "$stato_importata" == "IMPORTATA" ]; then
+        echo "✅ Annotazione $IMPORT_UUID trovata con stato IMPORTATA al tentativo $import_attempt"
+        echo "Dettagli annotazione importata:"
+        echo "$RISPOSTA_IMPORT" | jq .
+        import_found=true
+        break
+    elif [ "$stato_importata" != "null" ] && [ -n "$stato_importata" ]; then
+        echo "⚠️  Annotazione trovata ma stato non ancora IMPORTATA: $stato_importata. Continuo..."
+    fi
+
+    sleep 10
+done
+
+if [ "$import_found" = false ]; then
+    echo "❌ Annotazione $IMPORT_UUID non trovata con stato IMPORTATA dopo 3 minuti."
+    echo "Ultima risposta API: $RISPOSTA_IMPORT"
+    exit 1
+fi
+
+echo "=== FINE TEST IMPORT ANNOTAZIONE DA SQS ==="
+
 
 
 

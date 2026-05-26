@@ -57,3 +57,4 @@ azure:
   service-bus:
     connection-string: ${AZURE_SERVICEBUS_CONNECTION_STRING:localServiceBusConnectionString}
     queue-name: ${AZURE_SERVICEBUS_QUEUE_NAME:localQueueName}
+    import-queue-name: ${AZURE_SERVICEBUS_IMPORT_QUEUE_NAME:annotazioni-import}

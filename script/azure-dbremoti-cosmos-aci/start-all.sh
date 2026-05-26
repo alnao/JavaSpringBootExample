@@ -39,6 +39,7 @@ LOG_ANALYTICS_WORKSPACE="gestioneannotazioni-logs"
 #SERVICE BUS_TOPIC="gestioneannotazioni-topic"
 SERVICEBUS_NAMESPACE="gestioneannotazioni-servicebus"
 SERVICEBUS_QUEUE="gestioneannotazioni-queue"
+SERVICEBUS_IMPORT_QUEUE="annotazioni-import"
 
 #REDIS
 REDIS_NAME="gestioneannotazioni-redis"
@@ -738,6 +739,23 @@ wait_for_sql_server() {
       --name $SERVICEBUS_QUEUE
     check_error "Service Bus queue creata"
   fi
+  # Creazione coda ServiceBus per import annotazioni
+  IMPORT_QUEUE_EXISTS=$(az servicebus queue show \
+    --resource-group $RESOURCE_GROUP \
+    --namespace-name $SERVICEBUS_NAMESPACE \
+    --name $SERVICEBUS_IMPORT_QUEUE \
+    --query "name" \
+    --output tsv 2>/dev/null || echo "")
+  if [ -n "$IMPORT_QUEUE_EXISTS" ]; then
+    echo "✅ Service Bus import queue '$SERVICEBUS_IMPORT_QUEUE' già esistente"
+  else
+    echo "📬 Creazione Service Bus import queue..."
+    az servicebus queue create \
+      --resource-group $RESOURCE_GROUP \
+      --namespace-name $SERVICEBUS_NAMESPACE \
+      --name $SERVICEBUS_IMPORT_QUEUE
+    check_error "Service Bus import queue creata"
+  fi
   # Recupero connection string Service Bus
   echo "🔑 Recupero connection string Service Bus..."
   AZURE_SERVICEBUS_CONNECTION_STRING=$(az servicebus namespace authorization-rule keys list \
@@ -890,6 +908,7 @@ wait_for_sql_server() {
       MSSQL_SPRING_DATASOURCE_PASSWORD="$SQLSERVER_PASSWORD" \
       AZURE_SERVICEBUS_CONNECTION_STRING="$AZURE_SERVICEBUS_CONNECTION_STRING" \
       AZURE_SERVICEBUS_QUEUE_NAME="$SERVICEBUS_QUEUE" \
+      AZURE_SERVICEBUS_IMPORT_QUEUE_NAME="$SERVICEBUS_IMPORT_QUEUE" \
       REDIS_HOST=$REDIS_HOST \
       REDIS_PORT=$REDIS_PORT \
       REDIS_PASSWORD=$REDIS_KEY \

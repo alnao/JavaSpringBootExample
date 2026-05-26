@@ -10,7 +10,8 @@ DB_CLUSTER_ID="gestioneannotazioni-cluster"
 DB_INSTANCE_ID="gestioneannotazioni-instance"
 SG_NAME="gestioneannotazioni-sg"
 KEY_NAME="${KEY_NAME:-gestioneannotazioni-key}"
-SQS_QUEUE_NAME="gestioneannotazioni-annotazioni"
+SQS_QUEUE_NAME_IMPORT="gestioneannotazioni-annotazioni-import"
+SQS_QUEUE_NAME_EXPORT="gestioneannotazioni-annotazioni-export"
 REDIS_CLUSTER_ID="gestioneannotazioni-redis"
 
 # 1. Termina e rimuovi tutte le EC2 con tag gestioneannotazioni-app
@@ -33,13 +34,21 @@ aws dynamodb delete-table --table-name annotazioni_storico --region $REGION || e
 aws dynamodb delete-table --table-name annotazioni_storicoStati --region $REGION || echo "Tabella annotazioni_storicoStati non esistente"
 
 # 4. Rimuovi coda SQS
-echo "Rimozione coda SQS..."
-SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region $REGION --query 'QueueUrl' --output text 2>/dev/null) || echo "Coda SQS non trovata"
+echo "Rimozione coda SQS import ..."
+SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME_IMPORT --region $REGION --query 'QueueUrl' --output text 2>/dev/null) || echo "Coda SQS non trovata"
 if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
   echo "Eliminazione coda SQS: $SQS_QUEUE_URL"
   aws sqs delete-queue --queue-url "$SQS_QUEUE_URL" --region $REGION || echo "Errore nella rimozione coda SQS"
 else
-  echo "Coda SQS $SQS_QUEUE_NAME non esistente"
+  echo "Coda SQS $SQS_QUEUE_NAME_IMPORT non esistente"
+fi
+echo "Rimozione coda SQS export..."
+SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME_EXPORT --region $REGION --query 'QueueUrl' --output text 2>/dev/null) || echo "Coda SQS non trovata"
+if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
+  echo "Eliminazione coda SQS: $SQS_QUEUE_URL"
+  aws sqs delete-queue --queue-url "$SQS_QUEUE_URL" --region $REGION || echo "Errore nella rimozione coda SQS"
+else
+  echo "Coda SQS $SQS_QUEUE_NAME_EXPORT non esistente"
 fi
 
 # 4b. Rimuovi ElastiCache Redis cluster
