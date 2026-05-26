@@ -13,10 +13,11 @@ DB_INSTANCE_CLASS="${DB_INSTANCE_CLASS:-db.t3.medium}"
 EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-t3.medium}"
 EC2_COUNT="${EC2_COUNT:-1}"
 VPC_ID=$(aws ec2 describe-vpcs --region $REGION --filters Name=isDefault,Values=true --query 'Vpcs[0].VpcId' --output text)
-SQS_QUEUE_NAME="gestioneannotazioni-annotazioni"
-SQS_QUEUE_URL="https://sqs.$REGION.amazonaws.com/000000000000/$SQS_QUEUE_NAME"
+SQS_EXPORT_QUEUE_NAME="gestioneannotazioni-annotazioni-export"
+SQS_EXPORT_QUEUE_URL="https://sqs.$REGION.amazonaws.com/000000000000/$SQS_EXPORT_QUEUE_NAME"
 SQS_IMPORT_QUEUE_NAME="gestioneannotazioni-annotazioni-import"
 SQS_IMPORT_QUEUE_URL="https://sqs.$REGION.amazonaws.com/000000000000/$SQS_IMPORT_QUEUE_NAME"
+
 
 # 0. Crea IAM Role e Instance Profile se non esistono
 ROLE_NAME="gestioneannotazioni-ec2-role"
@@ -153,46 +154,49 @@ aws dynamodb create-table \
 
 
 # 4. Crea coda SQS con tag
-echo "Creazione coda SQS: $SQS_QUEUE_NAME"
-SQS_QUEUE_URL=$(aws sqs create-queue \
-  --queue-name $SQS_QUEUE_NAME \
+echo "Creazione coda di export SQS: $SQS_EXPORT_QUEUE_NAME"
+SQS_EXPORT_QUEUE_URL=$(aws sqs create-queue \
+  --queue-name $SQS_EXPORT_QUEUE_NAME \
   --region $REGION \
   --query 'QueueUrl' --output text 2>/dev/null) || {
-  echo "Tentativo di recuperare coda esistente..."
-  SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region $REGION --query 'QueueUrl' --output text 2>/dev/null) || {
-    echo "ERRORE: Impossibile creare o trovare la coda SQS"
-    exit 1
-  }
+    echo "Tentativo di recuperare coda esistente..."
+    SQS_EXPORT_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_EXPORT_QUEUE_NAME --region $REGION --query 'QueueUrl' --output text 2>/dev/null) || {
+      echo "ERRORE: Impossibile creare o trovare la coda SQS"
+      exit 1
+    }
 }
 # Aggiungi tag alla coda (separatamente)
-if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
+if [ -n "$SQS_EXPORT_QUEUE_URL" ] && [ "$SQS_EXPORT_QUEUE_URL" != "None" ]; then
   echo "Aggiunta tag alla coda SQS..."
   aws sqs tag-queue \
-    --queue-url "$SQS_QUEUE_URL" \
+    --queue-url "$SQS_EXPORT_QUEUE_URL" \
     --tags "Name=gestioneannotazioni-app,gestioneannotazioni-app=true" \
     --region $REGION 2>/dev/null || echo "Errore nell'aggiunta tag SQS (ignorato)"
 fi
-echo "SQS Queue URL: $SQS_QUEUE_URL"
+echo "SQS Queue URL: $SQS_EXPORT_QUEUE_URL"
 
-# 4c. Crea coda SQS di import con tag
-echo "Creazione coda SQS di import: $SQS_IMPORT_QUEUE_NAME"
+# 4c. Crea coda SQS di export con tag
+echo "Creazione coda SQS di import: $SQS_IMPORT_QUEUE_NAME "
 SQS_IMPORT_QUEUE_URL=$(aws sqs create-queue \
   --queue-name $SQS_IMPORT_QUEUE_NAME \
   --region $REGION \
   --query 'QueueUrl' --output text 2>/dev/null) || {
-  echo "Tentativo di recuperare coda import esistente..."
-  SQS_IMPORT_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_IMPORT_QUEUE_NAME --region $REGION --query 'QueueUrl' --output text 2>/dev/null) || {
-    echo "ERRORE: Impossibile creare o trovare la coda SQS import"
-    exit 1
-  }
+    echo "Tentativo di recuperare coda import esistente..."
+    SQS_IMPORT_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_IMPORT_QUEUE_NAME --region $REGION --query 'QueueUrl' --output text 2>/dev/null) || {
+      echo "ERRORE: Impossibile creare o trovare la coda SQS import"
+      exit 1
+    }
 }
+
 if [ -n "$SQS_IMPORT_QUEUE_URL" ] && [ "$SQS_IMPORT_QUEUE_URL" != "None" ]; then
   aws sqs tag-queue \
     --queue-url "$SQS_IMPORT_QUEUE_URL" \
     --tags "Name=gestioneannotazioni-app,gestioneannotazioni-app=true" \
     --region $REGION 2>/dev/null || echo "Errore nell'aggiunta tag SQS import (ignorato)"
 fi
-echo "SQS Import Queue URL: $SQS_IMPORT_QUEUE_URL" (richiesto per creare il cluster)
+echo "SQS Import Queue URL: $SQS_IMPORT_QUEUE_URL richiesto per creare il cluster"
+
+# 4c. elasticache
 CACHE_SUBNET_GROUP_NAME="gestioneannotazioni-redis-subnet-group"
 SUBNET_IDS=$(aws ec2 describe-subnets --region $REGION --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[*].SubnetId' --output text)
 aws elasticache create-cache-subnet-group \
@@ -220,7 +224,7 @@ aws elasticache create-cache-cluster \
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 6379 --cidr 0.0.0.0/0 --region $REGION 2>/dev/null || echo "Regola porta 6379 già esistente"
 
 # Attendi che Redis sia disponibile
-echo "Attendo che ElastiCache Redis sia disponibile (può richiedere 5-10 minuti)..."
+echo "Attendo che ElastiCache Redis sia disponibile potrebbe richiedere 5-10 minuti..."
 aws elasticache wait cache-cluster-available --cache-cluster-id $REDIS_CLUSTER_ID --region $REGION
 
 # Recupera endpoint Redis
@@ -251,7 +255,7 @@ aws ec2 create-key-pair --key-name $PARAM_KEY_NAME --region $REGION --query 'Key
 chmod 400 $PARAM_KEY_NAME.pem
 
 #  AURORA_ENDPOINT=$(aws rds describe-db-clusters --db-cluster-identifier $DB_CLUSTER_ID --region $REGION --query 'DBClusters[0].Endpoint' --output text)
-echo "Eseguo EC2 con endpoint AURORA_ENDPOINT=$AURORA_ENDPOINT e SQS_QUEUE_URL=$SQS_QUEUE_URL"
+echo "Eseguo EC2 con endpoint AURORA_ENDPOINT=$AURORA_ENDPOINT e SQS_EXPORT_QUEUE_URL=$SQS_EXPORT_QUEUE_URL"
 
 # 5. Crea EC2 con tag e user_data per avvio Docker
 AMI_ID=$(aws ec2 describe-images --owners amazon --filters "Name=name,Values=amzn2-ami-hvm-2.0.*-x86_64-gp2" --region $REGION --query 'Images | sort_by(@, &CreationDate)[-1].ImageId' --output text)
@@ -268,7 +272,7 @@ DB_USER="${DB_USER}"
 DB_PASS="${DB_PASS}"
 DB_NAME="${DB_NAME}"
 REGION="${REGION}"
-SQS_QUEUE_URL="${SQS_QUEUE_URL}"
+SQS_EXPORT_QUEUE_URL="${SQS_EXPORT_QUEUE_URL}"
 SQS_IMPORT_QUEUE_URL="${SQS_IMPORT_QUEUE_URL}"
 REDIS_HOST="${REDIS_ENDPOINT}"
 REDIS_PORT="${REDIS_PORT}"
@@ -277,7 +281,8 @@ echo "User=\$DB_USER"
 echo "Pass=\$DB_PASS"
 echo "Dbname=\$DB_NAME"
 echo "Region=\$REGION"
-echo "SQS_QUEUE_URL=\$SQS_QUEUE_URL"
+echo "SQS_EXPORT_QUEUE_URL=\$SQS_EXPORT_QUEUE_URL"
+echo "SQS_IMPORT_QUEUE_URL=\$SQS_IMPORT_QUEUE_URL"
 echo "Redis=\$REDIS_HOST:\$REDIS_PORT"
 
 # Test connessione diretta (Aurora dovrebbe essere gia pronto)
@@ -308,7 +313,7 @@ for i in {1..3}; do
     -e DYNAMODB_ANNOTAZIONI_TABLE_NAME=annotazioni \
     -e AWS_ACCESS_KEY_ID= \
     -e AWS_SECRET_ACCESS_KEY= \
-    -e SQS_QUEUE_URL=\$SQS_QUEUE_URL \
+    -e SQS_EXPORT_QUEUE_URL=\$SQS_EXPORT_QUEUE_URL \
     -e SQS_IMPORT_QUEUE_URL=\$SQS_IMPORT_QUEUE_URL \
     -e REDIS_HOST=\$REDIS_HOST \
     -e REDIS_PORT=\$REDIS_PORT \
@@ -350,7 +355,8 @@ PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --region $REG
 echo "Stack avviato! EC2 IP: $PUBLIC_IP"
 echo "Aurora MySQL: $AURORA_ENDPOINT"
 echo "ElastiCache Redis: $REDIS_ENDPOINT:$REDIS_PORT"
-echo "SQS Queue: $SQS_QUEUE_URL" 
+echo "SQS Export Queue: $SQS_EXPORT_QUEUE_URL" 
+echo "SQS Import Queue: $SQS_IMPORT_QUEUE_URL" 
 echo "DynamoDB: annotazioni, annotazioni_storico, annotazioni_storicoStati"
 echo "Applicazione disponibile su: http://$PUBLIC_IP:8080"
 echo ""

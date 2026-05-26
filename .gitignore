@@ -62,6 +62,7 @@ cni-plugins-linux-amd64-*
 **/dynamodb_data
 **/localstack_data
 
+
 # Emoji Legend for .gitignore entries
 # 🔧 Sviluppo e Programmazione
 # ⚙️ 🛠️ 🔧 🔨 🧰 🔩 ⚡ 💻 🖥️ ⌨️ 🖱️ 💾 💿 📀 🔌 🔋 🖨️ 📱 📟 ☎️ 📞 📠
@@ -89,3 +90,4 @@ cni-plugins-linux-amd64-*
 # 🌐 🌍 🌎 🌏 🗺️ 🧭 📡 📶 📳 📴 ☢️ ☣️ ⚛️ 🔬 🔭 📡 📻 📺 📷
 # 🔄 Workflow e Cicli
 # 🔄 🔃 🔁 🔂 ⏩ ⏪ ⏫ ⏬ ◀️ ▶️ 🔼 🔽 ⏸️ ⏹️ ⏺️ ⏯️ 🎦 🎬 📹 📽️
+

@@ -46,7 +46,7 @@ class SqsAnnotazioneImportServiceTest {
         importProperties.setEnabled(true);
 
         AwsProperties awsProperties = new AwsProperties();
-        awsProperties.getSqs().setQueueUrl("http://sqs.test.local/queue/annotazioni");
+        awsProperties.getSqs().setExportQueueUrl("http://sqs.test.local/queue/annotazioni");
 
         service = new SqsAnnotazioneImportService(
             metadataRepository,

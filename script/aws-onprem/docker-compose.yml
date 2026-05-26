@@ -57,10 +57,10 @@ services:
       start_period: 20s
     # awslocal sqs create-queue --queue-name annotazioni
     # docker exec -it gestioneannotazioni-localstack awslocal sqs list-queues
-  init-sqs: #questo crea la coda SQS di export in Localstack
+  init-sqs-export: #questo crea la coda SQS di export in Localstack
     image: amazon/aws-cli
-    container_name: gestioneannotazioni-init-sqs
-    entrypoint: ["/bin/sh", "-c", "until curl -sf http://localstack:4566/_localstack/health; do echo 'Waiting for LocalStack...'; sleep 3; done; aws sqs create-queue --queue-name annotazioni --endpoint-url=http://localstack:4566 --region=eu-central-1"]
+    container_name: gestioneannotazioni-init-sqs-export
+    entrypoint: ["/bin/sh", "-c", "until curl -sf http://localstack:4566/_localstack/health; do echo 'Waiting for LocalStack...'; sleep 3; done; aws sqs create-queue --queue-name annotazioni-export --endpoint-url=http://localstack:4566 --region=eu-central-1"]
     environment:
       - AWS_ACCESS_KEY_ID=dummy
       - AWS_SECRET_ACCESS_KEY=dummy
@@ -120,9 +120,14 @@ services:
       DYNAMODB_ANNOTAZIONI_TABLE_NAME: annotazioni
       # SQS LocalStack
       SQS_ENDPOINT: http://localstack:4566
-      SQS_QUEUE_URL: http://localstack:4566/000000000000/annotazioni
+      SQS_EXPORT_QUEUE_URL: http://localstack:4566/000000000000/annotazioni-export
       SQS_IMPORT_QUEUE_URL: http://localstack:4566/000000000000/annotazioni-import
       SQS_REGION: eu-central-1
+      # Import annotazioni da SQS
+      IMPORT_ANNOTAZIONI_ENABLED: "true"
+      IMPORT_ANNOTAZIONI_CRON_EXPRESSION: "* 0/3 * * * *"
+      IMPORT_SQS_MAX_MESSAGES: "10"
+      IMPORT_SQS_WAIT_TIME_SECONDS: "5"
       # Redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -156,6 +161,23 @@ services:
       - mysql
     networks:
       - aws-onprem-network
+
+  # SQS Admin UI - interfaccia web per visualizzare le code SQS LocalStack
+  # Accessibile su http://localhost:9325
+#    sqs-admin:
+#    image: ghcr.io/nicholasgasior/sqs-browser:latest
+#    container_name: gestioneannotazioni-sqs-admin
+#    ports:
+#      - "9325:3000"
+#    environment:
+#      - SQS_ENDPOINT=http://localstack:4566
+#      - AWS_REGION=eu-central-1
+#      - AWS_ACCESS_KEY_ID=dummy
+#      - AWS_SECRET_ACCESS_KEY=dummy
+#    depends_on:
+#      - localstack
+#    networks:
+#      - aws-onprem-network
 
   # DynamoDB Admin UI
   dynamodb-admin:

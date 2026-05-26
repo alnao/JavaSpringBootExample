@@ -72,7 +72,7 @@ public class SqsAnnotazioneInvioService implements AnnotazioneInvioService {
                 
                 // Crea il messaggio SQS
                 SendMessageRequest request = SendMessageRequest.builder()
-                        .queueUrl(awsProperties.getSqs().getQueueUrl())
+                        .queueUrl(awsProperties.getSqs().getExportQueueUrl())
                         .messageBody(messageJson)
                         // Opzione 1: Rimuovi i parametri FIFO (Consigliata)
                         //.messageGroupId("annotazioni-invio")
@@ -106,6 +106,6 @@ public class SqsAnnotazioneInvioService implements AnnotazioneInvioService {
     
     @Override
     public boolean isEnabled() {
-        return annotazioneInvioProperties.isEnabled() && awsProperties.getSqs().getQueueUrl() != null;
+        return annotazioneInvioProperties.isEnabled() && awsProperties.getSqs().getExportQueueUrl() != null;
     }
 }
