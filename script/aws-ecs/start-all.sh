@@ -30,6 +30,8 @@ AURORA_INSTANCE_CLASS="db.t3.medium"
 
 SQS_QUEUE_NAME="gestioneannotazioni-annotazioni"
 SQS_QUEUE_URL="https://sqs.$AWS_REGION.amazonaws.com/000000000000/$SQS_QUEUE_NAME"
+SQS_IMPORT_QUEUE_NAME="gestioneannotazioni-annotazioni-import"
+SQS_IMPORT_QUEUE_URL="https://sqs.$AWS_REGION.amazonaws.com/000000000000/$SQS_IMPORT_QUEUE_NAME"
 
 VPC_ID="" # lasciato vuoto per usare la default VPC
 SUBNETS="" # verrà popolato dallo script
@@ -275,7 +277,27 @@ if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
 fi
 echo "SQS Queue URL: $SQS_QUEUE_URL"
 
-# 4b. Crea subnet group per ElastiCache (richiesto per creare il cluster)
+# 4b. Crea coda SQS di import con tag
+echo "Creazione coda SQS di import: $SQS_IMPORT_QUEUE_NAME"
+SQS_IMPORT_QUEUE_URL=$(aws sqs create-queue \
+  --queue-name $SQS_IMPORT_QUEUE_NAME \
+  --region $AWS_REGION \
+  --query 'QueueUrl' --output text 2>/dev/null) || {
+  echo "Tentativo di recuperare coda import esistente..."
+  SQS_IMPORT_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_IMPORT_QUEUE_NAME --region $AWS_REGION --query 'QueueUrl' --output text 2>/dev/null) || {
+    echo "ERRORE: Impossibile creare o trovare la coda SQS import"
+    exit 1
+  }
+}
+if [ -n "$SQS_IMPORT_QUEUE_URL" ] && [ "$SQS_IMPORT_QUEUE_URL" != "None" ]; then
+  aws sqs tag-queue \
+    --queue-url "$SQS_IMPORT_QUEUE_URL" \
+    --tags "Name=gestioneannotazioni-app,gestioneannotazioni-app=true" \
+    --region $AWS_REGION 2>/dev/null || echo "Errore nell'aggiunta tag SQS import (ignorato)"
+fi
+echo "SQS Import Queue URL: $SQS_IMPORT_QUEUE_URL"
+
+# 4c. Crea subnet group per ElastiCache (richiesto per creare il cluster)
 CACHE_SUBNET_GROUP_NAME="gestioneannotazioni-redis-subnet-group"
 SUBNET_IDS=$(aws ec2 describe-subnets --region $AWS_REGION --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[*].SubnetId' --output text)
 aws elasticache create-cache-subnet-group \
@@ -380,6 +402,7 @@ cat > ./script/aws-ecs/task-def.json <<EOF
         { "name": "RDS_USERNAME", "value": "$AURORA_MASTER_USER" },
         { "name": "RDS_PASSWORD", "value": "$AURORA_MASTER_PASS" },
         { "name": "SQS_QUEUE_URL", "value": "$SQS_QUEUE_URL" },
+        { "name": "SQS_IMPORT_QUEUE_URL", "value": "$SQS_IMPORT_QUEUE_URL" },
         { "name": "REDIS_HOST", "value": "$REDIS_ENDPOINT" },
         { "name": "REDIS_PORT", "value": "$REDIS_PORT" }
       ],
@@ -458,6 +481,7 @@ echo "=== INFO DEPLOY ==="
 echo "Aurora endpoint: $aurora_endpoint"
 echo "ElastiCache Redis: $REDIS_ENDPOINT:$REDIS_PORT"
 echo "SQS Queue: $SQS_QUEUE_URL"
+echo "SQS Import Queue: $SQS_IMPORT_QUEUE_URL"
 echo "Security Group ID: $SECURITY_GROUP_ID"
 echo "VPC ID: $VPC_ID"
 echo "Subnets: $SUBNETS"

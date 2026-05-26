@@ -57,10 +57,25 @@ services:
       start_period: 20s
     # awslocal sqs create-queue --queue-name annotazioni
     # docker exec -it gestioneannotazioni-localstack awslocal sqs list-queues
-  init-sqs: #questo crea la coda SQS in Localstack
+  init-sqs: #questo crea la coda SQS di export in Localstack
     image: amazon/aws-cli
     container_name: gestioneannotazioni-init-sqs
     entrypoint: ["/bin/sh", "-c", "until curl -sf http://localstack:4566/_localstack/health; do echo 'Waiting for LocalStack...'; sleep 3; done; aws sqs create-queue --queue-name annotazioni --endpoint-url=http://localstack:4566 --region=eu-central-1"]
+    environment:
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+      - AWS_DEFAULT_REGION=eu-central-1
+    depends_on:
+      localstack:
+        condition: service_healthy
+    networks:
+      - aws-onprem-network
+    restart: "no"
+
+  init-sqs-import: #questo crea la coda SQS di import in Localstack
+    image: amazon/aws-cli
+    container_name: gestioneannotazioni-init-sqs-import
+    entrypoint: ["/bin/sh", "-c", "until curl -sf http://localstack:4566/_localstack/health; do echo 'Waiting for LocalStack...'; sleep 3; done; aws sqs create-queue --queue-name annotazioni-import --endpoint-url=http://localstack:4566 --region=eu-central-1"]
     environment:
       - AWS_ACCESS_KEY_ID=dummy
       - AWS_SECRET_ACCESS_KEY=dummy
@@ -106,6 +121,7 @@ services:
       # SQS LocalStack
       SQS_ENDPOINT: http://localstack:4566
       SQS_QUEUE_URL: http://localstack:4566/000000000000/annotazioni
+      SQS_IMPORT_QUEUE_URL: http://localstack:4566/000000000000/annotazioni-import
       SQS_REGION: eu-central-1
       # Redis
       REDIS_HOST: redis

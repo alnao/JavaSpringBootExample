@@ -15,6 +15,8 @@ EC2_COUNT="${EC2_COUNT:-1}"
 VPC_ID=$(aws ec2 describe-vpcs --region $REGION --filters Name=isDefault,Values=true --query 'Vpcs[0].VpcId' --output text)
 SQS_QUEUE_NAME="gestioneannotazioni-annotazioni"
 SQS_QUEUE_URL="https://sqs.$REGION.amazonaws.com/000000000000/$SQS_QUEUE_NAME"
+SQS_IMPORT_QUEUE_NAME="gestioneannotazioni-annotazioni-import"
+SQS_IMPORT_QUEUE_URL="https://sqs.$REGION.amazonaws.com/000000000000/$SQS_IMPORT_QUEUE_NAME"
 
 # 0. Crea IAM Role e Instance Profile se non esistono
 ROLE_NAME="gestioneannotazioni-ec2-role"
@@ -172,7 +174,25 @@ if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
 fi
 echo "SQS Queue URL: $SQS_QUEUE_URL"
 
-# 4b. Crea subnet group per ElastiCache (richiesto per creare il cluster)
+# 4c. Crea coda SQS di import con tag
+echo "Creazione coda SQS di import: $SQS_IMPORT_QUEUE_NAME"
+SQS_IMPORT_QUEUE_URL=$(aws sqs create-queue \
+  --queue-name $SQS_IMPORT_QUEUE_NAME \
+  --region $REGION \
+  --query 'QueueUrl' --output text 2>/dev/null) || {
+  echo "Tentativo di recuperare coda import esistente..."
+  SQS_IMPORT_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_IMPORT_QUEUE_NAME --region $REGION --query 'QueueUrl' --output text 2>/dev/null) || {
+    echo "ERRORE: Impossibile creare o trovare la coda SQS import"
+    exit 1
+  }
+}
+if [ -n "$SQS_IMPORT_QUEUE_URL" ] && [ "$SQS_IMPORT_QUEUE_URL" != "None" ]; then
+  aws sqs tag-queue \
+    --queue-url "$SQS_IMPORT_QUEUE_URL" \
+    --tags "Name=gestioneannotazioni-app,gestioneannotazioni-app=true" \
+    --region $REGION 2>/dev/null || echo "Errore nell'aggiunta tag SQS import (ignorato)"
+fi
+echo "SQS Import Queue URL: $SQS_IMPORT_QUEUE_URL" (richiesto per creare il cluster)
 CACHE_SUBNET_GROUP_NAME="gestioneannotazioni-redis-subnet-group"
 SUBNET_IDS=$(aws ec2 describe-subnets --region $REGION --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[*].SubnetId' --output text)
 aws elasticache create-cache-subnet-group \
@@ -249,6 +269,7 @@ DB_PASS="${DB_PASS}"
 DB_NAME="${DB_NAME}"
 REGION="${REGION}"
 SQS_QUEUE_URL="${SQS_QUEUE_URL}"
+SQS_IMPORT_QUEUE_URL="${SQS_IMPORT_QUEUE_URL}"
 REDIS_HOST="${REDIS_ENDPOINT}"
 REDIS_PORT="${REDIS_PORT}"
 echo "Host=\$AURORA_HOST"
@@ -288,6 +309,7 @@ for i in {1..3}; do
     -e AWS_ACCESS_KEY_ID= \
     -e AWS_SECRET_ACCESS_KEY= \
     -e SQS_QUEUE_URL=\$SQS_QUEUE_URL \
+    -e SQS_IMPORT_QUEUE_URL=\$SQS_IMPORT_QUEUE_URL \
     -e REDIS_HOST=\$REDIS_HOST \
     -e REDIS_PORT=\$REDIS_PORT \
     alnao/gestioneannotazioni:latest

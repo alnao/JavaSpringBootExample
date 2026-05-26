@@ -127,5 +127,11 @@ gestione-annotazioni:
     enabled: ${EXPORT_ANNOTAZIONI_ENABLED:true}
     cron-expression: ${EXPORT_ANNOTAZIONI_CRON_EXPRESSION:0 */2 * * * *}   # ogni 2 minuti
   import-annotazioni:
+    enabled: ${IMPORT_ANNOTAZIONI_ENABLED:false}
+    cron-expression: ${IMPORT_ANNOTAZIONI_CRON_EXPRESSION:0 */2 * * * *}
+    aws:
+      sqs:
+        max-number-of-messages: ${IMPORT_SQS_MAX_MESSAGES:10}
+        wait-time-seconds: ${IMPORT_SQS_WAIT_TIME_SECONDS:5}
     kafka:
       topic-name: annotazioni-import   # default già impostato

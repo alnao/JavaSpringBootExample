@@ -13,6 +13,7 @@ SQLSERVER_ADMIN="sqladmin"
 SQLSERVER_PASSWORD="P@ssw0rd123!"
 SERVICEBUS_NAMESPACE="gestioneannotazioni-servicebus"
 SERVICEBUS_QUEUE="eventbus-annotazioni"
+SERVICEBUS_IMPORT_QUEUE="annotazioni-import"
 REDIS_NAME="gestioneannotazioni-redis"
 
 # Parametri VM
@@ -380,6 +381,22 @@ else
   echo "   Service Bus queue già esistente, skip creazione"
 fi
 
+# Creazione coda ServiceBus per import annotazioni
+IMPORT_QUEUE_EXISTS=$(az servicebus queue show \
+  --resource-group $RESOURCE_GROUP \
+  --namespace-name $SERVICEBUS_NAMESPACE \
+  --name $SERVICEBUS_IMPORT_QUEUE \
+  --output tsv 2>/dev/null)
+if [ -z "$IMPORT_QUEUE_EXISTS" ]; then
+  az servicebus queue create \
+    --resource-group $RESOURCE_GROUP \
+    --namespace-name $SERVICEBUS_NAMESPACE \
+    --name $SERVICEBUS_IMPORT_QUEUE
+  check_error "Service Bus import queue creata"
+else
+  echo "   Service Bus import queue già esistente, skip creazione"
+fi
+
 # Recupero connection string Service Bus
 AZURE_SERVICEBUS_CONNECTION_STRING=$(az servicebus namespace authorization-rule keys list \
   --resource-group $RESOURCE_GROUP \
@@ -498,6 +515,7 @@ AZURE_COSMOS_ENABLED=true
 AZURE_COSMOS_DISABLE_SSL_VERIFICATION=false
 ANNOTAZIONE_INVIO_ENABLED=true
 AZURE_SERVICEBUS_QUEUE_NAME=$SERVICEBUS_QUEUE
+AZURE_SERVICEBUS_IMPORT_QUEUE_NAME=$SERVICEBUS_IMPORT_QUEUE
 REDIS_HOST=$REDIS_HOST
 REDIS_PORT=$REDIS_PORT
 REDIS_PASSWORD=$REDIS_KEY

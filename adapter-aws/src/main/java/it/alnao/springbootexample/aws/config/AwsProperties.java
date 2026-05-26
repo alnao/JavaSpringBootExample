@@ -83,6 +83,7 @@ public class AwsProperties {
     public static class SqsConfig {
         private String endpoint = "http://localstack:4566";
         private String queueUrl = "http://localstack:4566/000000000000/annotazioni";
+        private String importQueueUrl = "http://localstack:4566/000000000000/annotazioni-import";
 
         public String getEndpoint() {
             return endpoint;
@@ -98,6 +99,14 @@ public class AwsProperties {
 
         public void setQueueUrl(String queueUrl) {
             this.queueUrl = queueUrl;
+        }
+
+        public String getImportQueueUrl() {
+            return importQueueUrl;
+        }
+
+        public void setImportQueueUrl(String importQueueUrl) {
+            this.importQueueUrl = importQueueUrl;
         }
 
     }

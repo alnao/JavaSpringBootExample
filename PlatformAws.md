@@ -29,10 +29,14 @@ Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, 
     ```bash
     # Lista dalle code disponibili
     docker exec -it gestioneannotazioni-localstack awslocal sqs list-queues --region=eu-central-1
-    # Crea la coda se non esiste
+    # Crea la coda di export se non esiste
     docker exec -it gestioneannotazioni-localstack awslocal sqs create-queue --queue-name annotazioni --region=eu-central-1
-    # Lista dei messaggi
+    # Crea la coda di import se non esiste
+    docker exec -it gestioneannotazioni-localstack awslocal sqs create-queue --queue-name annotazioni-import --region=eu-central-1
+    # Lista dei messaggi dalla coda di export
     docker exec -it gestioneannotazioni-localstack awslocal sqs receive-message --queue-url http://localhost:4566/000000000000/annotazioni --region=eu-central-1
+    # Lista dei messaggi dalla coda di import
+    docker exec -it gestioneannotazioni-localstack awslocal sqs receive-message --queue-url http://localhost:4566/000000000000/annotazioni-import --region=eu-central-1
     # Verifica delle variabili di ambiente 
     docker exec -it gestioneannotazioni-app-aws env | grep AWS
     ```
@@ -71,7 +75,8 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
     Lo script esegue in sequenza:
     - Creazione VPC, Security Group, KeyPair, IAM Role
     - Provisioning Aurora MySQL (RDS) e DynamoDB
-    - Creazione della coda SQS utilizzata per l'invio/export delle annotazioni
+    - Creazione della coda SQS `gestioneannotazioni-annotazioni` utilizzata per l'invio/export delle annotazioni
+    - Creazione della coda SQS `gestioneannotazioni-annotazioni-import` utilizzata per l'import delle annotazioni
     - Upload e lancio script di inizializzazione SQL su Aurora (init-mysql.sql)
     - Creazione del Redis con ElasticCache (e di una subnet specifica!)
     - Creazione e configurazione istanza EC2 (Amazon Linux 2)
@@ -88,10 +93,19 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
       ```
     - Comando AWS-CLI per la lettura dei messaggi nelle code SQS
       ```
+      # Coda di export
       SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
       SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
       aws sqs receive-message \
         --queue-url "$SQS_QUEUE_URL" \
+        --region eu-central-1 \
+        --attribute-names All \
+        --message-attribute-names All
+      # Coda di import
+      SQS_IMPORT_QUEUE_NAME=gestioneannotazioni-annotazioni-import
+      SQS_IMPORT_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_IMPORT_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
+      aws sqs receive-message \
+        --queue-url "$SQS_IMPORT_QUEUE_URL" \
         --region eu-central-1 \
         --attribute-names All \
         --message-attribute-names All
@@ -141,7 +155,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     2. **IAM Roles**: Creazione Task Role (accesso Aurora/DynamoDB/ElastiCache) e Execution Role (logging CloudWatch)
     3. **Networking**: Creazione Security Groups con regole per HTTP (8080), Aurora (3306), Redis (6379), HTTPS/SSH
     4. **Aurora MySQL**: Provisioning cluster RDS con inizializzazione database e tabelle
-    5. **SQS**: Creazione coda SQS per *l'invio* delle annotazioni confermate
+    5. **SQS**: Creazione coda SQS `gestioneannotazioni-annotazioni` per *l'invio* delle annotazioni confermate e coda `gestioneannotazioni-annotazioni-import` per *l'import* delle annotazioni
     6. **ElastiCache Redis**: Provisioning cluster Redis per lock distribuiti (cache.t3.micro)
     7. **DynamoDB**: Creazione tabelle `annotazioni` e `annotazioni_storico` con attributi ottimizzati
     8. **ECS Deployment**: Creazione cluster, task definition, service con Fargate e auto-scaling
@@ -171,10 +185,19 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     ```
   - Comando AWS-CLI per la lettura dei messaggi nelle code SQS
     ```
+    # Coda di export
     SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
     SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
     aws sqs receive-message \
       --queue-url "$SQS_QUEUE_URL" \
+      --region eu-central-1 \
+      --attribute-names All \
+      --message-attribute-names All
+    # Coda di import
+    SQS_IMPORT_QUEUE_NAME=gestioneannotazioni-annotazioni-import
+    SQS_IMPORT_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_IMPORT_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
+    aws sqs receive-message \
+      --queue-url "$SQS_IMPORT_QUEUE_URL" \
       --region eu-central-1 \
       --attribute-names All \
       --message-attribute-names All
