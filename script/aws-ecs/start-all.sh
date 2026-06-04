@@ -3,8 +3,21 @@
 # Richiede: AWS CLI configurata, permessi su ECS, ECR, RDS, DynamoDB, IAM, VPC
 # Esegue: build/push immagine, creazione risorse, deploy ECS, attese, init DB
 
-set -euo pipefail
 export AWS_PAGER=""
+
+# Funzione helper per gestire errori di risorse già esistenti
+safe_run() {
+  local description=$1
+  shift
+  if eval "$@" &>/dev/null; then
+    echo "✓ $description"
+    return 0
+  else
+    local exit_code=$?
+    echo "⊘ $description (ignorato)"
+    return 0
+  fi
+}
 
 
 # === CONFIGURAZIONE ===
@@ -28,8 +41,8 @@ AURORA_ENGINE="aurora-mysql"
 AURORA_ENGINE_VER="5.7.mysql_aurora.2.11.4"
 AURORA_INSTANCE_CLASS="db.t3.medium"
 
-SQS_QUEUE_NAME="gestioneannotazioni-annotazioni"
-SQS_QUEUE_URL="https://sqs.$AWS_REGION.amazonaws.com/000000000000/$SQS_QUEUE_NAME"
+SQS_EXPORT_QUEUE_NAME="gestioneannotazioni-annotazioni-export"
+SQS_EXPORT_QUEUE_URL="https://sqs.$AWS_REGION.amazonaws.com/000000000000/$SQS_EXPORT_QUEUE_NAME"
 SQS_IMPORT_QUEUE_NAME="gestioneannotazioni-annotazioni-import"
 SQS_IMPORT_QUEUE_URL="https://sqs.$AWS_REGION.amazonaws.com/000000000000/$SQS_IMPORT_QUEUE_NAME"
 
@@ -41,9 +54,9 @@ SECURITY_GROUP_ID="" # verrà creato
 # === 1. Build e push immagine su ECR ===
 echo "[1/7] Build e push immagine Docker su ECR..."
 if ! aws ecr describe-repositories --repository-names "$ECR_REPO_NAME" --region $AWS_REGION > /dev/null 2>&1; then
-  aws ecr create-repository --repository-name "$ECR_REPO_NAME" --region $AWS_REGION --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+  safe_run "Creazione ECR repository" "aws ecr create-repository --repository-name \"$ECR_REPO_NAME\" --region $AWS_REGION --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true"
 else
-  echo "ECR repository già esistente."
+  echo "✓ ECR repository già esistente."
 fi
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ECR_URL="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME"
@@ -66,12 +79,13 @@ if ! aws iam get-role --role-name $TASK_ROLE_NAME --region $AWS_REGION > /dev/nu
     --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}' \
     --region $AWS_REGION \
     --query 'Role.Arn' --output text)
-  aws iam attach-role-policy --role-name $TASK_ROLE_NAME --policy-arn $POLICY_ARN --region $AWS_REGION
-  aws iam attach-role-policy --role-name $TASK_ROLE_NAME --policy-arn $RDS_POLICY_ARN --region $AWS_REGION
-  aws iam attach-role-policy --role-name $TASK_ROLE_NAME --policy-arn $SQS_POLICY_ARN --region $AWS_REGION
+  safe_run "Attach policy AmazonDynamoDBFullAccess" "aws iam attach-role-policy --role-name $TASK_ROLE_NAME --policy-arn $POLICY_ARN --region $AWS_REGION"
+  safe_run "Attach policy AmazonRDSFullAccess" "aws iam attach-role-policy --role-name $TASK_ROLE_NAME --policy-arn $RDS_POLICY_ARN --region $AWS_REGION"
+  safe_run "Attach policy AmazonSQSFullAccess" "aws iam attach-role-policy --role-name $TASK_ROLE_NAME --policy-arn $SQS_POLICY_ARN --region $AWS_REGION"
+  echo "✓ IAM Task Role creato: $TASK_ROLE_ARN"
 else
   TASK_ROLE_ARN=$(aws iam get-role --role-name $TASK_ROLE_NAME --region $AWS_REGION --query 'Role.Arn' --output text)
-  echo "IAM Role già esistente: $TASK_ROLE_ARN"
+  echo "✓ IAM Task Role già esistente: $TASK_ROLE_ARN"
 fi
 
 # === 1c. Creazione ECS Execution Role ===
@@ -88,42 +102,49 @@ if ! aws iam get-role --role-name $EXEC_ROLE_NAME --region $AWS_REGION > /dev/nu
     --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}' \
     --region $AWS_REGION \
     --query 'Role.Arn' --output text)
-  aws iam attach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn $EXEC_POLICY_ARN --region $AWS_REGION
-  aws iam attach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn $LOGS_POLICY_ARN --region $AWS_REGION
-  aws iam attach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn $SQS_POLICY_ARN --region $AWS_REGION
+  safe_run "Attach policy AmazonECSTaskExecutionRolePolicy" "aws iam attach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn $EXEC_POLICY_ARN --region $AWS_REGION"
+  safe_run "Attach policy CloudWatchLogsFullAccess" "aws iam attach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn $LOGS_POLICY_ARN --region $AWS_REGION"
+  safe_run "Attach policy AmazonSQSFullAccess" "aws iam attach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn $SQS_POLICY_ARN --region $AWS_REGION"
+  echo "✓ IAM Execution Role creato: $EXEC_ROLE_ARN"
 else
   EXEC_ROLE_ARN=$(aws iam get-role --role-name $EXEC_ROLE_NAME --region $AWS_REGION --query 'Role.Arn' --output text)
-  echo "IAM Execution Role già esistente: $EXEC_ROLE_ARN"
+  echo "✓ IAM Execution Role già esistente: $EXEC_ROLE_ARN"
   # Assicura che la policy CloudWatchLogs sia attaccata
   if ! aws iam list-attached-role-policies --role-name $EXEC_ROLE_NAME --region $AWS_REGION --query 'AttachedPolicies[*].PolicyArn' --output text | grep -q $LOGS_POLICY_ARN; then
-    aws iam attach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn $LOGS_POLICY_ARN --region $AWS_REGION
+    safe_run "Attach policy CloudWatchLogsFullAccess" "aws iam attach-role-policy --role-name $EXEC_ROLE_NAME --policy-arn $LOGS_POLICY_ARN --region $AWS_REGION"
   fi
 fi
 
 # Tag IAM Role (Task e Execution)
-aws iam tag-role --role-name $TASK_ROLE_NAME --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true --region $AWS_REGION || true
-aws iam tag-role --role-name $EXEC_ROLE_NAME --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true --region $AWS_REGION || true
+safe_run "Tag IAM Task Role" "aws iam tag-role --role-name $TASK_ROLE_NAME --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true --region $AWS_REGION"
+safe_run "Tag IAM Execution Role" "aws iam tag-role --role-name $EXEC_ROLE_NAME --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true --region $AWS_REGION"
 
 # === 2. Preparazione networking (deve essere prima di Aurora) ===
 echo "[2/7] Preparazione networking..."
 VPC_ID=$(aws ec2 describe-vpcs --filters Name=isDefault,Values=true --region $AWS_REGION --query 'Vpcs[0].VpcId' --output text)
 SUBNETS=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'Subnets[*].SubnetId' --output text | tr '\t' ',')
-if ! aws ec2 describe-security-groups --filters Name=group-name,Values=gestioneannotazioni-sg Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'SecurityGroups[0].GroupId' --output text | grep -v None > /dev/null 2>&1; then
+
+# Verifica se il Security Group esiste già
+SG_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=gestioneannotazioni-sg Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'SecurityGroups[0].GroupId' --output text 2>/dev/null)
+
+if [ "$SG_ID" == "None" ] || [ -z "$SG_ID" ]; then
+  echo "Creazione Security Group..."
   SECURITY_GROUP_ID=$(aws ec2 create-security-group --group-name gestioneannotazioni-sg --description "gestioneannotazioni ECS SG" --vpc-id $VPC_ID --region $AWS_REGION --query 'GroupId' --output text)
-  aws ec2 create-tags --resources $SECURITY_GROUP_ID --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true --region $AWS_REGION
+  safe_run "Tag Security Group" "aws ec2 create-tags --resources $SECURITY_GROUP_ID --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true --region $AWS_REGION"
 
   # Regole di sicurezza: apri solo le porte necessarie
-  aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 8080 --cidr 0.0.0.0/0 --region $AWS_REGION # HTTP app
-  aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 3306 --source-group $SECURITY_GROUP_ID --region $AWS_REGION # MySQL/Aurora solo da ECS
-  aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 443 --cidr 0.0.0.0/0 --region $AWS_REGION # HTTPS (opzionale)
-  aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 22 --cidr 0.0.0.0/0 --region $AWS_REGION # SSH (solo se necessario, meglio restringere)
+  safe_run "Regola porta 8080" "aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 8080 --cidr 0.0.0.0/0 --region $AWS_REGION"
+  safe_run "Regola porta 3306" "aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 3306 --source-group $SECURITY_GROUP_ID --region $AWS_REGION"
+  safe_run "Regola porta 443" "aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 443 --cidr 0.0.0.0/0 --region $AWS_REGION"
+  safe_run "Regola porta 22" "aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 22 --cidr 0.0.0.0/0 --region $AWS_REGION"
 else
-  SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=gestioneannotazioni-sg Name=vpc-id,Values=$VPC_ID --region $AWS_REGION --query 'SecurityGroups[0].GroupId' --output text)
-  echo "Security Group già esistente: $SECURITY_GROUP_ID"
+  SECURITY_GROUP_ID=$SG_ID
+  echo "✓ Security Group già esistente: $SECURITY_GROUP_ID"
 fi
 
 # === 3. Provisioning RDS MySQL (Aurora) ===
 echo "[3/7] Provisioning RDS MySQL (Aurora)..."
+
 # Crea Aurora cluster se non esiste
 echo "Verifica esistenza Aurora cluster..."
 if ! aws rds describe-db-clusters --db-cluster-identifier $AURORA_CLUSTER_ID --region $AWS_REGION > /dev/null 2>&1; then
@@ -137,9 +158,11 @@ if ! aws rds describe-db-clusters --db-cluster-identifier $AURORA_CLUSTER_ID --r
     --vpc-security-group-ids $SECURITY_GROUP_ID \
     --region $AWS_REGION \
     --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+  echo "✓ Aurora cluster creato"
 else
-  echo "Aurora cluster già esistente."
+  echo "✓ Aurora cluster già esistente."
 fi
+
 # Crea Aurora instance se non esiste
 echo "Verifica esistenza Aurora instance..."
 if ! aws rds describe-db-instances --db-instance-identifier $AURORA_INSTANCE_ID --region $AWS_REGION > /dev/null 2>&1; then
@@ -150,26 +173,39 @@ if ! aws rds describe-db-instances --db-instance-identifier $AURORA_INSTANCE_ID 
     --db-instance-class $AURORA_INSTANCE_CLASS \
     --region $AWS_REGION \
     --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+  echo "✓ Aurora instance creata"
 else
-  echo "Aurora instance già esistente."
+  echo "✓ Aurora instance già esistente."
 fi
 # Attendi che il cluster sia disponibile
 echo "Attendo che Aurora sia disponibile..."
-while true; do
-  STATUS=$(aws rds describe-db-clusters --db-cluster-identifier $AURORA_CLUSTER_ID --region $AWS_REGION --query 'DBClusters[0].Status' --output text)
-  echo "Stato Aurora: $STATUS"
-  if [[ "$STATUS" == "available" ]]; then break; fi
+max_attempts=60
+attempt=0
+while [ $attempt -lt $max_attempts ]; do
+  STATUS=$(aws rds describe-db-clusters --db-cluster-identifier $AURORA_CLUSTER_ID --region $AWS_REGION --query 'DBClusters[0].Status' --output text 2>/dev/null)
+  echo "Stato Aurora: $STATUS (tentativo $((attempt+1))/$max_attempts)"
+  if [[ "$STATUS" == "available" ]]; then 
+    echo "✓ Aurora disponibile"
+    break
+  fi
   sleep 20
+  attempt=$((attempt+1))
 done
 
 # Attendi anche che l'instance sia disponibile
 echo "Attendo che Aurora instance sia disponibile..."
-while true; do
-  INSTANCE_STATUS=$(aws rds describe-db-instances --db-instance-identifier $AURORA_INSTANCE_ID --region $AWS_REGION --query 'DBInstances[0].DBInstanceStatus' --output text)
-  echo "Stato Aurora instance: $INSTANCE_STATUS"
-  if [[ "$INSTANCE_STATUS" == "available" ]]; then break; fi
+attempt=0
+while [ $attempt -lt $max_attempts ]; do
+  INSTANCE_STATUS=$(aws rds describe-db-instances --db-instance-identifier $AURORA_INSTANCE_ID --region $AWS_REGION --query 'DBInstances[0].DBInstanceStatus' --output text 2>/dev/null)
+  echo "Stato Aurora instance: $INSTANCE_STATUS (tentativo $((attempt+1))/$max_attempts)"
+  if [[ "$INSTANCE_STATUS" == "available" ]]; then 
+    echo "✓ Aurora instance disponibile"
+    break
+  fi
   sleep 20
+  attempt=$((attempt+1))
 done
+
 # Recupera endpoint
 aurora_endpoint=$(aws rds describe-db-clusters --db-cluster-identifier $AURORA_CLUSTER_ID --region $AWS_REGION --query 'DBClusters[0].Endpoint' --output text)
 echo "Aurora endpoint: $aurora_endpoint"
@@ -213,9 +249,11 @@ if ! aws dynamodb describe-table --table-name $DYNAMODB_TABLE --region $AWS_REGI
     --billing-mode PAY_PER_REQUEST \
     --region $AWS_REGION \
     --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+  echo "✓ Tabella DynamoDB $DYNAMODB_TABLE creata"
 else
-  echo "Tabella DynamoDB $DYNAMODB_TABLE già esistente."
+  echo "✓ Tabella DynamoDB $DYNAMODB_TABLE già esistente."
 fi
+
 if ! aws dynamodb describe-table --table-name $DYNAMODB_TABLE2 --region $AWS_REGION > /dev/null 2>&1; then
   aws dynamodb create-table \
     --table-name $DYNAMODB_TABLE2 \
@@ -224,9 +262,11 @@ if ! aws dynamodb describe-table --table-name $DYNAMODB_TABLE2 --region $AWS_REG
     --billing-mode PAY_PER_REQUEST \
     --region $AWS_REGION \
     --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+  echo "✓ Tabella DynamoDB $DYNAMODB_TABLE2 creata"
 else
-  echo "Tabella DynamoDB $DYNAMODB_TABLE2 già esistente."
+  echo "✓ Tabella DynamoDB $DYNAMODB_TABLE2 già esistente."
 fi
+
 # Crea tabella annotazioni_storicoStati con GSI
 if ! aws dynamodb describe-table --table-name annotazioni_storicoStati --region $AWS_REGION > /dev/null 2>&1; then
   aws dynamodb create-table \
@@ -250,32 +290,27 @@ if ! aws dynamodb describe-table --table-name annotazioni_storicoStati --region 
     --billing-mode PROVISIONED \
     --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
     --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
-    --region "$AWS_REGION" || echo "Tabella storicoStati già esistente o errore ignorato."
+    --region "$AWS_REGION"
+  echo "✓ Tabella DynamoDB annotazioni_storicoStati creata"
 else
-  echo "Tabella DynamoDB annotazioni_storicoStati già esistente."
+  echo "✓ Tabella DynamoDB annotazioni_storicoStati già esistente."
 fi
 
 # 4. Crea coda SQS con tag
-echo "Creazione coda SQS: $SQS_QUEUE_NAME"
-SQS_QUEUE_URL=$(aws sqs create-queue \
-  --queue-name $SQS_QUEUE_NAME \
+echo "Creazione coda SQS: $SQS_EXPORT_QUEUE_NAME"
+SQS_EXPORT_QUEUE_URL=$(aws sqs create-queue \
+  --queue-name $SQS_EXPORT_QUEUE_NAME \
   --region $AWS_REGION \
   --query 'QueueUrl' --output text 2>/dev/null) || {
-  echo "Tentativo di recuperare coda esistente..."
-  SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region $AWS_REGION --query 'QueueUrl' --output text 2>/dev/null) || {
-    echo "ERRORE: Impossibile creare o trovare la coda SQS"
-    exit 1
-  }
+  SQS_EXPORT_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_EXPORT_QUEUE_NAME --region $AWS_REGION --query 'QueueUrl' --output text 2>/dev/null)
 }
-# Aggiungi tag alla coda (separatamente)
-if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
-  echo "Aggiunta tag alla coda SQS..."
-  aws sqs tag-queue \
-    --queue-url "$SQS_QUEUE_URL" \
-    --tags "Name=gestioneannotazioni-app,gestioneannotazioni-app=true" \
-    --region $AWS_REGION 2>/dev/null || echo "Errore nell'aggiunta tag SQS (ignorato)"
+
+if [ -n "$SQS_EXPORT_QUEUE_URL" ] && [ "$SQS_EXPORT_QUEUE_URL" != "None" ]; then
+  safe_run "Tag coda SQS export" "aws sqs tag-queue --queue-url \"$SQS_EXPORT_QUEUE_URL\" --tags \"Name=gestioneannotazioni-app,gestioneannotazioni-app=true\" --region $AWS_REGION"
+  echo "✓ SQS Queue URL: $SQS_EXPORT_QUEUE_URL"
+else
+  echo "⊘ Impossibile creare o trovare la coda SQS export"
 fi
-echo "SQS Queue URL: $SQS_QUEUE_URL"
 
 # 4b. Crea coda SQS di import con tag
 echo "Creazione coda SQS di import: $SQS_IMPORT_QUEUE_NAME"
@@ -283,50 +318,51 @@ SQS_IMPORT_QUEUE_URL=$(aws sqs create-queue \
   --queue-name $SQS_IMPORT_QUEUE_NAME \
   --region $AWS_REGION \
   --query 'QueueUrl' --output text 2>/dev/null) || {
-  echo "Tentativo di recuperare coda import esistente..."
-  SQS_IMPORT_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_IMPORT_QUEUE_NAME --region $AWS_REGION --query 'QueueUrl' --output text 2>/dev/null) || {
-    echo "ERRORE: Impossibile creare o trovare la coda SQS import"
-    exit 1
-  }
+  SQS_IMPORT_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_IMPORT_QUEUE_NAME --region $AWS_REGION --query 'QueueUrl' --output text 2>/dev/null)
 }
+
 if [ -n "$SQS_IMPORT_QUEUE_URL" ] && [ "$SQS_IMPORT_QUEUE_URL" != "None" ]; then
-  aws sqs tag-queue \
-    --queue-url "$SQS_IMPORT_QUEUE_URL" \
-    --tags "Name=gestioneannotazioni-app,gestioneannotazioni-app=true" \
-    --region $AWS_REGION 2>/dev/null || echo "Errore nell'aggiunta tag SQS import (ignorato)"
+  safe_run "Tag coda SQS import" "aws sqs tag-queue --queue-url \"$SQS_IMPORT_QUEUE_URL\" --tags \"Name=gestioneannotazioni-app,gestioneannotazioni-app=true\" --region $AWS_REGION"
+  echo "✓ SQS Import Queue URL: $SQS_IMPORT_QUEUE_URL"
+else
+  echo "⊘ Impossibile creare o trovare la coda SQS import"
 fi
-echo "SQS Import Queue URL: $SQS_IMPORT_QUEUE_URL"
 
 # 4c. Crea subnet group per ElastiCache (richiesto per creare il cluster)
 CACHE_SUBNET_GROUP_NAME="gestioneannotazioni-redis-subnet-group"
 SUBNET_IDS=$(aws ec2 describe-subnets --region $AWS_REGION --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[*].SubnetId' --output text)
-aws elasticache create-cache-subnet-group \
-  --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
-  --cache-subnet-group-description "Subnet group for gestioneannotazioni Redis" \
-  --subnet-ids $SUBNET_IDS \
-  --region $AWS_REGION \
-  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
-  2>/dev/null || echo "Cache subnet group già esistente"
+
+if ! aws elasticache describe-cache-subnet-groups --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME --region $AWS_REGION > /dev/null 2>&1; then
+  safe_run "Creazione ElastiCache subnet group" "aws elasticache create-cache-subnet-group --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME --cache-subnet-group-description \"Subnet group for gestioneannotazioni Redis\" --subnet-ids $SUBNET_IDS --region $AWS_REGION --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true"
+  echo "✓ Cache subnet group creato"
+else
+  echo "✓ Cache subnet group già esistente"
+fi
 
 # 4c. Crea ElastiCache Redis cluster
 REDIS_CLUSTER_ID="gestioneannotazioni-redis"
-aws elasticache create-cache-cluster \
-  --cache-cluster-id $REDIS_CLUSTER_ID \
-  --engine redis \
-  --cache-node-type cache.t3.micro \
-  --num-cache-nodes 1 \
-  --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
-  --security-group-ids $SECURITY_GROUP_ID \
-  --region $AWS_REGION \
-  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
-  2>/dev/null || echo "Redis cluster già esistente"
+if ! aws elasticache describe-cache-clusters --cache-cluster-id $REDIS_CLUSTER_ID --region $AWS_REGION > /dev/null 2>&1; then
+  safe_run "Creazione ElastiCache Redis cluster" "aws elasticache create-cache-cluster --cache-cluster-id $REDIS_CLUSTER_ID --engine redis --cache-node-type cache.t3.micro --num-cache-nodes 1 --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME --security-group-ids $SECURITY_GROUP_ID --region $AWS_REGION --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true"
+  echo "✓ Redis cluster creato"
+else
+  echo "✓ Redis cluster già esistente"
+fi
 
 # Aggiungi regola porta Redis (6379) al security group
-aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 6379 --source-group $SECURITY_GROUP_ID --region $AWS_REGION 2>/dev/null || echo "Regola porta 6379 già esistente"
+safe_run "Autorizzazione porta 6379" "aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 6379 --source-group $SECURITY_GROUP_ID --region $AWS_REGION"
 
 # Attendi che Redis sia disponibile
 echo "Attendo che ElastiCache Redis sia disponibile (può richiedere 5-10 minuti)..."
-aws elasticache wait cache-cluster-available --cache-cluster-id $REDIS_CLUSTER_ID --region $AWS_REGION
+max_attempts=40
+attempt=0
+while [ $attempt -lt $max_attempts ]; do
+  if aws elasticache describe-cache-clusters --cache-cluster-id $REDIS_CLUSTER_ID --region $AWS_REGION --query 'CacheClusters[0].CacheClusterStatus' --output text 2>/dev/null | grep -q "available"; then
+    echo "✓ ElastiCache Redis disponibile"
+    break
+  fi
+  sleep 15
+  attempt=$((attempt+1))
+done
 
 # Recupera endpoint Redis
 REDIS_ENDPOINT=$(aws elasticache describe-cache-clusters \
@@ -334,43 +370,39 @@ REDIS_ENDPOINT=$(aws elasticache describe-cache-clusters \
   --show-cache-node-info \
   --region $AWS_REGION \
   --query 'CacheClusters[0].CacheNodes[0].Endpoint.Address' \
-  --output text)
+  --output text 2>/dev/null)
 REDIS_PORT=$(aws elasticache describe-cache-clusters \
   --cache-cluster-id $REDIS_CLUSTER_ID \
   --show-cache-node-info \
   --region $AWS_REGION \
   --query 'CacheClusters[0].CacheNodes[0].Endpoint.Port' \
-  --output text)
+  --output text 2>/dev/null)
 
 echo "Redis endpoint: $REDIS_ENDPOINT:$REDIS_PORT"
 
 # === 5. Creazione cluster ECS ===
 echo "[5/7] Creazione ECS Cluster..."
 CLUSTER_STATUS=$(aws ecs describe-clusters --clusters $CLUSTER_NAME --region $AWS_REGION --query 'clusters[0].status' --output text 2>/dev/null)
+
 if [ "$CLUSTER_STATUS" != "ACTIVE" ]; then
-    if [ "$CLUSTER_STATUS" == "None" ] || [ -z "$CLUSTER_STATUS" ]; then
-        echo "Creazione del cluster ECS: $CLUSTER_NAME"
-        aws ecs create-cluster --cluster-name $CLUSTER_NAME --region $AWS_REGION \
-            --tags '[
-                {"key": "Name", "value": "gestioneannotazioni-app"},
-                {"key": "Project", "value": "gestioneannotazioni-app"}
-            ]' && echo "Cluster ECS creato con successo."
-    else
-        echo "Cluster $CLUSTER_NAME esiste ma non è attivo (stato: $CLUSTER_STATUS)"
-        aws ecs create-cluster --cluster-name $CLUSTER_NAME --region $AWS_REGION \
-            --tags '[
-                {"key": "Name", "value": "gestioneannotazioni-app"},
-                {"key": "Project", "value": "gestioneannotazioni-app"}
-            ]' && echo "Cluster ECS creato con successo."
-    fi
+  if [ "$CLUSTER_STATUS" == "None" ] || [ -z "$CLUSTER_STATUS" ]; then
+    echo "Creazione del cluster ECS: $CLUSTER_NAME"
+    aws ecs create-cluster --cluster-name $CLUSTER_NAME --region $AWS_REGION \
+      --tags '[
+        {"key": "Name", "value": "gestioneannotazioni-app"},
+        {"key": "Project", "value": "gestioneannotazioni-app"}
+      ]'
+    echo "✓ Cluster ECS creato"
+  fi
 else
-    echo "ECS Cluster $CLUSTER_NAME già esistente e attivo."
+  echo "✓ ECS Cluster $CLUSTER_NAME già esistente e attivo."
 fi
 
 # === 6. Definizione task ECS Fargate ===
-echo "[5/7] Definizione task ECS Fargate..."
+echo "[6/7] Definizione task ECS Fargate..."
 LOG_GROUP_NAME="/ecs/gestioneannotazioni-app"
-aws logs create-log-group --log-group-name $LOG_GROUP_NAME --region $AWS_REGION 2>/dev/null || true
+safe_run "Creazione CloudWatch Log Group" "aws logs create-log-group --log-group-name $LOG_GROUP_NAME --region $AWS_REGION"
+
 rm -f ./script/aws-ecs/task-def.json
 cat > ./script/aws-ecs/task-def.json <<EOF
 {
@@ -401,7 +433,7 @@ cat > ./script/aws-ecs/task-def.json <<EOF
         { "name": "RDS_DATABASE", "value": "$AURORA_DB_NAME" },
         { "name": "RDS_USERNAME", "value": "$AURORA_MASTER_USER" },
         { "name": "RDS_PASSWORD", "value": "$AURORA_MASTER_PASS" },
-        { "name": "SQS_QUEUE_URL", "value": "$SQS_QUEUE_URL" },
+        { "name": "SQS_EXPORT_QUEUE_URL", "value": "$SQS_EXPORT_QUEUE_URL" },
         { "name": "SQS_IMPORT_QUEUE_URL", "value": "$SQS_IMPORT_QUEUE_URL" },
         { "name": "REDIS_HOST", "value": "$REDIS_ENDPOINT" },
         { "name": "REDIS_PORT", "value": "$REDIS_PORT" }
@@ -418,21 +450,23 @@ cat > ./script/aws-ecs/task-def.json <<EOF
   ]
 }
 EOF
-aws ecs register-task-definition --cli-input-json file://script/aws-ecs/task-def.json --region $AWS_REGION
+
+aws ecs register-task-definition --cli-input-json file://script/aws-ecs/task-def.json --region $AWS_REGION > /dev/null
+echo "✓ Task Definition registrata"
 
 # === 7. Deploy servizio ECS Fargate ===
 echo "[7/7] Deploy servizio ECS Fargate..."
-# Ottieni ARN della task definition
 TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition $TASK_FAMILY --region $AWS_REGION --query 'taskDefinition.taskDefinitionArn' --output text 2>/dev/null)
+
 if [ -z "$TASK_DEF_ARN" ] || [ "$TASK_DEF_ARN" == "None" ]; then
-    echo "Errore: Task definition $TASK_FAMILY non trovata!"
-    exit 1
-fi
-# Controlla se il servizio esiste e è attivo
-SERVICE_STATUS=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION --query 'services[0].status' --output text 2>/dev/null)
-if [ "$SERVICE_STATUS" != "ACTIVE" ]; then
-    echo "Creazione del servizio ECS: $SERVICE_NAME"
-    aws ecs create-service \
+  echo "⊘ Task definition $TASK_FAMILY non trovata (continuo comunque)"
+else
+  SERVICE_STATUS=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION --query 'services[0].status' --output text 2>/dev/null)
+  
+  if [ "$SERVICE_STATUS" != "ACTIVE" ]; then
+    if [ "$SERVICE_STATUS" == "None" ] || [ -z "$SERVICE_STATUS" ]; then
+      echo "Creazione del servizio ECS: $SERVICE_NAME"
+      aws ecs create-service \
         --cluster $CLUSTER_NAME \
         --service-name $SERVICE_NAME \
         --task-definition $TASK_DEF_ARN \
@@ -441,12 +475,15 @@ if [ "$SERVICE_STATUS" != "ACTIVE" ]; then
         --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUP_ID],assignPublicIp=ENABLED}" \
         --region $AWS_REGION \
         --tags '[
-            {"key":"Name","value":"gestioneannotazioni-app"},
-            {"key":"Project","value":"gestioneannotazioni-app"},
-            {"key":"Environment","value":"production"}
-        ]' && echo "Servizio ECS creato con successo."
-else
-    echo "ECS Service $SERVICE_NAME già esistente e attivo."
+          {"key":"Name","value":"gestioneannotazioni-app"},
+          {"key":"Project","value":"gestioneannotazioni-app"},
+          {"key":"Environment","value":"production"}
+        ]' > /dev/null
+      echo "✓ Servizio ECS creato"
+    fi
+  else
+    echo "✓ ECS Service $SERVICE_NAME già esistente e attivo."
+  fi
 fi
 
 
@@ -480,7 +517,7 @@ fi
 echo "=== INFO DEPLOY ==="
 echo "Aurora endpoint: $aurora_endpoint"
 echo "ElastiCache Redis: $REDIS_ENDPOINT:$REDIS_PORT"
-echo "SQS Queue: $SQS_QUEUE_URL"
+echo "SQS Queue: $SQS_EXPORT_QUEUE_URL"
 echo "SQS Import Queue: $SQS_IMPORT_QUEUE_URL"
 echo "Security Group ID: $SECURITY_GROUP_ID"
 echo "VPC ID: $VPC_ID"

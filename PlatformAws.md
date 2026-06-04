@@ -11,6 +11,10 @@ Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: c
 ## ☁️ Esecuzione del profilo AWS in locale
 
 Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, DynamoDB Admin UI, Spring Boot profilo AWS):
+- Esiste uno script che esegue la creazione, tutti i test automatici e poi il deprovisioning di tutto
+  ```bash
+  ./script/automatic-test/test-aws-onprem.sh
+  ```
 - Prima di eseguire il comando di compose bisogna verficare che la versione dell'immagine su DockerHub sia aggiornata!
     ```bash
     ./script/push-image-docker-hub.sh
@@ -22,8 +26,12 @@ Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, 
     ```
 - Comando per la creazione dello stack nel docker locale
   ```bash
-  docker-compose -f script/aws-onprem/docker-compose.yml up -d
+  `./script/aws-onprem/start-all.sh`
   ```
+  - oppure
+    ```bash
+    docker-compose -f script/aws-onprem/docker-compose.yml up -d
+    ```
   - lo stack crea anche tabelle su Dynamo e database/tabelle su MySql locale
   - lo stack crea anche la coda SQS tramite immagine `localstack`, per everificare lo stato dei messaggi nella coda è possibile eseguire i comandi
     ```bash
@@ -40,7 +48,6 @@ Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, 
     # Verifica delle variabili di ambiente 
     docker exec -it gestioneannotazioni-app-aws env | grep AWS
     ```
-  - presenta anche uno script `./script/aws-onprem/start-all.sh` che esegue il docker compose
 - Servizi disponibili:
   - **Frontend**:        [http://localhost:8082](http://localhost:8082)
   - **Backend API**:     [http://localhost:8082/api/annotazioni](http://localhost:8082/api/annotazioni)
@@ -51,13 +58,16 @@ Per simulare l'ambiente AWS in locale (MySQL come RDS, DynamoDB Local, Adminer, 
   docker-compose logs -f <nome-servizio>
   ```
 - Per fermare tutto e rimuovere i componenti:
-  ```bash
-  docker-compose -f script/aws-onprem/docker-compose.yml down
-  docker volume rm $(docker volume ls -q)
-  docker rmi $(docker images -q)
-  ```
-  - presente anche uno script `./script/aws-onprem/stop-all.sh`
-
+  - presente anche uno script 
+    ```bash
+    ./script/aws-onprem/stop-all.sh
+    ```
+  - oppure manualmente con docker
+    ```bash
+    docker-compose -f script/aws-onprem/docker-compose.yml down
+    docker volume rm $(docker volume ls -q)
+    docker rmi $(docker images -q)
+    ```
 
 ### 🚀 Esecuzione su AWS EC2
 Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con provisioning completamente automatizzato di tutte le risorse cloud necessarie (Aurora MySQL, DynamoDB, EC2, Security Group, IAM Role, KeyPair, ecc.) tramite script Bash e AWS CLI.
@@ -78,10 +88,14 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
     - Creazione della coda SQS `gestioneannotazioni-annotazioni` utilizzata per l'invio/export delle annotazioni
     - Creazione della coda SQS `gestioneannotazioni-annotazioni-import` utilizzata per l'import delle annotazioni
     - Upload e lancio script di inizializzazione SQL su Aurora (init-mysql.sql)
-    - Creazione del Redis con ElasticCache (e di una subnet specifica!)
+    - Creazione del Redis con ElasticCache (e di una subnet specifica!). *La creazione potrebbe necessitare diversi minuti*
     - Creazione e configurazione istanza EC2 (Amazon Linux 2)
     - Deploy automatico del jar Spring Boot e avvio con profilo `aws`
     - Configurazione variabili d'ambiente e sicurezza SSH
+  - Esecuzione di test automatici (export, import e prenotazione)
+    ```bash
+    script/aws-ec2/test-aws-ec2.sh
+    ```
   - Accesso all'applicazione:
     - L'output finale dello script mostra l'IP pubblico EC2 e la porta applicativa (default 8080)
     - Accedi da browser: `http://<EC2_PUBLIC_IP>:8080`
@@ -90,25 +104,6 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
       ssh -i gestioneannotazioni-key.pem ec2-user@<EC2_PUBLIC_IP>
       sudo cat /var/log/cloud-init-output.log
       sudo tail /var/log/cloud-init-output.log --follow
-      ```
-    - Comando AWS-CLI per la lettura dei messaggi nelle code SQS
-      ```
-      # Coda di export
-      SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
-      SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
-      aws sqs receive-message \
-        --queue-url "$SQS_QUEUE_URL" \
-        --region eu-central-1 \
-        --attribute-names All \
-        --message-attribute-names All
-      # Coda di import
-      SQS_IMPORT_QUEUE_NAME=gestioneannotazioni-annotazioni-import
-      SQS_IMPORT_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_IMPORT_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
-      aws sqs receive-message \
-        --queue-url "$SQS_IMPORT_QUEUE_URL" \
-        --region eu-central-1 \
-        --attribute-names All \
-        --message-attribute-names All
       ```
   - Pulizia/cleanup:
     Rimozione di tutte le risorse create (EC2, RDS, DynamoDB, Security Group, KeyPair, ecc):
@@ -149,19 +144,19 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     ```bash
     ./script/aws-ecs/start-all.sh
     ```
-    Lo script ci può mettere diversi minuto per la creazione del database aurora e del task ECS!
+    Lo script ci può mettere diversi minuti per la creazione del database aurora e del task ECS!
     Lo script esegue in sequenza:
     1. **Build e Push ECR**: Compilazione Maven, build Docker, creazione repository ECR e push immagine
     2. **IAM Roles**: Creazione Task Role (accesso Aurora/DynamoDB/ElastiCache) e Execution Role (logging CloudWatch)
     3. **Networking**: Creazione Security Groups con regole per HTTP (8080), Aurora (3306), Redis (6379), HTTPS/SSH
     4. **Aurora MySQL**: Provisioning cluster RDS con inizializzazione database e tabelle
-    5. **SQS**: Creazione coda SQS `gestioneannotazioni-annotazioni` per *l'invio* delle annotazioni confermate e coda `gestioneannotazioni-annotazioni-import` per *l'import* delle annotazioni
+    5. **SQS**: Creazione coda SQS `gestioneannotazioni-annotazioni-export` per *l'invio* delle annotazioni confermate e coda `gestioneannotazioni-annotazioni-import` per *l'import* delle annotazioni
     6. **ElastiCache Redis**: Provisioning cluster Redis per lock distribuiti (cache.t3.micro)
     7. **DynamoDB**: Creazione tabelle `annotazioni` e `annotazioni_storico` con attributi ottimizzati
     8. **ECS Deployment**: Creazione cluster, task definition, service con Fargate e auto-scaling
     9. **CloudWatch Logs**: Configurazione logging applicativo con retention automatica
     10. **Endpoint Discovery**: Rilevamento automatico IP pubblico del task per accesso HTTP
-      - a volte capita che il task non faccia in tempo a partire e il ritorna l'ip corretto, in questi casi è possibile lanciare lo script
+      - a volte capita che il task non faccia in tempo a partire e non ritorna l'ip corretto, in questi casi è possibile lanciare lo script per sanare il problema:
         ```bash
         ./script/aws-ecs/check-fargete.sh
         ```
@@ -181,27 +176,8 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
     - Health Check: `http://<TASK_PUBLIC_IP>:8080/actuator/health`
   - Test dell'applicazione: è possibile lanciare lo script che verifica il sistema di prenotazione delle annotazioni con lo script
     ```
-    ./script/automatic-test/test-prenotazione-annotazione.sh <indirizzoip>:8080
+    ./script/aws-ecs/test-aws-ecs.sh
     ```
-  - Comando AWS-CLI per la lettura dei messaggi nelle code SQS
-    ```
-    # Coda di export
-    SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
-    SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
-    aws sqs receive-message \
-      --queue-url "$SQS_QUEUE_URL" \
-      --region eu-central-1 \
-      --attribute-names All \
-      --message-attribute-names All
-    # Coda di import
-    SQS_IMPORT_QUEUE_NAME=gestioneannotazioni-annotazioni-import
-    SQS_IMPORT_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_IMPORT_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
-    aws sqs receive-message \
-      --queue-url "$SQS_IMPORT_QUEUE_URL" \
-      --region eu-central-1 \
-      --attribute-names All \
-      --message-attribute-names All
-    ```    
   - Monitoring e logs:
     ```bash
     # Verifica stato servizio ECS

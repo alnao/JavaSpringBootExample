@@ -22,7 +22,8 @@ SECURITY_GROUP_NAME="gestioneannotazioni-sg"
 TASK_ROLE_NAME="gestioneannotazioni-ecs-task-role"
 EXEC_ROLE_NAME="gestioneannotazioni-ecs-execution-role"
 LOG_GROUP_NAME="/ecs/gestioneannotazioni-app"
-SQS_QUEUE_NAME="gestioneannotazioni-annotazioni"
+SQS_QUEUE_NAME_EXPORT="gestioneannotazioni-annotazioni-export"
+SQS_QUEUE_NAME_IMPORT="gestioneannotazioni-annotazioni-import"
 
 # 1. Elimina servizio ECS
 aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --desired-count 0 --region $AWS_REGION || true
@@ -44,17 +45,28 @@ aws dynamodb delete-table --table-name $DYNAMODB_TABLE --region $AWS_REGION || t
 aws dynamodb delete-table --table-name $DYNAMODB_TABLE2 --region $AWS_REGION || true
 aws dynamodb delete-table --table-name $DYNAMODB_TABLE3 --region $AWS_REGION || true
 
-# 4. Rimuovi coda SQS
-echo "Rimozione coda SQS..."
-SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region $AWS_REGION --query 'QueueUrl' --output text 2>/dev/null) || echo "Coda SQS non trovata"
+# 4. Rimuovi code SQS
+echo "Rimozione coda SQS $SQS_QUEUE_NAME_EXPORT..."
+SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME_EXPORT --region $AWS_REGION --query 'QueueUrl' --output text 2>/dev/null) || echo "Coda SQS non trovata"
 if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
   echo "Eliminazione coda SQS: $SQS_QUEUE_URL"
   aws sqs delete-queue --queue-url "$SQS_QUEUE_URL" --region $AWS_REGION || echo "Errore nella rimozione coda SQS"
 else
-  echo "Coda SQS $SQS_QUEUE_NAME non esistente"
+  echo "Coda SQS $SQS_QUEUE_NAME_EXPORT non esistente"
 fi
 
-# 4b. Rimuovi ElastiCache Redis cluster
+echo "Rimozione coda SQS $SQS_QUEUE_NAME_IMPORT..."
+SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME_IMPORT --region $AWS_REGION --query 'QueueUrl' --output text 2>/dev/null) || echo "Coda SQS non trovata"
+if [ -n "$SQS_QUEUE_URL" ] && [ "$SQS_QUEUE_URL" != "None" ]; then
+  echo "Eliminazione coda SQS: $SQS_QUEUE_URL"
+  aws sqs delete-queue --queue-url "$SQS_QUEUE_URL" --region $AWS_REGION || echo "Errore nella rimozione coda SQS"
+else
+  echo "Coda SQS $SQS_QUEUE_NAME_IMPORT non esistente"
+fi
+
+
+
+# 4c. Rimuovi ElastiCache Redis cluster
 REDIS_CLUSTER_ID="gestioneannotazioni-redis"
 echo "Rimozione ElastiCache Redis cluster..."
 aws elasticache delete-cache-cluster \

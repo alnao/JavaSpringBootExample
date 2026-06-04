@@ -65,7 +65,8 @@ Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: c
   - ✅ ⚙️ Migrazione da Java 17 a Java 21 ed esecuzione su Debian 13
   - ✅ 🛠️ Gestione errore esecuzione test locale con `mkdir -p /mnt/Dati4/Workspace/JavaSpringBootExample/application/data`
 - 🚧 🗃️ Sistema evoluto di gestione annotazioni
-  - ✅ 🧑‍🤝‍🧑 Gestione modifica annotazione con annotazione `@Version` di JPA (vedi Entity AnnotazioneMetadataEntity di Postgresql). *Non funziona perchè il Service esegue un refresh della versione all'interno del metodo aggiornaAnnotazione quindi non andrebbe in errore in caso di contesa*
+  - ✅ 🧑‍🤝‍🧑 Gestione modifica annotazione con annotazione `@Version` di JPA (vedi Entity AnnotazioneMetadataEntity di Postgresql). 
+    - *Non funziona perchè il Service esegue un refresh della versione all'interno del metodo aggiornaAnnotazione quindi non andrebbe in errore in caso di contesa*
   - ✅ 👥 Sistema di lock con Redis che impedisce che due utenti modifichino la stessa annotazione allo stesso momento
     - ✅ 🔒 Implementazione Redis con Redisson per profili kube, aws, azure
     - ✅ 💾 Implementazione in-memory per profilo sqlite
@@ -82,28 +83,30 @@ Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: c
     - ✅ 🕸️ Gestione con lock schedulazione nei profili cloud
     - ✅ 🔧 Gestione senza lock schedulazione nei profili sqlite
     - ✅ 🎯 Test con profilo sqlite e kube
-    - 🚧 🤖 Test con profilo AWS e Azure
+    - ✅ 🤖 Test con profilo AWS (locale, EC2, ECS Fargate)
+    - 🚧 🤖 Test con profilo Azure
   - 🚧 🔄 Import annotazioni: sistemi di import dati
     - ✅ 📝 Nuovo stato annotazioni "Importata"
     - ✅ 📖 Consumer Kafka che legge da un topic e inserisce annotazioni (import annotazioni)
     - ✅ ⚙️ Sistema di import da coda SQS e test su AWS-Ec2
     - ✅ ⚙️ Sistema di import da coda Azure
-    - 🚧 🔧 Sistema di backup and restore tramite export json (dove salva tutto? import con stato RESTORED?)
-    - 🚧 🎯 Test con profilo sqlite e kube
-    - 🚧 🤖 Test con profilo AWS e Azure
   - 🚧 🛠️ Refactor e rimozione del `@Autowired` a favore del injectiont tramite costruttore! (segnalazione sonar)
     - 🚧 ⚙️ Test coverage e security issues
-- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.0.2  
-- 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie annotazioni
-    - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
-  - 🚧 🧭 Sistema che gestisce la scadenza di una annotazione con spring-batch che elabora tutte le annotazioni rifiutate o scadute, con nuovo stato scadute.
-  - 🚧 💾 Backup & Disaster Recovery: Cross-region backup, point-in-time recovery, RTO/RPO compliance
-  - 🚧 🔐 OAuth2/OIDC Provider: Integrazione con provider esterni (Google, Microsoft, GitHub) + SSO enterprise
 - 🚧 🛡️ Gestione password via secret
   - 🚧 🔒 Gestione password tramite setret di Kubernetes nel profilo Kube
   - 🚧 🔒 Gestione password tramite AWS Secret manager nel profilo aws
   - 🚧 🔒 Gestione password tramite Azure key vault nel profilo azure
   - 🚧 🔒 Gestione password tramite File statici nel profilo sqlite
+- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.0.2  
+  - 🚧 ⚙️ Sviluppo template e script per AWS-EKS (script/aws-eks)
+  - 🚧 🎯 Test con profilo sqlite e kube
+  - 🚧 🤖 Test con profilo AWS e Azure
+- 🚧 💾 Backup & Disaster Recovery: Cross-region backup, point-in-time recovery, RTO/RPO compliance
+  - 🚧 🔧 Sistema di backup and restore tramite export json (dove salva tutto? import con stato RESTORED?)
+- 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie annotazioni
+    - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
+  - 🚧 🧭 Sistema che gestisce la scadenza di una annotazione con spring-batch che elabora tutte le annotazioni rifiutate o scadute, con nuovo stato scadute.
+  - 🚧 🔐 OAuth2/OIDC Provider: Integrazione con provider esterni (Google, Microsoft, GitHub) + SSO enterprise
 - 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.0.3
 - 🚧 ☸️ Esecuzione su Cloud in infrastruttura Kubernetes
   - 🚧 🤖 Deploy su AWS su EKS del profilo Kube

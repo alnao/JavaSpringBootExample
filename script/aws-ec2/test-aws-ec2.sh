@@ -154,7 +154,9 @@ while [ $import_attempt -lt $max_import_attempts ]; do
 done
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Esecuzione test di prenotazione annotazione..."
-../automatic-test/test-prenotazione-annotazione.sh $URL
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+"$PROJECT_ROOT/script/automatic-test/test-prenotazione-annotazione.sh" "$URL"
 
 
 

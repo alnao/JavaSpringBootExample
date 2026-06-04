@@ -1,3 +1,7 @@
+# in sviluppo!
+script/aws-eks
+
+
 automatic-test-*.log
 **/automatic-test-*.log
 

@@ -7,6 +7,21 @@ set -e
 # Disabilita paginazione aws cli
 export AWS_PAGER=""
 
+# Funzione helper per gestire errori di risorse già esistenti
+run_aws_command() {
+  local command=$1
+  local already_exists_msg=$2
+  eval "$command" || {
+    local exit_code=$?
+    # Se l'errore contiene "AlreadyExists" o "already exists", ignoriamo
+    if [ $exit_code -eq 254 ]; then
+      echo "$already_exists_msg"
+    else
+      return $exit_code
+    fi
+  }
+}
+
 REGION="eu-central-1"
 PARAM_KEY_NAME="${KEY_NAME:-gestioneannotazioni-key}"
 DB_INSTANCE_CLASS="${DB_INSTANCE_CLASS:-db.t3.medium}"
@@ -67,25 +82,36 @@ DB_INSTANCE_ID="gestioneannotazioni-instance"
 DB_NAME="gestioneannotazioni"
 DB_USER="gestioneannotazioni_user"
 DB_PASS="gestioneannotazioni_pass"
-aws rds create-db-cluster \
-  --db-cluster-identifier $DB_CLUSTER_ID \
-  --engine aurora-mysql \
-  --master-username $DB_USER \
-  --master-user-password $DB_PASS \
-  --vpc-security-group-ids $SG_ID \
-  --region $REGION \
-  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
-  2>/dev/null || echo "Cluster Aurora già esistente"
-  
-aws rds create-db-instance \
-  --db-instance-identifier $DB_INSTANCE_ID \
-  --db-cluster-identifier $DB_CLUSTER_ID \
-  --engine aurora-mysql \
-  --db-instance-class $DB_INSTANCE_CLASS \
-  --region $REGION \
-  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
-  --publicly-accessible \
-  2>/dev/null || echo "Istanza Aurora già esistente"
+
+# Controlla se il cluster esiste già
+if aws rds describe-db-clusters --db-cluster-identifier $DB_CLUSTER_ID --region $REGION &>/dev/null; then
+  echo "✓ Cluster Aurora $DB_CLUSTER_ID già esistente"
+else
+  echo "Creazione Cluster Aurora..."
+  aws rds create-db-cluster \
+    --db-cluster-identifier $DB_CLUSTER_ID \
+    --engine aurora-mysql \
+    --master-username $DB_USER \
+    --master-user-password $DB_PASS \
+    --vpc-security-group-ids $SG_ID \
+    --region $REGION \
+    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+fi
+
+# Controlla se l'istanza esiste già
+if aws rds describe-db-instances --db-instance-identifier $DB_INSTANCE_ID --region $REGION &>/dev/null; then
+  echo "✓ Istanza Aurora $DB_INSTANCE_ID già esistente"
+else
+  echo "Creazione Istanza Aurora..."
+  aws rds create-db-instance \
+    --db-instance-identifier $DB_INSTANCE_ID \
+    --db-cluster-identifier $DB_CLUSTER_ID \
+    --engine aurora-mysql \
+    --db-instance-class $DB_INSTANCE_CLASS \
+    --region $REGION \
+    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
+    --publicly-accessible
+fi
 
 # Attendi che Aurora sia disponibile prima di recuperare l'endpoint
 echo "Attendo che Aurora cluster sia disponibile..."
@@ -112,45 +138,65 @@ fi
 
 echo "Aurora endpoint finale: $AURORA_ENDPOINT"
 
-# 3. Crea tabella DynamoDB con tag
-aws dynamodb create-table \
-  --table-name annotazioni \
-  --attribute-definitions AttributeName=id,AttributeType=S \
-  --key-schema AttributeName=id,KeyType=HASH \
-  --billing-mode PAY_PER_REQUEST \
-  --region $REGION \
-  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true || echo "Tabella DynamoDB già esistente o errore ignorato."
+# 3. Crea tabelle DynamoDB con tag
+echo "Creazione/verifica tabelle DynamoDB..."
 
-# 3b. Crea tabella DynamoDB per lo storico
-aws dynamodb create-table \
-  --table-name annotazioni_storico \
-  --attribute-definitions AttributeName=id,AttributeType=S \
-  --key-schema AttributeName=id,KeyType=HASH \
-  --billing-mode PAY_PER_REQUEST \
-  --region $REGION \
-  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true || echo "Tabella DynamoDB storico già esistente o errore ignorato."
+# Tabella annotazioni
+if aws dynamodb describe-table --table-name annotazioni --region $REGION &>/dev/null; then
+  echo "✓ Tabella DynamoDB 'annotazioni' già esistente"
+else
+  echo "Creazione tabella annotazioni..."
+  aws dynamodb create-table \
+    --table-name annotazioni \
+    --attribute-definitions AttributeName=id,AttributeType=S \
+    --key-schema AttributeName=id,KeyType=HASH \
+    --billing-mode PAY_PER_REQUEST \
+    --region $REGION \
+    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+fi
 
-aws dynamodb create-table \
-  --table-name annotazioni_storicoStati \
-  --attribute-definitions \
-    AttributeName=idOperazione,AttributeType=S \
-    AttributeName=idAnnotazione,AttributeType=S \
-    AttributeName=dataModifica,AttributeType=S \
-  --key-schema AttributeName=idOperazione,KeyType=HASH \
-  --global-secondary-indexes '[
-    {
-      "IndexName": "idAnnotazione-index",
-      "KeySchema": [
-        {"AttributeName":"idAnnotazione","KeyType":"HASH"},
-        {"AttributeName":"dataModifica","KeyType":"RANGE"}
-      ],
-      "Projection": {"ProjectionType":"ALL"},
-      "ProvisionedThroughput": {"ReadCapacityUnits":5,"WriteCapacityUnits":5}
-    }
-  ]' \
-  --billing-mode PROVISIONED \
-  --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
-  --region "$REGION" || echo "Tabella storicoStati già esistente o errore ignorato."
+# Tabella annotazioni_storico
+if aws dynamodb describe-table --table-name annotazioni_storico --region $REGION &>/dev/null; then
+  echo "✓ Tabella DynamoDB 'annotazioni_storico' già esistente"
+else
+  echo "Creazione tabella annotazioni_storico..."
+  aws dynamodb create-table \
+    --table-name annotazioni_storico \
+    --attribute-definitions AttributeName=id,AttributeType=S \
+    --key-schema AttributeName=id,KeyType=HASH \
+    --billing-mode PAY_PER_REQUEST \
+    --region $REGION \
+    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+fi
+
+# Tabella annotazioni_storicoStati
+if aws dynamodb describe-table --table-name annotazioni_storicoStati --region $REGION &>/dev/null; then
+  echo "✓ Tabella DynamoDB 'annotazioni_storicoStati' già esistente"
+else
+  echo "Creazione tabella annotazioni_storicoStati..."
+  aws dynamodb create-table \
+    --table-name annotazioni_storicoStati \
+    --attribute-definitions \
+      AttributeName=idOperazione,AttributeType=S \
+      AttributeName=idAnnotazione,AttributeType=S \
+      AttributeName=dataModifica,AttributeType=S \
+    --key-schema AttributeName=idOperazione,KeyType=HASH \
+    --global-secondary-indexes '[
+      {
+        "IndexName": "idAnnotazione-index",
+        "KeySchema": [
+          {"AttributeName":"idAnnotazione","KeyType":"HASH"},
+          {"AttributeName":"dataModifica","KeyType":"RANGE"}
+        ],
+        "Projection": {"ProjectionType":"ALL"},
+        "ProvisionedThroughput": {"ReadCapacityUnits":5,"WriteCapacityUnits":5}
+      }
+    ]' \
+    --billing-mode PROVISIONED \
+    --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+    --region "$REGION" \
+    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+fi
 
 
 # 4. Crea coda SQS con tag
@@ -196,29 +242,39 @@ if [ -n "$SQS_IMPORT_QUEUE_URL" ] && [ "$SQS_IMPORT_QUEUE_URL" != "None" ]; then
 fi
 echo "SQS Import Queue URL: $SQS_IMPORT_QUEUE_URL richiesto per creare il cluster"
 
-# 4c. elasticache
+# 4c. ElastiCache - Subnet Group
 CACHE_SUBNET_GROUP_NAME="gestioneannotazioni-redis-subnet-group"
 SUBNET_IDS=$(aws ec2 describe-subnets --region $REGION --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[*].SubnetId' --output text)
-aws elasticache create-cache-subnet-group \
-  --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
-  --cache-subnet-group-description "Subnet group for gestioneannotazioni Redis" \
-  --subnet-ids $SUBNET_IDS \
-  --region $REGION \
-  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
-  2>/dev/null || echo "Cache subnet group già esistente"
 
-# 4c. Crea ElastiCache Redis cluster
+if aws elasticache describe-cache-subnet-groups --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME --region $REGION &>/dev/null; then
+  echo "✓ Cache subnet group '$CACHE_SUBNET_GROUP_NAME' già esistente"
+else
+  echo "Creazione cache subnet group..."
+  aws elasticache create-cache-subnet-group \
+    --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
+    --cache-subnet-group-description "Subnet group for gestioneannotazioni Redis" \
+    --subnet-ids $SUBNET_IDS \
+    --region $REGION \
+    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+fi
+
+# Crea ElastiCache Redis cluster
 REDIS_CLUSTER_ID="gestioneannotazioni-redis"
-aws elasticache create-cache-cluster \
-  --cache-cluster-id $REDIS_CLUSTER_ID \
-  --engine redis \
-  --cache-node-type cache.t3.micro \
-  --num-cache-nodes 1 \
-  --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
-  --security-group-ids $SG_ID \
-  --region $REGION \
-  --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
-  2>/dev/null || echo "Redis cluster già esistente"
+
+if aws elasticache describe-cache-clusters --cache-cluster-id $REDIS_CLUSTER_ID --region $REGION &>/dev/null; then
+  echo "✓ Redis cluster '$REDIS_CLUSTER_ID' già esistente"
+else
+  echo "Creazione Redis cluster..."
+  aws elasticache create-cache-cluster \
+    --cache-cluster-id $REDIS_CLUSTER_ID \
+    --engine redis \
+    --cache-node-type cache.t3.micro \
+    --num-cache-nodes 1 \
+    --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
+    --security-group-ids $SG_ID \
+    --region $REGION \
+    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+fi
 
 # Aggiungi regola porta Redis (6379) al security group
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 6379 --cidr 0.0.0.0/0 --region $REGION 2>/dev/null || echo "Regola porta 6379 già esistente"
@@ -334,22 +390,39 @@ echo "Usando AMI_ID=$AMI_ID"
 #echo "-----------"
 #echo $USER_DATA
 #echo "-----------"
-echo "Avvio EC2..."
+echo "Avvio/verifica EC2..."
 
-INSTANCE_ID=$(aws ec2 run-instances \
-  --image-id $AMI_ID \
-  --count $EC2_COUNT \
-  --instance-type $EC2_INSTANCE_TYPE \
-  --key-name $PARAM_KEY_NAME \
-  --security-group-ids $SG_ID \
-  --region $REGION \
-  --user-data $USER_DATA \
-  --iam-instance-profile Name=$INSTANCE_PROFILE_NAME \
-  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=gestioneannotazioni-app},{Key=gestioneannotazioni-app,Value=true}]' \
-  --query 'Instances[0].InstanceId' --output text)
+# Verifica se esiste già un'istanza con il tag gestioneannotazioni-app
+EXISTING_INSTANCE=$(aws ec2 describe-instances --region $REGION --filters "Name=tag:gestioneannotazioni-app,Values=true" "Name=instance-state-name,Values=running,stopped" --query 'Reservations[].Instances[0].InstanceId' --output text 2>/dev/null)
 
-# Attendi che EC2 sia running
-aws ec2 wait instance-running --instance-ids $INSTANCE_ID --region $REGION
+if [ -n "$EXISTING_INSTANCE" ] && [ "$EXISTING_INSTANCE" != "None" ]; then
+  echo "✓ Istanza EC2 già esistente: $EXISTING_INSTANCE"
+  INSTANCE_ID=$EXISTING_INSTANCE
+  
+  # Se l'istanza è ferma, avviali
+  INSTANCE_STATE=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --region $REGION --query 'Reservations[0].Instances[0].State.Name' --output text)
+  if [ "$INSTANCE_STATE" == "stopped" ]; then
+    echo "Istanza ferma, avvio in corso..."
+    aws ec2 start-instances --instance-ids $INSTANCE_ID --region $REGION
+    aws ec2 wait instance-running --instance-ids $INSTANCE_ID --region $REGION
+  fi
+else
+  echo "Creazione nuova istanza EC2..."
+  INSTANCE_ID=$(aws ec2 run-instances \
+    --image-id $AMI_ID \
+    --count $EC2_COUNT \
+    --instance-type $EC2_INSTANCE_TYPE \
+    --key-name $PARAM_KEY_NAME \
+    --security-group-ids $SG_ID \
+    --region $REGION \
+    --user-data $USER_DATA \
+    --iam-instance-profile Name=$INSTANCE_PROFILE_NAME \
+    --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=gestioneannotazioni-app},{Key=gestioneannotazioni-app,Value=true}]' \
+    --query 'Instances[0].InstanceId' --output text)
+  
+  # Attendi che EC2 sia running
+  aws ec2 wait instance-running --instance-ids $INSTANCE_ID --region $REGION
+fi
 PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --region $REGION --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
 
 echo "Stack avviato! EC2 IP: $PUBLIC_IP"
