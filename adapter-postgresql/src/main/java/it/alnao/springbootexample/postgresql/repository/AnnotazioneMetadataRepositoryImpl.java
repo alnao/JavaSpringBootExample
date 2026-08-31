@@ -4,7 +4,6 @@ import it.alnao.springbootexample.postgresql.entity.AnnotazioneMetadataEntity;
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
 import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
@@ -18,8 +17,11 @@ import java.util.stream.Collectors;
 @Profile("kube")
 public class AnnotazioneMetadataRepositoryImpl implements AnnotazioneMetadataRepository {
 
-    @Autowired
-    private AnnotazioneMetadataJpaRepository jpaRepository;
+    private final AnnotazioneMetadataJpaRepository jpaRepository;
+
+    public AnnotazioneMetadataRepositoryImpl(AnnotazioneMetadataJpaRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+    }
 
     @Override
     public AnnotazioneMetadata save(AnnotazioneMetadata metadata) {

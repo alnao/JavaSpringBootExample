@@ -6,7 +6,6 @@ import it.alnao.springbootexample.core.domain.auth.AccountType;
 import it.alnao.springbootexample.core.repository.auth.UserRepository;
 import it.alnao.springbootexample.sqlite.service.AnnotazioneServiceSQLiteImpl;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -26,7 +25,6 @@ public class DataInitializer implements ApplicationRunner {
     private final PasswordEncoder passwordEncoder;
     private final DataInitializerProperties properties;
 
-    @Autowired
     public DataInitializer(UserRepository userRepository, 
                           PasswordEncoder passwordEncoder,
                           DataInitializerProperties properties) {

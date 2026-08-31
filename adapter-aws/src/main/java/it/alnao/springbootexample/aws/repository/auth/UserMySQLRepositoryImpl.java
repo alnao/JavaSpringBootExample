@@ -4,7 +4,6 @@ import it.alnao.springbootexample.aws.entity.auth.UserMySQLEntity;
 import it.alnao.springbootexample.core.domain.auth.AccountType;
 import it.alnao.springbootexample.core.domain.auth.User;
 import it.alnao.springbootexample.core.repository.auth.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
@@ -25,7 +24,6 @@ public class UserMySQLRepositoryImpl implements UserRepository {
 
     private final UserMySQLJpaRepository userJpaRepository;
 
-    @Autowired
     public UserMySQLRepositoryImpl(UserMySQLJpaRepository userJpaRepository) {
         this.userJpaRepository = userJpaRepository;
     }

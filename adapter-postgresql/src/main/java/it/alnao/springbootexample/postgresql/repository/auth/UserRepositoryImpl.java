@@ -5,7 +5,6 @@ import it.alnao.springbootexample.core.domain.auth.User;
 import it.alnao.springbootexample.core.domain.auth.AccountType;
 import it.alnao.springbootexample.core.repository.auth.UserRepository;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
@@ -20,8 +19,11 @@ import java.util.UUID;
 @Profile("kube")
 public class UserRepositoryImpl implements UserRepository {
     
-    @Autowired
-    private UserJpaRepository jpaRepository;
+    private final UserJpaRepository jpaRepository;
+
+    public UserRepositoryImpl(UserJpaRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+    }
     
     @Override
     public User save(User user) {

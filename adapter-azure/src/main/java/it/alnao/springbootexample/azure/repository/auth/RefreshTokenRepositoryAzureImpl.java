@@ -3,7 +3,6 @@ package it.alnao.springbootexample.azure.repository.auth;
 import it.alnao.springbootexample.azure.entity.auth.RefreshTokenSqlServerEntity;
 import it.alnao.springbootexample.core.domain.auth.RefreshToken;
 import it.alnao.springbootexample.core.repository.auth.RefreshTokenRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +27,11 @@ public class RefreshTokenRepositoryAzureImpl implements RefreshTokenRepository {
                 .map(RefreshTokenSqlServerEntity::toDomain)
                 .toList();
     }
-    @Autowired
-    private RefreshTokenSqlServerRepository jpaRepository;
+    private final RefreshTokenSqlServerRepository jpaRepository;
+
+    public RefreshTokenRepositoryAzureImpl(RefreshTokenSqlServerRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+    }
 
     @Override
     public RefreshToken save(RefreshToken refreshToken) {

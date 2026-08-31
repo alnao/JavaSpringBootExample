@@ -77,30 +77,37 @@ Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: c
     - ✅ ☁️ Modifica script profilo Azure per servizio redis on Cloud
     - ✅ ⚙️ Modifica al frontend per gestire le prenotazioni di una annotazione quando si entra nel dettaglio
     - ✅ ⚙️ Modifica al frontend per visualizzare l'errore specifico se qualcun'altro ha bloccato quella annotazione
-  - 🚧 🕸️ Gestione invio notifiche singolo se ci sono più istanze dell'applicazione in esecuzione (esempio minikube)
+  - ✅ 🕸️ Gestione invio notifiche singolo se ci sono più istanze dell'applicazione in esecuzione (esempio minikube)
     - ✅ 🛠️ Rinominare l'attuale sistema di lock in "AnnotazioneRedisLockService"
     - ✅ ⚙️ Aggiunta libreria shedlock nel core e creazione classe config nel adapter redis
     - ✅ 🕸️ Gestione con lock schedulazione nei profili cloud
     - ✅ 🔧 Gestione senza lock schedulazione nei profili sqlite
     - ✅ 🎯 Test con profilo sqlite e kube
     - ✅ 🤖 Test con profilo AWS (locale, EC2, ECS Fargate)
-    - 🚧 🤖 Test con profilo Azure
-  - 🚧 🔄 Import annotazioni: sistemi di import dati
+  - ✅ 🔄 Import annotazioni: sistemi di import dati
     - ✅ 📝 Nuovo stato annotazioni "Importata"
     - ✅ 📖 Consumer Kafka che legge da un topic e inserisce annotazioni (import annotazioni)
     - ✅ ⚙️ Sistema di import da coda SQS e test su AWS-Ec2
     - ✅ ⚙️ Sistema di import da coda Azure
-  - 🚧 🛠️ Refactor e rimozione del `@Autowired` a favore del injectiont tramite costruttore! (segnalazione sonar)
-    - 🚧 ⚙️ Test coverage e security issues
+  - ✅ 🛠️ Refactor e rimozione del `@Autowired` a favore del injectiont tramite costruttore! (segnalazione sonar)
+    - ✅ ⚙️ Test coverage e security issues per avere coverage >90%
 - 🚧 🛡️ Gestione password via secret
-  - 🚧 🔒 Gestione password tramite setret di Kubernetes nel profilo Kube
+  - 🚧 🔒 Gestione password tramite secret di Kubernetes nel profilo Kube
   - 🚧 🔒 Gestione password tramite AWS Secret manager nel profilo aws
   - 🚧 🔒 Gestione password tramite Azure key vault nel profilo azure
   - 🚧 🔒 Gestione password tramite File statici nel profilo sqlite
 - 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.0.2  
   - 🚧 ⚙️ Sviluppo template e script per AWS-EKS (script/aws-eks)
-  - 🚧 🎯 Test con profilo sqlite e kube
-  - 🚧 🤖 Test con profilo AWS e Azure
+  - 🚧 🎯 Test con profilo sqlite
+  - 🚧 🎯 Test con profilo kube
+  - 🚧 🤖 Test con profilo AWS
+  - 🚧 🤖 Test con profilo Azure
+  - 🚧 📡 Rilascio immagine 0.0.2 su DockerHub
+- 🚧 🤖 Robot test
+  - 🚧 🤖 Creare suite robot-test base
+  - 🚧 🤖 Script per esecuzione in locale
+  - 🚧 🤖 Script per esecuzione in remoto AWS
+  - 🚧 🤖 Script per esecuzione in remoto Azure
 - 🚧 💾 Backup & Disaster Recovery: Cross-region backup, point-in-time recovery, RTO/RPO compliance
   - 🚧 🔧 Sistema di backup and restore tramite export json (dove salva tutto? import con stato RESTORED?)
 - 🚧 🎯 Notifiche real-time (WebSocket): creazione `adapter-notifier` che permetta ad utenti di registrarsi su WebSocket e ricevere notifiche su cambio stato delle proprie annotazioni
@@ -171,7 +178,7 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
   ```
   ./script/automatic-test/test-all.sh
   ```
-- Profilo `aws` in Cloud AWS con MySql e MySql ed esecuzione su EC2
+- Profilo `aws` in Cloud AWS con Dynamo e MySql ed esecuzione su EC2
   ```bash
   ./script/aws-ec2/start-all.sh
 
@@ -179,7 +186,7 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
   ./script/aws-ec2/test-aws-ec2.sh
 
   # Verifica coda SQS delle annotazioni esportate!
-  SQS_QUEUE_NAME=gestioneannotazioni-annotazioni
+  SQS_QUEUE_NAME=gestioneannotazioni-annotazioni-export
   SQS_QUEUE_URL=$(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --region eu-central-1 --query 'QueueUrl' --output text)
   aws sqs receive-message --queue-url "$SQS_QUEUE_URL" --region eu-central-1 --attribute-names All --message-attribute-names All
 
@@ -187,7 +194,7 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
   ./script/aws-ec2/stop-all.sh
   ```
   - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
-- Profilo `azure` in Cloud Azure con MySql e MySql ed esecuzione in locale
+- Profilo `azure` in Cloud Azure con xxx e MsSql ed esecuzione in locale
   ```bash
   ./script/azure-dbremoti-cosmos-runlocale/start-all.sh
 
@@ -196,7 +203,7 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
   ./script/azure-dbremoti-cosmos-runlocale/stop-all.sh
   ```
   - ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️
-- Profilo `azure` in Cloud Azure con MySql e MySql ed esecuzione in VirtualMachine su azure
+- Profilo `azure` in Cloud Azure con xxx e MsSql ed esecuzione in VirtualMachine su azure
   ```bash
   ./script/azure-dbremoti-cosmos-vm/start-all.sh
 

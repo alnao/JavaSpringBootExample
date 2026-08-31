@@ -2,7 +2,6 @@ package it.alnao.springbootexample.aws.repository;
 
 import it.alnao.springbootexample.aws.entity.AnnotazioneStoricoDynamoEntity;
 import it.alnao.springbootexample.core.config.NoSqlTableConfig;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
@@ -19,7 +18,6 @@ import java.util.stream.Collectors;
 public class AnnotazioneStoricoDynamoRepositoryDdbImpl implements AnnotazioneStoricoDynamoRepository {
     private final DynamoDbTable<AnnotazioneStoricoDynamoEntity> table;
 
-    @Autowired
     public AnnotazioneStoricoDynamoRepositoryDdbImpl(DynamoDbEnhancedClient dynamoDbEnhancedClient, NoSqlTableConfig tableConfig) {
         this.table = dynamoDbEnhancedClient.table(tableConfig.getAnnotazioniStoricoTableName(), TableSchema.fromBean(AnnotazioneStoricoDynamoEntity.class));
     }

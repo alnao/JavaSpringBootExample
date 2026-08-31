@@ -14,7 +14,7 @@ import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
@@ -24,20 +24,23 @@ import java.util.UUID;
 public class AnnotazioniPortServiceImpl implements AnnotazioniPortService {
     private static final Logger logger = LoggerFactory.getLogger(AnnotazioniPortServiceImpl.class);
     
-    @Autowired
-    private AnnotazioneService annotazioneService;
-    
-    @Autowired
-    private UserService userService;
-    
-    @Autowired
-    private ValidatoreTransizioniStatoService validatoreTransizioniStatoService;
-    
-    @Autowired
-    private AnnotazioneStoricoStatiService annotazioneStoricoStatiService;
-    
-    @Autowired(required = false)
-    private AnnotazioneLockService lockService;
+    private final AnnotazioneService annotazioneService;
+    private final UserService userService;
+    private final ValidatoreTransizioniStatoService validatoreTransizioniStatoService;
+    private final AnnotazioneStoricoStatiService annotazioneStoricoStatiService;
+    private final AnnotazioneLockService lockService;
+
+    public AnnotazioniPortServiceImpl(AnnotazioneService annotazioneService,
+                                      UserService userService,
+                                      ValidatoreTransizioniStatoService validatoreTransizioniStatoService,
+                                      AnnotazioneStoricoStatiService annotazioneStoricoStatiService,
+                                      @Nullable AnnotazioneLockService lockService) {
+        this.annotazioneService = annotazioneService;
+        this.userService = userService;
+        this.validatoreTransizioniStatoService = validatoreTransizioniStatoService;
+        this.annotazioneStoricoStatiService = annotazioneStoricoStatiService;
+        this.lockService = lockService;
+    }
 
         public AnnotazioneCompleta creaAnnotazione(AnnotazioneCompleta annotazione, String utente) {
             logger.info("AnnotazioniPortServiceImpl Creazione annotazione per utente: {}, valore: {}", utente, annotazione.getAnnotazione().getValoreNota());

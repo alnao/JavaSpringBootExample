@@ -7,7 +7,6 @@ import it.alnao.springbootexample.sqlite.repository.AnnotazioneMetadataSQLiteRep
 import it.alnao.springbootexample.sqlite.entity.AnnotazioneSQLiteEntity;
 import it.alnao.springbootexample.sqlite.entity.AnnotazioneMetadataSQLiteEntity;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -49,11 +48,14 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
     }
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AnnotazioneServiceSQLiteImpl.class);
 
-    @Autowired
-    private AnnotazioneSQLiteRepository annotazioneRepository;
+    private final AnnotazioneSQLiteRepository annotazioneRepository;
+    private final AnnotazioneMetadataSQLiteRepository metadataRepository;
 
-    @Autowired
-    private AnnotazioneMetadataSQLiteRepository metadataRepository;
+    public AnnotazioneServiceSQLiteImpl(AnnotazioneSQLiteRepository annotazioneRepository,
+                                        AnnotazioneMetadataSQLiteRepository metadataRepository) {
+        this.annotazioneRepository = annotazioneRepository;
+        this.metadataRepository = metadataRepository;
+    }
 
     // Aggiornamento completo di annotazione e metadata
     public it.alnao.springbootexample.core.domain.AnnotazioneCompleta aggiornaAnnotazioneCompleta(
@@ -241,7 +243,7 @@ public class AnnotazioneServiceSQLiteImpl implements AnnotazioneService {
     @Override
     public java.util.List<it.alnao.springbootexample.core.domain.AnnotazioneCompleta> trovaPerStato(it.alnao.springbootexample.core.domain.StatoAnnotazione stato) {
         return trovaTutte().stream()
-            .filter(a -> stato.equals(a.getMetadata().getStato()))
+            .filter(a -> stato.getValue().equals(a.getMetadata().getStato()))
             .collect(java.util.stream.Collectors.toList());
     }
 

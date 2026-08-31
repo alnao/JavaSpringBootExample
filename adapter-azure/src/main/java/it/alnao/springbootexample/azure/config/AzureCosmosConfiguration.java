@@ -2,7 +2,6 @@ package it.alnao.springbootexample.azure.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -32,12 +31,11 @@ import java.io.File;
 public class AzureCosmosConfiguration {
     private static final Logger logger = LoggerFactory.getLogger(AzureCosmosConfiguration.class);
     private final AzureProperties azureProperties;
-    
-    @Autowired
-    private ApplicationContext applicationContext;
+    private final ApplicationContext applicationContext;
 
-    public AzureCosmosConfiguration(AzureProperties azureProperties) {
+    public AzureCosmosConfiguration(AzureProperties azureProperties, ApplicationContext applicationContext) {
         this.azureProperties = azureProperties;
+        this.applicationContext = applicationContext;
     }
 
     /**

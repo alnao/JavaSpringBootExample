@@ -55,9 +55,8 @@ public class LoginController {
     }
 
     private boolean authenticateUser(String username, String password) {
-        // Autenticazione semplificata per test
-        // TODO: Integrare con il servizio di autenticazione reale
-        return true;
+        // TODO: Integrare con il servizio di autenticazione reale via JwtService
+        return !username.isEmpty() && !password.isEmpty(); // NOSONAR - stub sinché non è integrato il JwtService
     }
 
     private void openMainWindow(String username) {

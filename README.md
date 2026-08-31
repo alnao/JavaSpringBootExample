@@ -268,59 +268,66 @@ L'applicazione espone la documentazione interattiva delle API REST tramite Swagg
 
 
 ### 📈 Analisi qualità e coverage con SonarQube
-L'applicazione supporta l'analisi statica del codice, la code coverage e la qualità tramite SonarQube. Ecco come avviare e utilizzare SonarQube in locale:
+L'applicazione supporta l'analisi statica del codice, la code coverage e la qualità tramite SonarQube.
 
-- **Avvio SonarQube tramite Docker**:
+- **Avvio SonarQube** (docker-compose incluso nel progetto):
     ```bash
-    # comando diretto
-    docker run -d --name sonarqube -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true -p 9000:9000 sonarqube:latest
-    
-    # comando con docker-compose (più robusto)
-    cd ./script/sonarqube
-    docker-compose up
-
-    # comandi per la verifica
-    docker ps
-    docker logs -f sonarqube
-    docker start sonarqube
+    cd ./script/sonarqube && docker compose up -d
+    # attendi che lo status diventi UP
+    curl -s http://localhost:9000/api/system/status | python3 -c "import sys,json; print(json.load(sys.stdin).get('status',''))"
     ```
-    L'interfaccia sarà disponibile su [http://localhost:9000](http://localhost:9000)
+    - Credenziali default: `admin` / `admin`
+    - Interfaccia web: [http://localhost:9000](http://localhost:9000)
 
-- **Primo accesso**:
-    - Username: `admin`
-    - Password: `admin`
-    - Al primo accesso ti verrà chiesto di cambiare la password.
-
-- **Creazione token personale**:
-    1. Vai su [http://localhost:9000/account/security](http://localhost:9000/account/security)
-    2. Crea un nuovo token (esempio: `sqa_xxxxxxxxxxxxxxxxxxxx`)
-    3. Crea variabile `SONAR_LOCAL_KEY="sqa_xxxxxxxxxxxxxxxxxxxx"`
-
-- **Esecuzione analisi Maven con coverage**:
+- **Creazione token via API** (automatica, senza passare dall'interfaccia web):
     ```bash
-    mvn clean verify sonar:sonar \
-      -Dsonar.login=$SONAR_LOCAL_KEY \
+    SONAR_LOCAL_KEY=$(curl -s -u admin:admin -X POST \
+      "http://localhost:9000/api/user_tokens/generate" \
+      -d "name=ci-$(date +%s)" \
+      | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))")
+    echo "Token: $SONAR_LOCAL_KEY"
+    ```
+    - In alternativa, via interfaccia web: [http://localhost:9000/account/security](http://localhost:9000/account/security)
+
+- **Esecuzione analisi completa** (coverage JaCoCo + analisi Sonar in un unico comando):
+    ```bash
+    mvn clean verify \
+      org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+      -Dmaven.test.failure.ignore=true \
+      -Dsonar.projectKey=gestioneannotazioni \
+      -Dsonar.projectName="Gestione Annotazioni" \
       -Dsonar.host.url=http://localhost:9000 \
-      -Pkube
+      -Dsonar.login=$SONAR_LOCAL_KEY
     ```
-    - Assicurati che il report di coverage sia generato (JaCoCo è già configurato nei vari moduli).
+    - JaCoCo è già configurato in tutti i moduli: i report vengono generati durante la fase `verify`
 
-- **Dashboard e risultati**:
-    - Vai su [http://localhost:9000/dashboard?id=it.alnao.annotazioni%3Aannotazioni-parent](http://localhost:9000/dashboard?id=it.alnao.annotazioni%3Aannotazioni-parent) per vedere la qualità, la coverage e i dettagli del progetto.
+- **Lettura risultati via API** (automatica, senza interfaccia web):
+    ```bash
+    # metriche principali (bug, vulnerabilità, coverage, code smells)
+    curl -s -u "$SONAR_LOCAL_KEY:" \
+      "http://localhost:9000/api/measures/component?component=gestioneannotazioni&metricKeys=bugs,vulnerabilities,security_hotspots,code_smells,coverage,duplicated_lines_density" \
+      | python3 -c "import sys,json; [print(f\"{m['metric']:40s} = {m.get('value','N/A')}\") for m in json.load(sys.stdin)['component']['measures']]"
+    # lista vulnerabilità
+    curl -s -u "$SONAR_LOCAL_KEY:" \
+      "http://localhost:9000/api/issues/search?componentKeys=gestioneannotazioni&types=VULNERABILITY&resolved=false" \
+      | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f\"  [{i['severity']}] {i.get('component','').split('/')[-1]}:{i.get('line','?')} - {i.get('message','')}\") for i in d['issues']]"
+    # security hotspots
+    curl -s -u "$SONAR_LOCAL_KEY:" \
+      "http://localhost:9000/api/hotspots/search?projectKey=gestioneannotazioni" \
+      | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f\"  [{h['vulnerabilityProbability']}] {h.get('component','').split('/')[-1]}:{h.get('line','?')} - {h.get('message','')}\") for h in d['hotspots']]"
+    ```
+
+- **Dashboard web** (interfaccia grafica. Primo accesso Username: `admin` e Password: `admin`)
+    - Al primo accesso ti verrà chiesto di cambiare la password.):
+    - Panoramica: [http://localhost:9000/dashboard?id=gestioneannotazioni](http://localhost:9000/dashboard?id=gestioneannotazioni)
+    - Vulnerabilità: [http://localhost:9000/project/issues?id=gestioneannotazioni&types=VULNERABILITY&resolved=false](http://localhost:9000/project/issues?id=gestioneannotazioni&types=VULNERABILITY&resolved=false)
+    - Security Hotspots: [http://localhost:9000/security_hotspots?id=gestioneannotazioni](http://localhost:9000/security_hotspots?id=gestioneannotazioni)
+    - Coverage detail: [http://localhost:9000/component_measures?id=gestioneannotazioni&metric=coverage](http://localhost:9000/component_measures?id=gestioneannotazioni&metric=coverage)
 
 - **Note**:
-    - Se la coverage non appare, assicurati che i test siano eseguiti e che i report `jacoco.xml` siano generati nei vari moduli (`target/site/jacoco/jacoco.xml`).
-    - Se la coverage non viene calcolata, il motivo può essere che il disco del server è pieno, si vede con il comando 
-      ```bash
-      docker exec -it 07de393b8656 cat /opt/sonarqube/logs/es.log
-      ```
-      che ritorna un errore del tipo
-      ```
-      2025.09.01 13:25:11 WARN  es[][o.e.c.r.a.DiskThresholdMonitor] flood stage disk watermark [95%] exceeded on [txaoVj8zTtCfBRE4_SfPVQ][sonarqube][/opt/sonarqube/data/es7/nodes/0] free: 3gb[3.3%], all indices on this node will be marked read-only
-      ```
-    - Puoi personalizzare le regole di qualità e i badge direttamente dalla dashboard SonarQube.
-    - Possibile chiamare le API di sonar con il comando 
-      ```curl -s -u "sqa_xxxxxxxx:" "http://localhost:9000/api/measures/component?component=it.alnao.springbootexample%3Aspringbootexample-parent&metricKeys=coverage,duplicated_lines_density,duplicated_blocks,duplicated_lines,ncloc,uncovered_lines,uncovered_conditions" | python3 -m json.tool```
+    - Il `projectKey` usato è `gestioneannotazioni` (configurato con `-Dsonar.projectKey=...`)
+    - Se la coverage non appare, verifica che i report `target/site/jacoco/jacoco.xml` siano presenti nei moduli
+    - Se il disco del server SonarQube è pieno: `docker exec -it $(docker ps -q --filter ancestor=sonarqube:lts) cat /opt/sonarqube/logs/es.log`
 
 
 ### ⏰ Redis

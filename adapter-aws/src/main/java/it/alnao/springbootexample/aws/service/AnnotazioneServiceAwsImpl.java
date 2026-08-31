@@ -11,7 +11,6 @@ import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import it.alnao.springbootexample.core.service.AbstractAnnotazioneService;
 import it.alnao.springbootexample.core.utils.AnnotazioniUtils;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -23,14 +22,17 @@ import java.util.UUID;
 @Profile("aws")
 public class AnnotazioneServiceAwsImpl extends AbstractAnnotazioneService {
 
-    @Autowired
-    private AnnotazioneRepository annotazioneRepository;
+    private final AnnotazioneRepository annotazioneRepository;
+    private final AnnotazioneMetadataRepository metadataRepository;
+    private final AnnotazioneStoricoDynamoRepository storicoDynamoRepository;
 
-    @Autowired
-    private AnnotazioneMetadataRepository metadataRepository;
-
-    @Autowired
-    private AnnotazioneStoricoDynamoRepository storicoDynamoRepository;
+    public AnnotazioneServiceAwsImpl(AnnotazioneRepository annotazioneRepository,
+                                     AnnotazioneMetadataRepository metadataRepository,
+                                     AnnotazioneStoricoDynamoRepository storicoDynamoRepository) {
+        this.annotazioneRepository = annotazioneRepository;
+        this.metadataRepository = metadataRepository;
+        this.storicoDynamoRepository = storicoDynamoRepository;
+    }
 
     @Override
     protected AnnotazioneRepository getAnnotazioneRepository() {

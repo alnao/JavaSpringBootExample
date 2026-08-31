@@ -3,7 +3,6 @@ package it.alnao.springbootexample.aws.service;
 import it.alnao.springbootexample.core.domain.AnnotazioneStoricoStati;
 import it.alnao.springbootexample.aws.entity.AnnotazioneStoricoStatiDynamoEntity;
 import it.alnao.springbootexample.aws.repository.AnnotazioneStoricoStatiDynamoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -20,8 +19,11 @@ import java.util.stream.Collectors;
 @Profile("aws")
 public class AnnotazioneStoricoStatiService implements it.alnao.springbootexample.core.service.AnnotazioneStoricoStatiService {
 
-    @Autowired
-    private AnnotazioneStoricoStatiDynamoRepository storicoStatiRepository;
+    private final AnnotazioneStoricoStatiDynamoRepository storicoStatiRepository;
+
+    public AnnotazioneStoricoStatiService(AnnotazioneStoricoStatiDynamoRepository storicoStatiRepository) {
+        this.storicoStatiRepository = storicoStatiRepository;
+    }
 
     /**
      * Inserisce un nuovo record di storico cambio stato

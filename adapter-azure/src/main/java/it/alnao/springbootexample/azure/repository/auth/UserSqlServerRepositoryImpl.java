@@ -3,7 +3,6 @@ package it.alnao.springbootexample.azure.repository.auth;
 import it.alnao.springbootexample.azure.entity.auth.UserSqlServerEntity;
 import it.alnao.springbootexample.core.domain.auth.User;
 import it.alnao.springbootexample.core.repository.auth.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
@@ -18,8 +17,11 @@ import java.util.stream.Collectors;
 @Primary
 @Profile("azure")
 public class UserSqlServerRepositoryImpl implements it.alnao.springbootexample.core.repository.auth.UserRepository {
-    @Autowired
-    private UserSqlServerJpaRepository userJpaRepository;
+    private final UserSqlServerJpaRepository userJpaRepository;
+
+    public UserSqlServerRepositoryImpl(UserSqlServerJpaRepository userJpaRepository) {
+        this.userJpaRepository = userJpaRepository;
+    }
 
     @Override
     public List<User> findByEnabled(boolean enabled) {

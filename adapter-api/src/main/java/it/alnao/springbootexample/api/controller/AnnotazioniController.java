@@ -23,7 +23,6 @@ import it.alnao.springbootexample.core.service.AnnotazioneLockService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,11 +45,13 @@ public class AnnotazioniController {
     
     private static final Logger logger = LoggerFactory.getLogger(AnnotazioniController.class);
     
-    @Autowired
-    private AnnotazioniPortService annotazioniPortService;
-    
-    @Autowired
-    private AnnotazioneLockService lockService;
+    private final AnnotazioniPortService annotazioniPortService;
+    private final AnnotazioneLockService lockService;
+
+    public AnnotazioniController(AnnotazioniPortService annotazioniPortService, AnnotazioneLockService lockService) {
+        this.annotazioniPortService = annotazioniPortService;
+        this.lockService = lockService;
+    }
     
     @Operation(summary = "Crea una nuova annotazione")
     @ApiResponses(value = {

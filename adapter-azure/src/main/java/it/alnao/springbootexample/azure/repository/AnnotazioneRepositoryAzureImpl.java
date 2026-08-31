@@ -3,7 +3,6 @@ package it.alnao.springbootexample.azure.repository;
 import it.alnao.springbootexample.azure.entity.AnnotazioneCosmosEntity;
 import it.alnao.springbootexample.core.domain.Annotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
@@ -20,8 +19,11 @@ import java.util.ArrayList;
 @Primary
 @Profile("azure")
 public class AnnotazioneRepositoryAzureImpl implements AnnotazioneRepository {
-    @Autowired
-    private AnnotazioneCosmosRepository cosmosRepository;
+    private final AnnotazioneCosmosRepository cosmosRepository;
+
+    public AnnotazioneRepositoryAzureImpl(AnnotazioneCosmosRepository cosmosRepository) {
+        this.cosmosRepository = cosmosRepository;
+    }
 
     @Override
     public Annotazione save(Annotazione annotazione) {

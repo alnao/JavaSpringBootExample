@@ -3,7 +3,6 @@ package it.alnao.springbootexample.aws.repository.auth;
 import it.alnao.springbootexample.aws.entity.auth.RefreshTokenMySQLEntity;
 import it.alnao.springbootexample.core.domain.auth.RefreshToken;
 import it.alnao.springbootexample.core.repository.auth.RefreshTokenRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,8 +18,11 @@ import java.util.UUID;
 @Repository
 @Profile("aws")
 public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
-    @Autowired
-    private RefreshTokenMySQLJpaRepository jpaRepository;
+    private final RefreshTokenMySQLJpaRepository jpaRepository;
+
+    public RefreshTokenRepositoryImpl(RefreshTokenMySQLJpaRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+    }
 
     @Override
     public RefreshToken save(RefreshToken refreshToken) {

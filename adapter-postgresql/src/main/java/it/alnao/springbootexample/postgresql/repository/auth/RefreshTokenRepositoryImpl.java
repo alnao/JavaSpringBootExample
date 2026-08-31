@@ -4,7 +4,6 @@ import it.alnao.springbootexample.postgresql.entity.auth.RefreshTokenEntity;
 import it.alnao.springbootexample.core.domain.auth.RefreshToken;
 import it.alnao.springbootexample.core.repository.auth.RefreshTokenRepository;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,8 +20,11 @@ import java.util.UUID;
 @Profile("kube")
 public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
     
-    @Autowired
-    private RefreshTokenJpaRepository jpaRepository;
+    private final RefreshTokenJpaRepository jpaRepository;
+
+    public RefreshTokenRepositoryImpl(RefreshTokenJpaRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+    }
     
     @Override
     public RefreshToken save(RefreshToken refreshToken) {

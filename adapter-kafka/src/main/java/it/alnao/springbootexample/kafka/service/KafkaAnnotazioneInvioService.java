@@ -72,20 +72,16 @@ public class KafkaAnnotazioneInvioService implements AnnotazioneInvioService {
                     messageJson
                 );
                 
-                if (future != null) {
-                    future.whenComplete((result, exception) -> {
-                        if (exception == null) {
-                            logger.debug("Annotazione {} inviata a Kafka topic {} con offset {}",
-                                metadata.getId(),
-                                result.getRecordMetadata().topic(),
-                                result.getRecordMetadata().offset());
-                        } else {
-                            logger.error("Errore invio annotazione {} a Kafka", metadata.getId(), exception);
-                        }
-                    });
-                } else {
-                    logger.warn("KafkaTemplate.send() ha restituito null per l'annotazione {}", metadata.getId());
-                }
+                future.whenComplete((result, exception) -> {
+                    if (exception == null) {
+                        logger.debug("Annotazione {} inviata a Kafka topic {} con offset {}",
+                            metadata.getId(),
+                            result.getRecordMetadata().topic(),
+                            result.getRecordMetadata().offset());
+                    } else {
+                        logger.error("Errore invio annotazione {} a Kafka", metadata.getId(), exception);
+                    }
+                });
                 
                 // Aggiorna lo stato a INVIATA
                 metadata.setStato(StatoAnnotazione.INVIATA.getValue());

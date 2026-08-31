@@ -50,8 +50,8 @@ public class SslDisablerInitializer implements ApplicationContextInitializer<Con
             TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {
                     public X509Certificate[] getAcceptedIssuers() { return null; }
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {} //NOSONAR - dev-only emulator
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {} //NOSONAR - dev-only emulator
                 }
             };
 
@@ -61,7 +61,7 @@ public class SslDisablerInitializer implements ApplicationContextInitializer<Con
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
             
             // 3. Disabilita verifica hostname
-            HostnameVerifier allHostsValid = (hostname, session) -> true;
+            HostnameVerifier allHostsValid = (hostname, session) -> true; //NOSONAR - dev-only emulator
             HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
             
             // 4. Imposta SSLContext di default (usato anche da Netty se non usa OpenSSL)

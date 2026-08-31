@@ -4,7 +4,6 @@ import it.alnao.springbootexample.core.domain.AnnotazioneStoricoStati;
 import it.alnao.springbootexample.core.service.AnnotazioneStoricoStatiService;
 import it.alnao.springbootexample.azure.entity.AnnotazioneStoricoStatiCosmosEntity;
 import it.alnao.springbootexample.azure.repository.AnnotazioneStoricoStatiCosmosRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -16,8 +15,11 @@ import java.util.stream.Collectors;
 @Profile("azure")
 public class AnnotazioneStoricoStatiServiceAzureImpl implements AnnotazioneStoricoStatiService {
 
-    @Autowired
-    private AnnotazioneStoricoStatiCosmosRepository storicoRepository;
+    private final AnnotazioneStoricoStatiCosmosRepository storicoRepository;
+
+    public AnnotazioneStoricoStatiServiceAzureImpl(AnnotazioneStoricoStatiCosmosRepository storicoRepository) {
+        this.storicoRepository = storicoRepository;
+    }
 
     @Override
     public AnnotazioneStoricoStati inserisciCambioStato(String idAnnotazione, String versione, String statoNew, String statoOld, String utente, String notaOperazione) {

@@ -4,7 +4,6 @@ import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
 import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import it.alnao.springbootexample.sqlite.entity.AnnotazioneMetadataSQLiteEntity;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
@@ -18,8 +17,11 @@ import java.util.stream.Collectors;
 @Profile("sqlite")
 public class AnnotazioneMetadataRepositoryImpl implements AnnotazioneMetadataRepository {
 
-    @Autowired
-    private AnnotazioneMetadataSQLiteJpaRepository jpaRepository;
+    private final AnnotazioneMetadataSQLiteJpaRepository jpaRepository;
+
+    public AnnotazioneMetadataRepositoryImpl(AnnotazioneMetadataSQLiteJpaRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+    }
 
     @Override
     public List<AnnotazioneMetadata> findByStato(StatoAnnotazione stato) {

@@ -4,7 +4,6 @@ import it.alnao.springbootexample.aws.entity.AnnotazioneMetadataMysqlEntity;
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
 import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
@@ -18,8 +17,11 @@ import java.util.stream.Collectors;
 @Profile("aws")
 public class AnnotazioneMetadataRepositoryAwsImpl implements AnnotazioneMetadataRepository {
 
-    @Autowired
-    private AnnotazioneMetadataMysqlRepository mysqlRepository;
+    private final AnnotazioneMetadataMysqlRepository mysqlRepository;
+
+    public AnnotazioneMetadataRepositoryAwsImpl(AnnotazioneMetadataMysqlRepository mysqlRepository) {
+        this.mysqlRepository = mysqlRepository;
+    }
 
     @Override
     public AnnotazioneMetadata save(AnnotazioneMetadata metadata) {

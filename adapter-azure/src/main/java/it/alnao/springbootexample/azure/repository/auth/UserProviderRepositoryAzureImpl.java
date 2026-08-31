@@ -3,7 +3,6 @@ package it.alnao.springbootexample.azure.repository.auth;
 import it.alnao.springbootexample.azure.entity.auth.UserProviderSqlServerEntity;
 import it.alnao.springbootexample.core.domain.auth.UserProvider;
 import it.alnao.springbootexample.core.repository.auth.UserProviderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,8 +41,11 @@ public class UserProviderRepositoryAzureImpl implements UserProviderRepository {
             .filter(e -> userId.equals(e.getUserId()) && provider.equals(e.getProvider()))
             .forEach(e -> jpaRepository.deleteById(e.getId()));
     }
-    @Autowired
-    private UserProviderSqlServerRepository jpaRepository;
+    private final UserProviderSqlServerRepository jpaRepository;
+
+    public UserProviderRepositoryAzureImpl(UserProviderSqlServerRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+    }
 
     @Override
     public List<UserProvider> findAll() {

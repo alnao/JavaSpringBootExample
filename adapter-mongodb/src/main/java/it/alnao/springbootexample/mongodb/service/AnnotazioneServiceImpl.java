@@ -15,7 +15,6 @@ import it.alnao.springbootexample.mongodb.repository.AnnotazioneStoricoMongoRepo
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,17 +30,20 @@ public class AnnotazioneServiceImpl extends AbstractAnnotazioneService {
 
     private static final Logger logger = LoggerFactory.getLogger(AnnotazioneServiceImpl.class);
 
-    @Autowired
-    private AnnotazioneRepository annotazioneRepository;
+    private final AnnotazioneRepository annotazioneRepository;
+    private final AnnotazioneMetadataRepository metadataRepository;
+    private final AnnotazioneStoricoMongoRepository storicoMongoRepository;
+    private final AnnotazioneLockService lockService;
 
-    @Autowired
-    private AnnotazioneMetadataRepository metadataRepository;
-
-    @Autowired
-    private AnnotazioneStoricoMongoRepository storicoMongoRepository;
-
-    @Autowired
-    private AnnotazioneLockService lockService;
+    public AnnotazioneServiceImpl(AnnotazioneRepository annotazioneRepository,
+                                  AnnotazioneMetadataRepository metadataRepository,
+                                  AnnotazioneStoricoMongoRepository storicoMongoRepository,
+                                  AnnotazioneLockService lockService) {
+        this.annotazioneRepository = annotazioneRepository;
+        this.metadataRepository = metadataRepository;
+        this.storicoMongoRepository = storicoMongoRepository;
+        this.lockService = lockService;
+    }
 
     @Override
     protected AnnotazioneRepository getAnnotazioneRepository() {

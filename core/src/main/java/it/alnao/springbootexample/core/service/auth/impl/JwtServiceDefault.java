@@ -9,7 +9,6 @@ import it.alnao.springbootexample.core.service.auth.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +29,6 @@ public class JwtServiceDefault implements JwtService {
     private final JwtConfig.JwtConfigBean jwtConfig;
     private final Optional<RefreshTokenRepository> refreshTokenRepository;
 
-    @Autowired
     public JwtServiceDefault(JwtConfig.JwtConfigBean jwtConfig, Optional<RefreshTokenRepository> refreshTokenRepository) {
         this.jwtConfig = jwtConfig;
         this.refreshTokenRepository = refreshTokenRepository;

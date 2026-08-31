@@ -6,7 +6,6 @@ import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -26,8 +25,11 @@ public class AnnotazioneRedisLockService implements AnnotazioneLockService {
     private static final String LOCK_PREFIX = "annotation:lock:";
     private static final String OWNER_MAP = "annotation:lock:owners";
     
-    @Autowired
-    private RedissonClient redisson;
+    private final RedissonClient redisson;
+
+    public AnnotazioneRedisLockService(RedissonClient redisson) {
+        this.redisson = redisson;
+    }
     
     @Override
     public boolean acquireLock(UUID annotazioneId, String utente, long timeoutSeconds) {
@@ -35,14 +37,18 @@ public class AnnotazioneRedisLockService implements AnnotazioneLockService {
         RLock lock = redisson.getLock(lockKey);
         
         try {
-            boolean acquired = lock.tryLock(timeoutSeconds, timeoutSeconds, TimeUnit.SECONDS);
+            boolean acquired = lock.tryLock(timeoutSeconds, timeoutSeconds, TimeUnit.SECONDS); //NOSONAR java:S2222 - distributed lock intentionally spans multiple methods; releaseLock() called by the caller
             
             if (acquired) {
-                // Salva il proprietario del lock
-                RMap<String, String> ownerMap = redisson.getMap(OWNER_MAP);
-                ownerMap.put(annotazioneId.toString(), utente);
-                
-                logger.info("Lock acquisito su annotazione {} da utente {}", annotazioneId, utente);
+                try {
+                    RMap<String, String> ownerMap = redisson.getMap(OWNER_MAP);
+                    ownerMap.put(annotazioneId.toString(), utente);
+                    logger.info("Lock acquisito su annotazione {} da utente {}", annotazioneId, utente);
+                } catch (Exception e) {
+                    lock.unlock();
+                    logger.error("Errore tracciamento proprietario lock, lock rilasciato: {}", e.getMessage());
+                    return false;
+                }
             } else {
                 logger.warn("Impossibile acquisire lock su annotazione {} per utente {}", annotazioneId, utente);
             }

@@ -4,7 +4,6 @@ import it.alnao.springbootexample.azure.entity.AnnotazioneMetadataSqlServerEntit
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
 import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
@@ -17,8 +16,11 @@ import java.util.stream.Collectors;
 @Repository
 @Profile("azure")
 public class AnnotazioneMetadataRepositoryAzureImpl implements AnnotazioneMetadataRepository {
-    @Autowired
-    private AnnotazioneMetadataSqlServerRepository sqlRepository;
+    private final AnnotazioneMetadataSqlServerRepository sqlRepository;
+
+    public AnnotazioneMetadataRepositoryAzureImpl(AnnotazioneMetadataSqlServerRepository sqlRepository) {
+        this.sqlRepository = sqlRepository;
+    }
 
     @Override
     public AnnotazioneMetadata save(AnnotazioneMetadata metadata) {

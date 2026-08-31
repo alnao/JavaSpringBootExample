@@ -4,7 +4,6 @@ import it.alnao.springbootexample.postgresql.entity.auth.UserProviderEntity;
 import it.alnao.springbootexample.core.domain.auth.UserProvider;
 import it.alnao.springbootexample.core.repository.auth.UserProviderRepository;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,8 +19,11 @@ import java.util.UUID;
 @Profile("kube")
 public class UserProviderRepositoryImpl implements UserProviderRepository {
     
-    @Autowired
-    private UserProviderJpaRepository jpaRepository;
+    private final UserProviderJpaRepository jpaRepository;
+
+    public UserProviderRepositoryImpl(UserProviderJpaRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+    }
     
     @Override
     public UserProvider save(UserProvider userProvider) {

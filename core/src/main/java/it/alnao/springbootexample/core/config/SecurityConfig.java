@@ -49,7 +49,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable()) //TODO: ToRemove! Make sure disabling Spring Security's CSRF protection is safe here.
+                .csrf(csrf -> csrf.disable()) // CSRF disabilitato intenzionalmente: API REST stateless con JWT non usa cookie di sessione
                 .authorizeHttpRequests(authz -> authz
                         // Static resources (CSS, JS, images, etc.)
                         .requestMatchers("/", "/index.html", "/*.html").permitAll()

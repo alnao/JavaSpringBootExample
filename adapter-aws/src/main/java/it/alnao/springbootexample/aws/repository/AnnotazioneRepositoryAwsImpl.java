@@ -3,7 +3,6 @@ package it.alnao.springbootexample.aws.repository;
 import it.alnao.springbootexample.aws.entity.AnnotazioneDynamoEntity;
 import it.alnao.springbootexample.core.domain.Annotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
@@ -16,8 +15,11 @@ import java.util.stream.Collectors;
 @Profile("aws")
 public class AnnotazioneRepositoryAwsImpl implements AnnotazioneRepository {
 
-    @Autowired
-    private AnnotazioneDynamoRepository dynamoRepository;
+    private final AnnotazioneDynamoRepository dynamoRepository;
+
+    public AnnotazioneRepositoryAwsImpl(AnnotazioneDynamoRepository dynamoRepository) {
+        this.dynamoRepository = dynamoRepository;
+    }
 
     @Override
     public Annotazione save(Annotazione annotazione) {

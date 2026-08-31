@@ -3,7 +3,6 @@ package it.alnao.springbootexample.sqlite.service;
 import it.alnao.springbootexample.core.domain.AnnotazioneStoricoStati;
 import it.alnao.springbootexample.sqlite.entity.AnnotazioneStoricoStatiSQLiteEntity;
 import it.alnao.springbootexample.sqlite.repository.AnnotazioneStoricoStatiSQLiteRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -19,8 +18,11 @@ import java.util.stream.Collectors;
 @Profile("sqlite")
 public class AnnotazioneStoricoStatiService implements it.alnao.springbootexample.core.service.AnnotazioneStoricoStatiService {
 
-    @Autowired
-    private AnnotazioneStoricoStatiSQLiteRepository storicoStatiRepository;
+    private final AnnotazioneStoricoStatiSQLiteRepository storicoStatiRepository;
+
+    public AnnotazioneStoricoStatiService(AnnotazioneStoricoStatiSQLiteRepository storicoStatiRepository) {
+        this.storicoStatiRepository = storicoStatiRepository;
+    }
 
     /**
      * Inserisce un nuovo record di storico cambio stato

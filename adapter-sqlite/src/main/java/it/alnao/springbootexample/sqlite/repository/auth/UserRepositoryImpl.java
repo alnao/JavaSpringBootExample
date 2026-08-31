@@ -5,7 +5,6 @@ import it.alnao.springbootexample.core.domain.auth.AccountType;
 import it.alnao.springbootexample.core.repository.auth.UserRepository;
 import it.alnao.springbootexample.sqlite.entity.auth.UserSQLiteEntity;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -16,8 +15,11 @@ import java.util.stream.Collectors;
 @Service
 @Profile("sqlite")
 public class UserRepositoryImpl implements UserRepository {
-    @Autowired
-    private UserSQLiteRepository userSQLiteRepository;
+    private final UserSQLiteRepository userSQLiteRepository;
+
+    public UserRepositoryImpl(UserSQLiteRepository userSQLiteRepository) {
+        this.userSQLiteRepository = userSQLiteRepository;
+    }
     
     @Override
     public Optional<User> findByExternalIdAndAccountType(String externalId, AccountType accountType) {

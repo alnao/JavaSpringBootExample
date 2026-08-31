@@ -3,7 +3,6 @@ package it.alnao.springbootexample.mongodb.repository;
 import it.alnao.springbootexample.mongodb.entity.AnnotazioneEntity;
 import it.alnao.springbootexample.core.domain.Annotazione;
 import it.alnao.springbootexample.core.repository.AnnotazioneRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
@@ -16,8 +15,11 @@ import java.util.stream.Collectors;
 @Profile("kube")
 public class AnnotazioneRepositoryImpl implements AnnotazioneRepository {
 
-    @Autowired
-    private AnnotazioneMongoRepository mongoRepository;
+    private final AnnotazioneMongoRepository mongoRepository;
+
+    public AnnotazioneRepositoryImpl(AnnotazioneMongoRepository mongoRepository) {
+        this.mongoRepository = mongoRepository;
+    }
 
     @Override
     public Annotazione save(Annotazione annotazione) {

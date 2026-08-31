@@ -3,7 +3,6 @@ package it.alnao.springbootexample.mongodb.service;
 import it.alnao.springbootexample.core.domain.AnnotazioneStoricoStati;
 import it.alnao.springbootexample.mongodb.entity.AnnotazioneStoricoStatiEntity;
 import it.alnao.springbootexample.mongodb.repository.AnnotazioneStoricoStatiMongoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -19,8 +18,11 @@ import java.util.stream.Collectors;
 @Profile("kube")
 public class AnnotazioneStoricoStatiService implements it.alnao.springbootexample.core.service.AnnotazioneStoricoStatiService {
 
-    @Autowired
-    private AnnotazioneStoricoStatiMongoRepository storicoStatiRepository;
+    private final AnnotazioneStoricoStatiMongoRepository storicoStatiRepository;
+
+    public AnnotazioneStoricoStatiService(AnnotazioneStoricoStatiMongoRepository storicoStatiRepository) {
+        this.storicoStatiRepository = storicoStatiRepository;
+    }
 
     /**
      * Inserisce un nuovo record di storico cambio stato

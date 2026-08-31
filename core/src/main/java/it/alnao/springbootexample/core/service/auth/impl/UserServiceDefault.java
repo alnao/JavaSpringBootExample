@@ -5,7 +5,6 @@ import it.alnao.springbootexample.core.domain.auth.User;
 import it.alnao.springbootexample.core.repository.auth.UserRepository;
 import it.alnao.springbootexample.core.service.auth.UserService;
 import it.alnao.springbootexample.core.service.auth.UserStatistics;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +20,6 @@ public class UserServiceDefault implements UserService {
 
     private final UserRepository userRepository;
 
-    @Autowired
     public UserServiceDefault(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
