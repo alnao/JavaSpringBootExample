@@ -1,8 +1,8 @@
 package it.alnao.springbootexample.mongodb.service;
 
 import it.alnao.springbootexample.core.domain.Annotazione;
+import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
-import it.alnao.springbootexample.core.exception.AnnotationLockedException;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import it.alnao.springbootexample.core.repository.AnnotazioneRepository;
 import it.alnao.springbootexample.core.service.AnnotazioneLockService;
@@ -13,25 +13,25 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.lang.reflect.Constructor;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
- * Copre i rami di gestione lock e validazione input di aggiornaAnnotazione.
+ * L'aggiornamento non gestisce prenotazioni: la verifica che la modifica provenga
+ * dal proprietario della prenotazione vive nel core ed è unica per tutti i profili.
+ * Questi test fissano che l'adapter non acquisisca né rilasci lock per conto suo.
  */
 class AnnotazioneServiceImplLockTest {
 
     @Mock AnnotazioneRepository annotazioneRepository;
     @Mock AnnotazioneMetadataRepository metadataRepository;
     @Mock AnnotazioneStoricoMongoRepository storicoMongoRepository;
-    @Mock AnnotazioneLockService lockService;
     @InjectMocks AnnotazioneServiceImpl service;
 
     private UUID id;
@@ -52,38 +52,59 @@ class AnnotazioneServiceImplLockTest {
         lenient().when(metadataRepository.save(any(AnnotazioneMetadata.class))).thenAnswer(i -> i.getArgument(0));
     }
 
+    // ---- Nessuna dipendenza dal servizio di lock ----
+
     @Test
-    void aggiornaAnnotazione_withNullUser_throwsIllegalArgument() {
+    void servizio_nonDipendeDalServizioDiLock() {
+        for (Constructor<?> c : AnnotazioneServiceImpl.class.getConstructors()) {
+            for (Class<?> parametro : c.getParameterTypes()) {
+                assertNotEquals(AnnotazioneLockService.class, parametro,
+                        "l'adapter non deve dipendere dal servizio di lock: la verifica vive nel core");
+            }
+        }
+    }
+
+    // ---- Validazione input ----
+
+    @Test
+    void aggiornaAnnotazione_conUtenteNullo_lanciaIllegalArgument() {
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
                 () -> service.aggiornaAnnotazione(id, "nuovo", "descr", null));
         assertEquals("Utente non può essere null", e.getMessage());
-        verifyNoInteractions(lockService);
+        verifyNoInteractions(annotazioneRepository, metadataRepository, storicoMongoRepository);
     }
 
     @Test
-    void aggiornaAnnotazione_whenLockIsAlreadyHeldByTheSameUser_proceeds() {
+    void aggiornaAnnotazione_suAnnotazioneInesistente_lanciaEccezione() {
+        when(annotazioneRepository.findById(id)).thenReturn(Optional.empty());
+        when(metadataRepository.findById(id)).thenReturn(Optional.empty());
+        assertThrows(RuntimeException.class,
+                () -> service.aggiornaAnnotazione(id, "nuovo", "descr", "mario"));
+    }
+
+    // ---- Aggiornamento ----
+
+    @Test
+    void aggiornaAnnotazione_applicaLaModificaEIncrementaLaVersione() {
         esistente();
-        when(lockService.acquireLock(any(UUID.class), anyString(), anyLong())).thenReturn(false);
-        when(lockService.getOwner(id)).thenReturn(Optional.of("mario"));
 
-        assertDoesNotThrow(() -> service.aggiornaAnnotazione(id, "nuovo", "descr", "mario"));
+        AnnotazioneCompleta risultato = service.aggiornaAnnotazione(id, "nuovo testo", "nuova descr", "mario");
+
+        assertEquals("nuovo testo", risultato.getAnnotazione().getValoreNota());
+        assertNotEquals("1.0", risultato.getAnnotazione().getVersioneNota(),
+                "la versione della nota deve essere incrementata");
+        assertEquals("mario", risultato.getMetadata().getUtenteUltimaModifica());
+        verify(storicoMongoRepository).save(any());
     }
 
     @Test
-    void aggiornaAnnotazione_whenLockIsHeldByAnother_throwsAnnotationLocked() {
-        when(lockService.acquireLock(any(UUID.class), anyString(), anyLong())).thenReturn(false);
-        when(lockService.getOwner(id)).thenReturn(Optional.of("luigi"));
+    void aggiornaAnnotazione_daUtenteDiversoDalCreatore_vieneApplicato() {
+        // La contesa fra utenti è decisa dal core: l'adapter non rifiuta nulla.
+        esistente();
 
-        assertThrows(AnnotationLockedException.class,
-                () -> service.aggiornaAnnotazione(id, "nuovo", "descr", "mario"));
-    }
+        AnnotazioneCompleta risultato = service.aggiornaAnnotazione(id, "testo di luigi", "descr", "luigi");
 
-    @Test
-    void aggiornaAnnotazione_whenLockHasNoOwner_throwsAnnotationLocked() {
-        when(lockService.acquireLock(any(UUID.class), anyString(), anyLong())).thenReturn(false);
-        when(lockService.getOwner(id)).thenReturn(Optional.empty());
-
-        assertThrows(AnnotationLockedException.class,
-                () -> service.aggiornaAnnotazione(id, "nuovo", "descr", "mario"));
+        assertEquals("testo di luigi", risultato.getAnnotazione().getValoreNota());
+        assertEquals("luigi", risultato.getMetadata().getUtenteUltimaModifica());
     }
 }

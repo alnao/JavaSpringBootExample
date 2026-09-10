@@ -36,9 +36,11 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
 ## 📚 Indice contenuti
 - 📝 [Roadmap & todo-list](./Roadmap.md)
   - 📖 [Test di non regressione](./Roadmap.md#-Test-di-non-regressione) ad ogni rilascio *bisognerebbe* eseguire un test di non regressione completo!
+- 🔄 [Gestione sviluppi con open spec](#-gestione-sviluppi)
 - 🛠️ [Struttura progetto](#-struttura-progetto)
   - ⚙️ [Esecuzione locale](#-esecuzione-locale)
   - 📡 [API Endpoints](#-api-endpoints)
+  - 🔁 [Transizioni di stato e configurazione](#-transizioni-di-stato-e-configurazione)
   - 📊 [Monitoring con actuator](#-monitoring-con-actuator)
   - 📖 [Documentazione API con Swagger / OpenAPI](#-documentazione-api-con-swagger--openapi)
   - 📈 [Analisi qualità e coverage con SonarQube](#-analisi-qualità-e-coverage-con-sonarqube)
@@ -48,6 +50,45 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
 - 📦 [Docker & Kubernetes & Minikube](./PlatformDockerHub.md) vedi file dedicato
 - ☁️ [AWS (EC2 o ECS Fargate con MySql e Dynamo)](./PlatformAws.md) vedi file dedicato
 - ☁️ [Azure (Virtual o Container con CosmosDB e SqlServer)](./PlatformAzure.md) vedi file dedicato
+
+
+## 🔄 Gestione sviluppi
+
+Gli sviluppi sono governati con [OpenSpec](https://github.com/Fission-AI/OpenSpec): ogni modifica non banale parte da una proposta scritta, viene approvata e solo dopo implementata. Le specifiche restano nel repository come contratto di ciò che il sistema garantisce.
+
+- Setup (richiede Node.js 20.19+):
+  ```bash
+  npm install -g @fission-ai/openspec@latest
+  cd <cartella-del-progetto>
+  openspec init
+  ```
+  `openspec init` crea `openspec/` e le istruzioni per l'assistente in `.claude/`. Il contesto di progetto va aggiunto a mano: in questo repository sta in [openspec/project.md](./openspec/project.md), richiamato dal campo `context` di [openspec/config.yaml](./openspec/config.yaml) insieme alle regole per proposte, spec e task.
+- Struttura:
+  ```
+  openspec/
+  ├── config.yaml     # contesto di progetto e regole per gli artefatti
+  ├── project.md      # architettura esagonale, 4 profili, comandi mvn e script
+  ├── specs/          # cosa il sistema GARANTISCE oggi (verità corrente)
+  └── changes/        # proposte in corso: proposal.md, specs/, design.md, tasks.md
+      └── archive/    # change completate
+  ```
+- Capability già specificate: 
+  - `annotazioni-stati` (ciclo di vita e transizioni per ruolo)
+  - `annotazioni-lock` (prenotazione in modifica)
+  - le altre vengono scritte quando la relativa funzionalità viene toccata da una change.
+- Flusso operativo:
+  - esplorazione: `/opsx:explore`
+  - proposta: `/opsx:propose <descrizione>` → genera proposal, spec delta, design e task
+  - **approvazione**: si rivedono gli artefatti prima di scrivere codice
+  - implementazione: `/opsx:apply`
+  - chiusura: `/opsx:archive`, che aggiorna `specs/` con i delta e sposta la change in archivio
+- Comandi utili:
+  ```bash
+  openspec list --specs           # inventario delle capability
+  openspec validate --specs --strict
+  openspec update                 # aggiorna le istruzioni per gli assistenti
+  ```
+- Divisione dei ruoli documentali: [Roadmap.md](./Roadmap.md) racconta *cosa è stato fatto*, `openspec/specs/` dichiara *cosa deve valere*. Ad ogni archiviazione si aggiornano entrambi.
 
 
 ## 🛠️ Struttura progetto
@@ -205,6 +246,31 @@ Il progetto è pensato per essere agnostico rispetto al cloud provider: sono svi
         -d '{"utente":"admin"}'
       ```
 
+
+### 🔁 Transizioni di stato e configurazione
+
+Le transizioni di stato consentite non sono cablate nel codice: sono descritte in `core/src/main/resources/cambiamentoStati.yaml`, dove ogni voce dichiara stato di partenza, stato di arrivo, ruolo richiesto e una descrizione.
+
+```yaml
+transizioni:
+  - statoPartenza: "INSERITA"
+    statoArrivo: "CONFERMATA"
+    ruoloRichiesto: "MODERATOR"
+    descrizione: "Moderatore può confermare annotazione"
+```
+
+Il file è impacchettato nel jar ed è lo stesso per tutti i profili. **È obbligatorio a runtime**: se non è caricabile l'applicazione non completa l'avvio, invece di partire con regole di ripiego e rifiutare poi ogni cambio di stato con un 403 indistinguibile da un problema di permessi.
+
+Sono trattati come errore di avvio: file assente, contenuto non interpretabile, riferimento a uno stato o a un ruolo inesistente, e assenza di transizioni. Il log riporta una sola riga di errore con la causa e, quando il problema è in una singola voce, la sua posizione:
+
+```
+[ValidatoreTransizioniStatoService] La configurazione delle transizioni di stato 'cambiamentoStati.yaml'
+contiene una voce non valida in posizione 2 (statoPartenza=INSERITA, statoArrivo=APPROVATA,
+ruoloRichiesto=MODERATOR, descrizione=...): stato o ruolo non riconosciuto.
+L'applicazione non può avviarsi senza le regole di transizione.
+```
+
+Su Kubernetes, ECS e ACI questo si manifesta come container che termina con codice diverso da zero e non passa in stato *healthy*. Un test del modulo `core` verifica il file realmente spedito, così un errore nello YAML emerge in fase di build e non al deploy.
 
 ### 📊 Monitoring con actuator
 L'applicazione espone endpoint Actuator per il monitoring:

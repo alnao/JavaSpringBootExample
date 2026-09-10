@@ -4,17 +4,19 @@ import it.alnao.springbootexample.core.domain.auth.UserRole;
 import it.alnao.springbootexample.core.domain.StatoAnnotazione;
 import it.alnao.springbootexample.core.domain.TransizioneStato;
 import it.alnao.springbootexample.core.config.TransizioniStatoConfig;
+import it.alnao.springbootexample.core.exception.TransizioniStatoConfigurationException;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.error.YAMLException;
 
 import jakarta.annotation.PostConstruct;
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,55 +30,110 @@ public class ValidatoreTransizioniStatoService {
 
     private static final Logger logger = LoggerFactory.getLogger(ValidatoreTransizioniStatoService.class);
 
+    /** Nome della risorsa di classpath che descrive le transizioni consentite. */
+    private static final String RISORSA_TRANSIZIONI_DEFAULT = "cambiamentoStati.yaml";
+
+    private final String risorsaTransizioni;
+
     private List<TransizioneStato> transizioniPermesse;
 
+    public ValidatoreTransizioniStatoService() {
+        this(RISORSA_TRANSIZIONI_DEFAULT);
+    }
+
     /**
-     * Inizializza le transizioni caricandole dal file YAML
+     * Costruttore con risorsa esplicita, usato dai test per verificare il
+     * comportamento con configurazioni non valide.
+     */
+    public ValidatoreTransizioniStatoService(String risorsaTransizioni) {
+        this.risorsaTransizioni = risorsaTransizioni;
+    }
+
+    /**
+     * Inizializza le transizioni caricandole dal file YAML.
+     * Se il caricamento non produce un insieme di transizioni valido interrompe
+     * l'avvio: senza regole di transizione l'applicazione rifiuterebbe ogni
+     * cambio di stato, con lo stesso codice di errore di un permesso mancante.
      */
     @PostConstruct
     public void initTransizioni() {
-        logger.info("[ValidatoreTransizioniStatoService] Inizializzazione transizioni di stato...");
+        logger.info("[ValidatoreTransizioniStatoService] Inizializzazione transizioni di stato da {}...", risorsaTransizioni);
         this.transizioniPermesse = caricaTransizioniDaYaml();
         logger.info("[ValidatoreTransizioniStatoService] Caricate {} transizioni di stato", transizioniPermesse.size());
     }
 
     /**
-     * Carica le transizioni dal file YAML
+     * Carica le transizioni dal file YAML, senza insiemi di ripiego: le regole di
+     * workflow restano descritte esclusivamente in configurazione.
      */
     private List<TransizioneStato> caricaTransizioniDaYaml() {
-        try {
-            ClassPathResource resource = new ClassPathResource("cambiamentoStati.yaml");
-            Yaml yaml = new Yaml();
-            
-            try (InputStream inputStream = resource.getInputStream()) {
-                TransizioniStatoConfig config = yaml.loadAs(inputStream, TransizioniStatoConfig.class);
-                
-                return config.getTransizioni().stream()
-                    .map(this::convertiDaYaml)
-                    .collect(Collectors.toList());
-            }
-        } catch (Exception e) {
-            logger.error("[ValidatoreTransizioniStatoService] Errore nel caricamento delle transizioni da YAML: {}", e.getMessage());
-            logger.warn("[ValidatoreTransizioniStatoService] Utilizzo transizioni di default");
-            return Arrays.asList(
-            // Transizioni per USER ADMIN per errore!
-            new TransizioneStato(StatoAnnotazione.ERRORE, StatoAnnotazione.ERRORE, UserRole.ADMIN, 
-                               "Admin può andare in errore la propria annotazione"));
+        TransizioniStatoConfig config = leggiConfigurazione();
 
+        List<TransizioniStatoConfig.TransizioneYaml> voci =
+                config == null ? null : config.getTransizioni();
+        if (voci == null || voci.isEmpty()) {
+            throw errore("non dichiara alcuna transizione: nessun cambio di stato sarebbe possibile", null);
+        }
+
+        List<TransizioneStato> transizioni = new ArrayList<>(voci.size());
+        for (int i = 0; i < voci.size(); i++) {
+            transizioni.add(convertiDaYaml(voci.get(i), i));
+        }
+        return transizioni;
+    }
+
+    /**
+     * Legge e deserializza la risorsa di configurazione.
+     */
+    private TransizioniStatoConfig leggiConfigurazione() {
+        ClassPathResource resource = new ClassPathResource(risorsaTransizioni);
+        if (!resource.exists()) {
+            throw errore("non è stata trovata nel classpath", null);
+        }
+        try (InputStream inputStream = resource.getInputStream()) {
+            Yaml yaml = new Yaml();
+            return yaml.loadAs(inputStream, TransizioniStatoConfig.class);
+        } catch (IOException e) {
+            throw errore("non è leggibile", e);
+        } catch (YAMLException e) {
+            throw errore("non è interpretabile come YAML valido", e);
         }
     }
 
     /**
-     * Converte una transizione YAML in oggetto TransizioneStato
+     * Converte una transizione YAML in oggetto TransizioneStato.
+     * L'indice e la descrizione della voce entrano nel messaggio di errore per
+     * rendere identificabile la riga da correggere leggendo i soli log.
      */
-    private TransizioneStato convertiDaYaml(TransizioniStatoConfig.TransizioneYaml yaml) {
-        StatoAnnotazione statoPartenza = StatoAnnotazione.valueOf(yaml.getStatoPartenza());
-        StatoAnnotazione statoArrivo = StatoAnnotazione.valueOf(yaml.getStatoArrivo());
-        UserRole ruolo = UserRole.valueOf(yaml.getRuoloRichiesto());
-        
-        return new TransizioneStato(statoPartenza, statoArrivo, ruolo, yaml.getDescrizione());
+    private TransizioneStato convertiDaYaml(TransizioniStatoConfig.TransizioneYaml yaml, int indice) {
+        try {
+            StatoAnnotazione statoPartenza = StatoAnnotazione.valueOf(yaml.getStatoPartenza());
+            StatoAnnotazione statoArrivo = StatoAnnotazione.valueOf(yaml.getStatoArrivo());
+            UserRole ruolo = UserRole.valueOf(yaml.getRuoloRichiesto());
+            return new TransizioneStato(statoPartenza, statoArrivo, ruolo, yaml.getDescrizione());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw errore(String.format(
+                    "contiene una voce non valida in posizione %d (statoPartenza=%s, statoArrivo=%s, ruoloRichiesto=%s, descrizione=%s): "
+                            + "stato o ruolo non riconosciuto",
+                    indice + 1, yaml.getStatoPartenza(), yaml.getStatoArrivo(),
+                    yaml.getRuoloRichiesto(), yaml.getDescrizione()), e);
+        }
     }
 
+    /**
+     * Costruisce l'eccezione di configurazione loggando una sola riga di errore
+     * prima della terminazione, leggibile nei log di un container.
+     */
+    private TransizioniStatoConfigurationException errore(String motivo, Throwable causa) {
+        String messaggio = String.format(
+                "La configurazione delle transizioni di stato '%s' %s. "
+                        + "L'applicazione non può avviarsi senza le regole di transizione.",
+                risorsaTransizioni, motivo);
+        logger.error("[ValidatoreTransizioniStatoService] {}", messaggio);
+        return causa == null
+                ? new TransizioniStatoConfigurationException(messaggio)
+                : new TransizioniStatoConfigurationException(messaggio, causa);
+    }
 
     /**
      * Verifica se una transizione di stato è permessa per un dato ruolo utente

@@ -1,0 +1,5 @@
+transizioni:
+  - statoPartenza: "INSERITA"
+    statoArrivo: "MODIFICATA"
+    ruoloRichiesto: "SUPERVISORE"
+    descrizione: "Voce con ruolo inesistente"

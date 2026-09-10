@@ -8,6 +8,11 @@ if [ -z "$LOG_FILE" ]; then
   exec > >(tee -a "$LOG_FILE") 2>&1
 fi
 export LOG_FILE
+
+# Conteggio dei test e riepilogo finale
+source "$(dirname "$0")/lib-report.sh"
+report_run_inizio "sqlite"
+
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] === INIZIO: test-sqlite-onprem.sh ==="
 
 #cd ..
@@ -51,7 +56,7 @@ cleanup() {
     wait $APP_PID 2>/dev/null || true
     echo "Script test-sqlite-onprem concluso."
 }
-trap cleanup EXIT
+trap 'RC=$?; cleanup; report_chiusura $RC' EXIT
 
 echo "Attesa avvio applicazione (max 60 secondi)..."
 for i in {1..30}; do
@@ -60,7 +65,7 @@ for i in {1..30}; do
         break
     fi
     if [ $i -eq 30 ]; then
-        echo "ERRORE: Timeout - L'applicazione non si è avviata in 60 secondi"
+        test_ko "Avvio applicazione entro 60 secondi"
         cat /tmp/app-sqlite.log
         exit 1
     fi
@@ -70,11 +75,25 @@ done
 # Prendo il campo status e verifico se è UP
 status=$(curl -s http://localhost:8082/actuator/health | jq -r .status)
 if [ "$status" == "UP" ]; then
-    echo "L'applicazione è in esecuzione correttamente."
+    test_ok "Health actuator UP"
 else
-    echo "L'applicazione non è in esecuzione."
+    test_ko "Health actuator UP (stato: $status)"
     exit 1
 fi
+
+# L'applicazione popola da sola la tabella users all'avvio, e lo fa dopo che
+# /actuator/health risponde UP. Inserire gli utenti di test prima che abbia
+# finito fa fallire il suo seeding con violazione di UNIQUE su users.username e
+# lascia il login senza risposta: si attende quindi che la tabella sia popolata.
+echo "Attesa completamento inizializzazione utenti da parte dell'applicazione..."
+for i in {1..30}; do
+    utenti_presenti=$(sqlite3 /tmp/database.sqlite "SELECT COUNT(*) FROM users;" 2>/dev/null || echo 0)
+    if [ "${utenti_presenti:-0}" -gt 0 ]; then
+        echo "Utenti inizializzati dall'applicazione dopo $((i*2)) secondi"
+        break
+    fi
+    sleep 2
+done
 
 sqlite3 /tmp/database.sqlite < script/init-database/init-sqlite.sql
 
@@ -88,17 +107,18 @@ token=$(echo $token_response | jq -r .token)
 echo "Token ottenuto: $token"
 
 if [ -z "$token" ] || [ "$token" == "null" ]; then
-    echo "ERRORE: Login fallito. Risposta: $token_response"
+    test_ko "Login utente admin"
+    echo "   Risposta: $token_response"
     exit 1
 else
-    echo "Login eseguito correttamente."
+    test_ok "Login utente admin"
 fi
 
 curl -s http://localhost:8082/api/annotazioni -H "Authorization: Bearer $token" | jq .  > /dev/null
 if [ $? -eq 0 ]; then
-    echo "Chiamata API /api/annotazioni eseguita correttamente."
+    test_ok "GET /api/annotazioni"
 else
-    echo "Chiamata API /api/annotazioni fallita."
+    test_ko "GET /api/annotazioni"
     exit 1
 fi
 
@@ -113,9 +133,9 @@ echo "Risposta POST annotazione: $RISPOSTA"
 # Verifica che la risposta contenga un ID (segno di successo)
 id_creato=$(echo $RISPOSTA | jq -r .id 2>/dev/null)
 if [ -n "$id_creato" ] && [ "$id_creato" != "null" ]; then
-    echo "✅ Creazione annotazione eseguita correttamente. ID: $id_creato"
+    test_ok "Creazione annotazione (ID: $id_creato)"
 else
-    echo "❌ Creazione annotazione fallita."
+    test_ko "Creazione annotazione"
     echo "   Risposta completa: $RISPOSTA"
     exit 1
 fi
@@ -145,7 +165,7 @@ while [ $attempt -lt $max_attempts ]; do
     row_count=$(sqlite3 /tmp/database.sqlite "SELECT COUNT(*) FROM annotazioni_inviate;" 2>/dev/null || echo "0")
     
     if [ "$row_count" -ge 1 ]; then
-        echo "✅ Verifica database SQLite riuscita al tentativo $attempt/$max_attempts"
+        test_ok "Export annotazione presente in annotazioni_inviate (tentativo $attempt)"
         echo "   Numero di righe in annotazioni_inviate: $row_count"
         break
     else
@@ -162,10 +182,13 @@ done
 echo ""
 echo ""
 echo "Esecuzione test di prenotazione annotazione..."
-./script/automatic-test/test-prenotazione-annotazione.sh
+if ! ./script/automatic-test/test-prenotazione-annotazione.sh; then
+    echo "Test di prenotazione annotazione falliti: vedi il riepilogo finale"
+    ESITO_FIGLI=1
+fi
 
 if [ "$row_count" -lt 1 ]; then
-    echo "❌ Verifica database SQLite fallita dopo 2 minuti"
+    test_ko "Export annotazione presente in annotazioni_inviate"
     echo "   Righe trovate: $row_count"
     echo "   Tabelle presenti nel database:"
     sqlite3 /tmp/database.sqlite ".tables"
@@ -180,6 +203,11 @@ kill $APP_PID 2>/dev/null || true
 
 echo "✅ Test con profilo 'sqlite' superati!"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] === FINE: test-sqlite-onprem.sh ==="
+
+if [ "$(report_ko_totali)" -gt 0 ] || [ "${ESITO_FIGLI:-0}" -ne 0 ]; then
+    echo "❌ Alcuni test del profilo 'sqlite' sono falliti"
+    exit 1
+fi
 
 echo "✅ Tutti i test sono stati eseguiti con successo!"
 exit 0

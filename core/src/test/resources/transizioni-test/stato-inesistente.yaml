@@ -1,0 +1,9 @@
+transizioni:
+  - statoPartenza: "INSERITA"
+    statoArrivo: "MODIFICATA"
+    ruoloRichiesto: "USER"
+    descrizione: "Voce valida"
+  - statoPartenza: "INSERITA"
+    statoArrivo: "APPROVATA"
+    ruoloRichiesto: "MODERATOR"
+    descrizione: "Voce con stato inesistente"

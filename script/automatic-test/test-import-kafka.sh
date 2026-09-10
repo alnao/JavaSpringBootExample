@@ -24,6 +24,10 @@ if [ -z "$LOG_FILE" ]; then
 fi
 export LOG_FILE
 
+# Conteggio dei test e riepilogo finale
+source "$(dirname "$0")/lib-report.sh"
+trap 'report_chiusura $?' EXIT
+
 # Colori per output
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -47,11 +51,11 @@ LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/login" \
 TOKEN=$(echo $LOGIN_RESPONSE | grep -o '"token":"[^"]*' | cut -d'"' -f4)
 
 if [ -z "$TOKEN" ]; then
-    echo -e "${RED}✗ Errore: Login fallito${NC}"
+    test_ko "Import Kafka: login utente admin"
     echo "Risposta: $LOGIN_RESPONSE"
     exit 1
 fi
-echo -e "${GREEN}✓ Login admin effettuato con successo${NC}"
+test_ok "Import Kafka: login utente admin"
 echo ""
 
 # 2. Generazione UUID e invio messaggio sul topic annotazioni-import
@@ -68,7 +72,7 @@ EOF
 if [ "$KAFKA_TYPE" = "kube" ]; then
     KAFKA_POD=$(kubectl get pods -n gestioneannotazioni --no-headers 2>/dev/null | grep "^kafka-service" | awk '{print $1}')
     if [ -z "$KAFKA_POD" ]; then
-        echo -e "${RED}✗ Errore: Pod Kafka non trovato in Kubernetes${NC}"
+        test_ko "Import Kafka: individuazione pod Kafka"
         exit 1
     fi
     echo "$KAFKA_MESSAGE" | kubectl exec -i "$KAFKA_POD" -n gestioneannotazioni -- \
@@ -79,10 +83,10 @@ else
 fi
 
 if [ $? -ne 0 ]; then
-    echo -e "${RED}✗ Errore: Invio messaggio Kafka fallito${NC}"
+    test_ko "Import Kafka: invio messaggio sul topic annotazioni-import"
     exit 1
 fi
-echo -e "${GREEN}✓ Messaggio inviato sul topic annotazioni-import (ID: $ANNOTATION_ID)${NC}"
+test_ok "Import Kafka: invio messaggio sul topic annotazioni-import"
 echo ""
 
 # 3. Attesa e verifica che l'annotazione venga importata con stato IMPORTATA (max 5 minuti)
@@ -98,7 +102,7 @@ while [ $attempt -lt $max_attempts ]; do
     stato_finale=$(echo "$STATO_RESPONSE" | grep -o '"stato":"[^"]*' | cut -d'"' -f4)
 
     if [ "$stato_finale" = "IMPORTATA" ]; then
-        echo -e "${GREEN}✓ Annotazione importata correttamente con stato IMPORTATA al tentativo $attempt${NC}"
+        test_ok "Import Kafka: annotazione importata con stato IMPORTATA (tentativo $attempt)"
         break
     fi
 
@@ -112,7 +116,7 @@ while [ $attempt -lt $max_attempts ]; do
 done
 
 if [ "$stato_finale" != "IMPORTATA" ]; then
-    echo -e "${RED}✗ Annotazione non risulta con stato IMPORTATA dopo 5 minuti (stato: $stato_finale)${NC}"
+    test_ko "Import Kafka: annotazione non importata dopo 5 minuti (stato: $stato_finale)"
     exit 1
 fi
 echo ""
@@ -133,3 +137,9 @@ echo ""
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] ✓ Test Import Kafka completati${NC}"
 echo -e "${BLUE}========================================${NC}"
+
+# Esce in errore se qualche test di questo script è fallito
+if [ "$(report_ko_locali)" -gt 0 ]; then
+    exit 1
+fi
+exit 0

@@ -91,11 +91,16 @@ Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: c
     - ✅ ⚙️ Sistema di import da coda Azure
   - ✅ 🛠️ Refactor e rimozione del `@Autowired` a favore del injectiont tramite costruttore! (segnalazione sonar)
     - ✅ ⚙️ Test coverage e security issues per avere coverage >90%
+    - 🚧 🤖 Test con profilo Azure
+- ✅ 🔁 Governo degli sviluppi con OpenSpec (`openspec/`): specifiche come contratto, change proposte e approvate prima dell'implementazione
+  - ✅ 📖 Capability specificate: `annotazioni-stati` e `annotazioni-lock`
+  - ✅ 🛠️ Avvio interrotto se `cambiamentoStati.yaml` non è caricabile, al posto del ripiego silenzioso che faceva rifiutare ogni cambio di stato con 403 (change `fallback-transizioni-stato`)
+  - ✅ 🔓 Rimozione del lock duplicato in `adapter-mongodb`, che rilascia la prenotazione dell'utente dopo un salvataggio solo sul profilo kube (change `lock-modifica-solo-nel-core`)
 - 🚧 🛡️ Gestione password via secret
   - 🚧 🔒 Gestione password tramite secret di Kubernetes nel profilo Kube
   - 🚧 🔒 Gestione password tramite AWS Secret manager nel profilo aws
   - 🚧 🔒 Gestione password tramite Azure key vault nel profilo azure
-  - 🚧 🔒 Gestione password tramite File statici nel profilo sqlite
+  - 🚧 🔒 Gestione password tramite File statici o qualcosa docker nel profilo sqlite
 - 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.0.2  
   - 🚧 ⚙️ Sviluppo template e script per AWS-EKS (script/aws-eks)
   - 🚧 🎯 Test con profilo sqlite
@@ -178,6 +183,9 @@ Per ogni modifica, prima del rilascio, *bisognerebbe* eseguire un test di non re
   ```
   ./script/automatic-test/test-all.sh
   ```
+  - esegue tutti i profili anche se uno fallisce, poi esce con codice diverso da zero se almeno un profilo ha riportato errori
+  - in coda a `automatic-test-YYYYMMDD.log` scrive il riepilogo: elenco delle esecuzioni con orari e durata, tabella dei test per profilo e elenco dei test falliti
+  - ogni script di profilo, lanciato da solo, scrive il proprio riepilogo allo stesso modo
 - Profilo `aws` in Cloud AWS con Dynamo e MySql ed esecuzione su EC2
   ```bash
   ./script/aws-ec2/start-all.sh

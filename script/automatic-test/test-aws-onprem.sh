@@ -8,6 +8,11 @@ if [ -z "$LOG_FILE" ]; then
   exec > >(tee -a "$LOG_FILE") 2>&1
 fi
 export LOG_FILE
+
+# Conteggio dei test e riepilogo finale
+source "$(dirname "$0")/lib-report.sh"
+report_run_inizio "aws (locale)"
+
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] === INIZIO: test-aws-onprem.sh ==="
 
 #cd ..
@@ -27,11 +32,11 @@ echo "DynamoDB Admin: [http://localhost:8087](http://localhost:8087)"
 
 # Funzione per terminare l'applicazione in caso di errore
 cleanup() {
-    docker-compose -f script/aws-onprem/docker-compose.yml down
-    docker volume rm $(docker volume ls -q) > /dev/null 2>&1
-    docker rmi $(docker images -q) > /dev/null 2>&1
+    # Limitato alle risorse dichiarate in questo docker-compose: non tocca
+    # immagini e volumi di altri progetti presenti sulla macchina.
+    docker-compose -f script/aws-onprem/docker-compose.yml down --volumes --remove-orphans --rmi local
 }
-trap cleanup EXIT
+trap 'RC=$?; cleanup; report_chiusura $RC' EXIT
 
 URL="http://localhost:8082"
 
@@ -42,7 +47,7 @@ for i in {1..30}; do
         break
     fi
     if [ $i -eq 30 ]; then
-        echo "ERRORE: Timeout - L'applicazione non si è avviata in 60 secondi"
+        test_ko "Avvio applicazione entro 60 secondi"
         exit 1
     fi
     sleep 2
@@ -51,9 +56,9 @@ done
 # Prendo il campo status e verifico se è UP
 status=$(curl -s $URL/actuator/health | jq -r .status)
 if [ "$status" == "UP" ]; then
-    echo "L'applicazione è in esecuzione correttamente."
+    test_ok "Health actuator UP"
 else
-    echo "L'applicazione non è in esecuzione."
+    test_ko "Health actuator UP (stato: $status)"
     exit 1
 fi
 
@@ -66,17 +71,18 @@ token=$(echo $token_response | jq -r .token)
 echo "Token ottenuto: $token"
 
 if [ -z "$token" ] || [ "$token" == "null" ]; then
-    echo "ERRORE: Login fallito. Risposta: $token_response"
+    test_ko "Login utente admin"
+    echo "   Risposta: $token_response"
     exit 1
 else
-    echo "Login eseguito correttamente."
+    test_ok "Login utente admin"
 fi
 
 curl -s $URL/api/annotazioni -H "Authorization: Bearer $token" | jq .  > /dev/null
 if [ $? -eq 0 ]; then
-    echo "Chiamata API /api/annotazioni eseguita correttamente."
+    test_ok "GET /api/annotazioni"
 else
-    echo "Chiamata API /api/annotazioni fallita."
+    test_ko "GET /api/annotazioni"
     exit 1
 fi
 
@@ -90,9 +96,9 @@ echo "Risposta POST annotazione: $RISPOSTA"
 # Verifica che la risposta contenga un ID (segno di successo)
 id_creato=$(echo $RISPOSTA | jq -r .id 2>/dev/null)
 if [ -n "$id_creato" ] && [ "$id_creato" != "null" ]; then
-    echo "✅ Creazione annotazione eseguita correttamente. ID: $id_creato"
+    test_ok "Creazione annotazione (ID: $id_creato)"
 else
-    echo "❌ Creazione annotazione fallita."
+    test_ko "Creazione annotazione"
     echo "   Risposta completa: $RISPOSTA"
     exit 1
 fi
@@ -118,7 +124,7 @@ SQS=$(aws sqs list-queues --endpoint-url=http://localhost:4566 --region=eu-centr
 )
 QUEUE_URL=$(echo $SQS | jq -r '.QueueUrls[]')
 if [ -z "$QUEUE_URL" ]; then
-    echo "❌ ERRORE: Coda SQS 'GestioneAnnotazioniQueue' non trovata."
+    test_ko "Coda SQS di export presente"
     exit 1
 fi
 echo "Coda SQS trovata: $QUEUE_URL"
@@ -152,7 +158,7 @@ while [ $attempt -lt $max_attempts ]; do
     if [ "$message_count" -gt 0 ]; then
         # Verifica se il messaggio contiene l'ID dell'annotazione creata
         if echo "$RISPOSTA" | jq -r '.Messages[].Body' | grep -q "$id_creato"; then
-            echo "✅ Annotazione trovata in SQS al tentativo $attempt"
+            test_ok "Export annotazione sulla coda SQS (tentativo $attempt)"
             echo "Numero messaggi ricevuti: $message_count"
             
             # Mostra il corpo del messaggio
@@ -186,7 +192,7 @@ while [ $attempt -lt $max_attempts ]; do
 done
 
 if [ "$found_in_sqs" = false ]; then
-    echo "❌ Annotazione non trovata nei messaggi SQS dopo 10 minuti."
+    test_ko "Export annotazione sulla coda SQS"
     echo "Ultima risposta SQS: $RISPOSTA"
     exit 1
 fi
@@ -196,7 +202,10 @@ fi
 echo ""
 echo ""
 echo "Esecuzione test di prenotazione annotazione..."
-./script/automatic-test/test-prenotazione-annotazione.sh
+if ! ./script/automatic-test/test-prenotazione-annotazione.sh; then
+    echo "Test di prenotazione annotazione falliti: vedi il riepilogo finale"
+    ESITO_FIGLI=1
+fi
 
 
 # Test import da SQS: invia un messaggio nella coda di import e verifica che l'annotazione venga importata con stato IMPORTATA
@@ -210,7 +219,7 @@ IMPORT_QUEUE_URL=$(aws sqs list-queues \
     | jq -r '.QueueUrls[0]')
 
 if [ -z "$IMPORT_QUEUE_URL" ] || [ "$IMPORT_QUEUE_URL" == "null" ]; then
-    echo "❌ ERRORE: Coda SQS 'annotazioni-import' non trovata."
+    test_ko "Coda SQS di import presente"
     exit 1
 fi
 echo "Coda SQS import trovata: $IMPORT_QUEUE_URL"
@@ -250,11 +259,11 @@ SEND_RESULT=$(aws sqs send-message \
 
 SEND_MSG_ID=$(echo "$SEND_RESULT" | jq -r '.MessageId' 2>/dev/null)
 if [ -z "$SEND_MSG_ID" ] || [ "$SEND_MSG_ID" == "null" ]; then
-    echo "❌ ERRORE: Invio messaggio SQS import fallito."
+    test_ko "Invio messaggio sulla coda SQS di import"
     echo "   Risposta: $SEND_RESULT"
     exit 1
 fi
-echo "✅ Messaggio inviato nella coda import. MessageId: $SEND_MSG_ID"
+test_ok "Invio messaggio sulla coda SQS di import (MessageId: $SEND_MSG_ID)"
 
 # Attende che lo scheduler processi il messaggio (cron ogni 30 secondi, max 3 minuti)
 echo "Attesa elaborazione import da parte dello scheduler (max 3 minuti)..."
@@ -273,7 +282,7 @@ while [ $import_attempt -lt $max_import_attempts ]; do
     stato_importata=$(echo "$RISPOSTA_IMPORT" | jq -r '.stato' 2>/dev/null)
 
     if [ "$stato_importata" == "IMPORTATA" ]; then
-        echo "✅ Annotazione $IMPORT_UUID trovata con stato IMPORTATA al tentativo $import_attempt"
+        test_ok "Import annotazione da SQS con stato IMPORTATA (tentativo $import_attempt)"
         echo "Dettagli annotazione importata:"
         echo "$RISPOSTA_IMPORT" | jq .
         import_found=true
@@ -286,7 +295,7 @@ while [ $import_attempt -lt $max_import_attempts ]; do
 done
 
 if [ "$import_found" = false ]; then
-    echo "❌ Annotazione $IMPORT_UUID non trovata con stato IMPORTATA dopo 3 minuti."
+    test_ko "Import annotazione da SQS con stato IMPORTATA"
     echo "Ultima risposta API: $RISPOSTA_IMPORT"
     exit 1
 fi
@@ -296,11 +305,14 @@ echo "=== FINE TEST IMPORT ANNOTAZIONE DA SQS ==="
 
 
 
-# Terminazione applicazione (gestita da trap cleanup)
-docker-compose -f script/aws-onprem/docker-compose.yml down
-
-echo "✅ Test con profilo 'KUBE' superati!"
+# Terminazione dello stack: gestita dal trap cleanup
+echo "✅ Test con profilo 'AWS' superati!"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] === FINE: test-aws-onprem.sh ==="
+
+if [ "$(report_ko_totali)" -gt 0 ] || [ "${ESITO_FIGLI:-0}" -ne 0 ]; then
+    echo "❌ Alcuni test del profilo 'aws' sono falliti"
+    exit 1
+fi
 
 echo "✅ Tutti i test sono stati eseguiti con successo!"
 exit 0

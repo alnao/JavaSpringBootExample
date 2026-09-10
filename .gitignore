@@ -66,6 +66,12 @@ cni-plugins-linux-amd64-*
 **/dynamodb_data
 **/localstack_data
 
+# node e open-spec
+node_modules/
+package.json
+package-lock.json
+package-lock.yaml
+
 
 # Emoji Legend for .gitignore entries
 # 🔧 Sviluppo e Programmazione

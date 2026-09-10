@@ -8,6 +8,10 @@ if [ -z "$LOG_FILE" ]; then
   exec > >(tee -a "$LOG_FILE") 2>&1
 fi
 export LOG_FILE
+
+# Conteggio dei test e riepilogo finale
+source "$(dirname "$0")/lib-report.sh"
+report_run_inizio "kube (minikube)"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] === INIZIO: test-minikube.sh ==="
 
 #cd ..
@@ -32,7 +36,7 @@ cleanup() {
     minikube delete > /dev/null 2>&1
     echo "Applicazione terminata e minikube eliminato."
 }
-trap cleanup EXIT
+trap 'RC=$?; cleanup; report_chiusura $RC' EXIT
 
 sleep 10
 URL=$(minikube service gestioneannotazioni-app -n gestioneannotazioni --url)
@@ -44,7 +48,7 @@ for i in {1..10}; do
         break
     fi
     if [ $i -eq 10 ]; then
-        echo "ERRORE: Timeout - L'applicazione non si è avviata in tempo!"
+        test_ko "Avvio applicazione entro il tempo massimo"
         exit 1
     fi
     echo "Attesa... ($((i*30)) secondi trascorsi)"
@@ -54,9 +58,9 @@ done
 # Prendo il campo status e verifico se è UP
 status=$(curl -s $URL/actuator/health | jq -r .status)
 if [ "$status" == "UP" ]; then
-    echo "L'applicazione è in esecuzione correttamente."
+    test_ok "Health actuator UP"
 else
-    echo "L'applicazione non è in esecuzione."
+    test_ko "Health actuator UP (stato: $status)"
     exit 1
 fi
 
@@ -69,17 +73,18 @@ token=$(echo $token_response | jq -r .token)
 echo "Token ottenuto: $token"
 
 if [ -z "$token" ] || [ "$token" == "null" ]; then
-    echo "ERRORE: Login fallito. Risposta: $token_response"
+    test_ko "Login utente admin"
+    echo "   Risposta: $token_response"
     exit 1
 else
-    echo "Login eseguito correttamente."
+    test_ok "Login utente admin"
 fi
 
 curl -s $URL/api/annotazioni -H "Authorization: Bearer $token" | jq .  > /dev/null
 if [ $? -eq 0 ]; then
-    echo "Chiamata API /api/annotazioni eseguita correttamente."
+    test_ok "GET /api/annotazioni"
 else
-    echo "Chiamata API /api/annotazioni fallita."
+    test_ko "GET /api/annotazioni"
     exit 1
 fi
 
@@ -93,9 +98,9 @@ echo "Risposta POST annotazione: $RISPOSTA"
 # Verifica che la risposta contenga un ID (segno di successo)
 id_creato=$(echo $RISPOSTA | jq -r .id 2>/dev/null)
 if [ -n "$id_creato" ] && [ "$id_creato" != "null" ]; then
-    echo "✅ Creazione annotazione eseguita correttamente. ID: $id_creato"
+    test_ok "Creazione annotazione (ID: $id_creato)"
 else
-    echo "❌ Creazione annotazione fallita."
+    test_ko "Creazione annotazione"
     echo "   Risposta completa: $RISPOSTA"
     exit 1
 fi
@@ -135,7 +140,7 @@ while [ $attempt -lt $max_attempts ]; do
     
     # Verifica se il messaggio contiene l'ID dell'annotazione creata
     if echo "$kafka_messages" | grep -q "$id_creato"; then
-        echo "✅ Annotazione trovata in Kafka al tentativo $attempt"
+        test_ok "Export annotazione sul topic Kafka (tentativo $attempt)"
         echo "Contenuto messaggio: $kafka_messages"
         found_in_kafka=true
         break
@@ -150,7 +155,7 @@ while [ $attempt -lt $max_attempts ]; do
 done
 
 if [ "$found_in_kafka" = false ]; then
-    echo "❌ Annotazione non trovata nei messaggi Kafka dopo 10 minuti."
+    test_ko "Export annotazione sul topic Kafka"
     echo "Ultimi messaggi ricevuti: $kafka_messages"
     exit 1
 fi
@@ -160,7 +165,10 @@ fi
 echo ""
 echo ""
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Esecuzione test di prenotazione annotazione..."
-./script/automatic-test/test-prenotazione-annotazione.sh $URL
+if ! ./script/automatic-test/test-prenotazione-annotazione.sh $URL; then
+    echo "Test di prenotazione annotazione falliti: vedi il riepilogo finale"
+    ESITO_FIGLI=1
+fi
 
 echo ""
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Esecuzione test import/export Kafka..."
@@ -171,8 +179,13 @@ echo "Terminazione applicazione"
 ./script/minikube/stop-all.sh
 minikube delete
 
-echo "✅ Test con profilo 'KUBE' superati!"
+echo "✅ Test con profilo 'KUBE' su minikube superati!"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] === FINE: test-minikube.sh ==="
+
+if [ "$(report_ko_totali)" -gt 0 ] || [ "${ESITO_FIGLI:-0}" -ne 0 ]; then
+    echo "❌ Alcuni test su minikube sono falliti"
+    exit 1
+fi
 
 echo "✅ Tutti i test sono stati eseguiti con successo!"
 exit 0

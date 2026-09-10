@@ -11,6 +11,10 @@ if [ -z "$LOG_FILE" ]; then
 fi
 export LOG_FILE
 
+# Conteggio dei test e riepilogo finale
+source "$(dirname "$0")/lib-report.sh"
+trap 'report_chiusura $?' EXIT
+
 BASE_URL="http://localhost:8082/api"
 #se mi arriva un parametro lo uso come base url
 if [ ! -z "$1" ]; then
@@ -40,10 +44,10 @@ LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/login" \
 TOKEN=$(echo $LOGIN_RESPONSE | grep -o '"token":"[^"]*' | cut -d'"' -f4)
 
 if [ -z "$TOKEN" ]; then
-    echo -e "${RED}✗ Errore: Login fallito${NC}"
+    test_ko "Login utente admin"
     exit 1
 fi
-echo -e "${GREEN}✓ Login admin effettuato con successo${NC}"
+test_ok "Login utente admin"
 echo ""
 
 # 2. Login utente alnao
@@ -55,10 +59,10 @@ LOGIN_RESPONSE_2=$(curl -s -X POST "$BASE_URL/auth/login" \
 TOKEN_2=$(echo $LOGIN_RESPONSE_2 | grep -o '"token":"[^"]*' | cut -d'"' -f4)
 
 if [ -z "$TOKEN_2" ]; then
-    echo -e "${RED}✗ Errore: Login fallito per alnao${NC}"
+    test_ko "Login utente alnao"
     exit 1
 fi
-echo -e "${GREEN}✓ Login alnao effettuato con successo${NC}"
+test_ok "Login utente alnao"
 echo ""
 
 # 3. Creazione annotazione di test
@@ -79,11 +83,11 @@ CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/annotazioni" \
 ANNOTATION_ID=$(echo $CREATE_RESPONSE | grep -o '"id":"[^"]*' | cut -d'"' -f4)
 
 if [ -z "$ANNOTATION_ID" ]; then
-    echo -e "${RED}✗ Errore: Creazione annotazione fallita${NC}"
+    test_ko "Creazione annotazione di test"
     echo "Risposta: $CREATE_RESPONSE"
     exit 1
 fi
-echo -e "${GREEN}✓ Annotazione creata con ID: $ANNOTATION_ID${NC}"
+test_ok "Creazione annotazione di test (ID: $ANNOTATION_ID)"
 echo ""
 
 # 4. Verifica stato prenotazione (dovrebbe essere libera)
@@ -105,10 +109,10 @@ HTTP_CODE=$(echo "$PRENOTA_RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2)
 BODY=$(echo "$PRENOTA_RESPONSE" | sed '/HTTP_CODE/d')
 
 if [ "$HTTP_CODE" = "200" ]; then
-    echo -e "${GREEN}✓ Prenotazione effettuata con successo${NC}"
+    test_ok "5. Prenotazione da parte di admin"
     echo "Risposta: $BODY"
 else
-    echo -e "${RED}✗ Errore nella prenotazione (HTTP $HTTP_CODE)${NC}"
+    test_ko "5. Prenotazione da parte di admin (HTTP $HTTP_CODE)"
     echo "Risposta: $BODY"
     exit 1
 fi
@@ -133,10 +137,10 @@ HTTP_CODE=$(echo "$PRENOTA_CONFLICT" | grep "HTTP_CODE" | cut -d':' -f2)
 BODY=$(echo "$PRENOTA_CONFLICT" | sed '/HTTP_CODE/d')
 
 if [ "$HTTP_CODE" = "409" ]; then
-    echo -e "${GREEN}✓ Correttamente bloccato (HTTP 409)${NC}"
+    test_ok "7. Prenotazione da altro utente correttamente bloccata (409)"
     echo "Risposta: $BODY"
 else
-    echo -e "${RED}✗ Errore: prenotazione non dovrebbe essere possibile (HTTP $HTTP_CODE)${NC}"
+    test_ko "7. Prenotazione da altro utente non bloccata (HTTP $HTTP_CODE)"
     echo "Risposta: $BODY"
     exit 1
 fi
@@ -158,10 +162,10 @@ UPDATE_CONFLICT=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X PUT "$BASE_URL/annota
 HTTP_CODE=$(echo "$UPDATE_CONFLICT" | grep "HTTP_CODE" | cut -d':' -f2)
 BODY=$(echo "$UPDATE_CONFLICT" | sed '/HTTP_CODE/d')
 if [ "$HTTP_CODE" = "409" ]; then
-    echo -e "${GREEN}✓ Modifica correttamente bloccata (HTTP 409)${NC}"
+    test_ok "8. Modifica da altro utente correttamente bloccata (409)"
     echo "Risposta: $BODY"
 else
-    echo -e "${RED}✗ Errore: modifica non dovrebbe essere possibile (HTTP $HTTP_CODE)${NC}"
+    test_ko "8. Modifica da altro utente non bloccata (HTTP $HTTP_CODE)"
     echo "Risposta: $BODY"
     exit 1
 fi
@@ -184,9 +188,9 @@ HTTP_CODE=$(echo "$UPDATE_SUCCESS" | grep "HTTP_CODE" | cut -d':' -f2)
 BODY=$(echo "$UPDATE_SUCCESS" | sed '/HTTP_CODE/d')
 
 if [ "$HTTP_CODE" = "200" ]; then
-    echo -e "${GREEN}✓ Modifica effettuata con successo${NC}"
+    test_ok "9. Modifica da parte del proprietario della prenotazione"
 else
-    echo -e "${RED}✗ Errore nella modifica (HTTP $HTTP_CODE)${NC}"
+    test_ko "9. Modifica da parte del proprietario della prenotazione (HTTP $HTTP_CODE)"
     echo "Risposta: $BODY"
     exit 1
 fi
@@ -204,10 +208,10 @@ PRENOTA_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "$BASE_URL/anno
 HTTP_CODE=$(echo "$PRENOTA_RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2)
 BODY=$(echo "$PRENOTA_RESPONSE" | sed '/HTTP_CODE/d')
 if [ "$HTTP_CODE" = "200" ]; then
-    echo -e "${GREEN}✓ Prenotazione effettuata con successo${NC}"
+    test_ok "10. Ri-prenotazione da parte dello stesso utente"
     echo "Risposta: $BODY"
 else
-    echo -e "${RED}✗ Errore nella prenotazione (HTTP $HTTP_CODE)${NC}"
+    test_ko "10. Ri-prenotazione da parte dello stesso utente (HTTP $HTTP_CODE)"
     echo "Risposta: $BODY"
     exit 1
 fi
@@ -225,9 +229,9 @@ RILASCIO_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X DELETE "$BASE_URL/a
 HTTP_CODE=$(echo "$RILASCIO_RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2)
 
 if [ "$HTTP_CODE" = "204" ]; then
-    echo -e "${GREEN}✓ Lock rilasciato con successo${NC}"
+    test_ok "11. Rilascio prenotazione da parte del proprietario"
 else
-    echo -e "${RED}✗ Errore nel rilascio (HTTP $HTTP_CODE)${NC}"
+    test_ko "11. Rilascio prenotazione da parte del proprietario (HTTP $HTTP_CODE)"
     BODY=$(echo "$RILASCIO_RESPONSE" | sed '/HTTP_CODE/d')
     echo "Risposta: $BODY"
     exit 1
@@ -253,10 +257,10 @@ HTTP_CODE=$(echo "$PRENOTA_RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2)
 BODY=$(echo "$PRENOTA_RESPONSE" | sed '/HTTP_CODE/d')
 
 if [ "$HTTP_CODE" = "200" ]; then
-    echo -e "${GREEN}✓ Prenotazione effettuata con successo${NC}"
+    test_ok "13. Prenotazione da altro utente dopo il rilascio"
     echo "Risposta: $BODY"
 else
-    echo -e "${RED}✗ Errore nella prenotazione (HTTP $HTTP_CODE)${NC}"
+    test_ko "13. Prenotazione da altro utente dopo il rilascio (HTTP $HTTP_CODE)"
     echo "Risposta: $BODY"
     exit 1
 fi
@@ -273,10 +277,10 @@ PRENOTA_TIMEOUT=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "$BASE_URL/annot
 HTTP_CODE=$(echo "$PRENOTA_TIMEOUT" | grep "HTTP_CODE" | cut -d':' -f2)
 BODY=$(echo "$PRENOTA_TIMEOUT" | sed '/HTTP_CODE/d')
 if [ "$HTTP_CODE" = "200" ]; then
-    echo -e "${GREEN}✓ Prenotazione effettuata con successo dopo timeout${NC}"
+    test_ok "14. Prenotazione possibile dopo la scadenza automatica"
     echo "Risposta: $BODY"
 else
-    echo -e "${RED}✗ Errore nella prenotazione dopo timeout (HTTP $HTTP_CODE)${NC}"
+    test_ko "14. Prenotazione impossibile dopo la scadenza automatica (HTTP $HTTP_CODE)"
     echo "Risposta: $BODY"
     exit 1
 fi
@@ -290,9 +294,9 @@ DELETE_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X DELETE "$BASE_URL/ann
 HTTP_CODE=$(echo "$DELETE_RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2)
 
 if [ "$HTTP_CODE" = "204" ]; then
-    echo -e "${GREEN}✓ Annotazione eliminata${NC}"
+    test_ok "15. Eliminazione annotazione di test"
 else
-    echo -e "${RED}✗ Errore nell'eliminazione (HTTP $HTTP_CODE)${NC}"
+    test_ko "15. Eliminazione annotazione di test (HTTP $HTTP_CODE)"
     echo "Risposta: $BODY"
     echo "Comunue procedo e do che i test sono completati perchè la cancellazione non è in perimetro di questi test!"
     #exit 1
@@ -302,3 +306,9 @@ echo ""
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] ✓ Test Prenotazione completati${NC} ✓"
 echo -e "${BLUE}========================================${NC}"
+
+# Esce in errore se qualche test è fallito senza interrompere lo script
+if [ "$(report_ko_locali)" -gt 0 ]; then
+    exit 1
+fi
+exit 0

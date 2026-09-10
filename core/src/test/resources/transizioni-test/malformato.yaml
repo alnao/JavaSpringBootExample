@@ -1,0 +1,4 @@
+transizioni:
+  - statoPartenza: "INSERITA"
+   statoArrivo: "MODIFICATA"
+      ruoloRichiesto: [USER

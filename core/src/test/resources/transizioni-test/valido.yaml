@@ -1,0 +1,9 @@
+transizioni:
+  - statoPartenza: "INSERITA"
+    statoArrivo: "MODIFICATA"
+    ruoloRichiesto: "USER"
+    descrizione: "Utente può modificare la propria annotazione"
+  - statoPartenza: "MODIFICATA"
+    statoArrivo: "CONFERMATA"
+    ruoloRichiesto: "MODERATOR"
+    descrizione: "Moderatore può confermare annotazione modificata"

@@ -1,0 +1,81 @@
+schema: spec-driven
+
+context: |
+  Progetto "Sistema di Gestione Annotazioni" (it.alnao.springbootexample, v0.0.2).
+  Java 21, Spring Boot 3.3.5, Maven multi-modulo, architettura esagonale:
+  la logica sta in core/, gli adapter implementano solo i port.
+  Quattro profili Spring equivalenti per funzionalita' ma diversi per tecnologia:
+  sqlite / kube (PostgreSQL+MongoDB+Kafka) / aws (MySQL+DynamoDB+SQS) /
+  azure (SQL Server+Cosmos+Service Bus). Una feature che tocca persistenza, code
+  o lock e' incompleta finche' non copre tutti e quattro i profili.
+  Convenzioni: constructor injection (mai @Autowired su campo), nomi di dominio
+  in italiano, nessun if sul profilo dentro al core, coverage > 90%.
+  Documentazione e comandi in italiano.
+
+  LEGGI SEMPRE openspec/project.md prima di produrre artefatti: contiene stack,
+  moduli, stati delle annotazioni, comandi di build e test, script di
+  regressione e vincoli operativi (i profili aws/azure generano costi reali).
+
+
+rules:
+  proposal:
+    - Scrivi in italiano, coerente con README.md e Roadmap.md
+    - "Dichiara esplicitamente quali dei 4 profili (sqlite, kube, aws, azure) sono coinvolti"
+    - 'Se un profilo viene escluso, motivalo in una sezione "Non-goals"'
+    - Segnala se la change tocca il core o soltanto uno o piu' adapter
+  specs:
+    - "Scrivi i requisiti in italiano, mantenendo SHALL/MUST come parole normative"
+    - "Descrivi il comportamento osservabile via API REST o via scheduler, mai classi o librerie"
+    - Dove il comportamento differisce per profilo, scrivi uno scenario per profilo
+  design:
+    - "Rispetta l'architettura esagonale: logica nel core, gli adapter implementano i port"
+    - "Nessun if sul profilo Spring dentro al core: usa @Profile sugli adapter"
+    - "Motiva ogni nuova dipendenza Maven aggiunta al pom"
+  tasks:
+    - Task da massimo 2 ore ciascuno
+    - "Per feature che toccano persistenza, code o lock: un task separato per ciascun profilo"
+    - Prevedi un task di test con coverage per ogni modulo modificato
+    - "Ultimo task: esecuzione dello script di regressione del profilo interessato in script/automatic-test/"
+
+operations:
+  apply:
+    guidance:
+      - "Non eseguire mai comandi git (commit, push, pull, merge)"
+      - "Non eseguire script che creano risorse su AWS o Azure: generano costi reali"
+      - "Usa constructor injection, mai @Autowired sui campi"
+      - 'Verifica con "mvn -q -pl <moduli> -am test" prima di marcare un task completato'
+  archive:
+    guidance:
+      - "Riassumi cosa e' cambiato nelle spec principali"
+      - "Ricorda di spuntare la voce corrispondente in Roadmap.md"
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing

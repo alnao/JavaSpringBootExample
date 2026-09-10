@@ -78,10 +78,10 @@ echo "---------------------------------------------------------------------"
     echo "Configuro document mongo e database postgres"
 # document dentro Mongo
     docker cp script/init-database/init-mongodb.js annotazioni-mongo:/init-mongodb.js
-    docker exec -it annotazioni-mongo mongo -u admin -p admin123 --authenticationDatabase admin /init-mongodb.js
+    docker exec annotazioni-mongo mongo -u admin -p admin123 --authenticationDatabase admin /init-mongodb.js
 # database nel postgresql
     docker cp script/init-database/init-postgres.sql annotazioni-postgres:/init-postgres.sql
-    docker exec -it annotazioni-postgres psql -U gestioneannotazioni_user -d gestioneannotazioni -f /init-postgres.sql
+    docker exec annotazioni-postgres psql -U gestioneannotazioni_user -d gestioneannotazioni -f /init-postgres.sql
 
 # Esecuzione servizio con profilo kube
     echo "Faccio partire il servizio"

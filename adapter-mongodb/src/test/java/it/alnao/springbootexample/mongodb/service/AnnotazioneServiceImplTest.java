@@ -5,7 +5,6 @@ import it.alnao.springbootexample.core.domain.AnnotazioneCompleta;
 import it.alnao.springbootexample.core.domain.AnnotazioneMetadata;
 import it.alnao.springbootexample.core.repository.AnnotazioneMetadataRepository;
 import it.alnao.springbootexample.core.repository.AnnotazioneRepository;
-import it.alnao.springbootexample.core.service.AnnotazioneLockService;
 import it.alnao.springbootexample.mongodb.entity.AnnotazioneStoricoEntity;
 import it.alnao.springbootexample.mongodb.repository.AnnotazioneStoricoMongoRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +26,6 @@ class AnnotazioneServiceImplTest {
     @Mock AnnotazioneRepository annotazioneRepository;
     @Mock AnnotazioneMetadataRepository metadataRepository;
     @Mock AnnotazioneStoricoMongoRepository storicoMongoRepository;
-    @Mock AnnotazioneLockService lockService;
     @InjectMocks AnnotazioneServiceImpl service;
 
     @BeforeEach
@@ -52,13 +50,12 @@ class AnnotazioneServiceImplTest {
     }
 
     @Test
-    void aggiornaAnnotazione_whenFound_acquiresLockAndUpdates() {
+    void aggiornaAnnotazione_whenFound_updatesWithoutTouchingLocks() {
         UUID id = UUID.randomUUID();
         Annotazione ann = new Annotazione(id, "v1.0", "vecchio");
         AnnotazioneMetadata meta = buildMetadata(id);
         when(annotazioneRepository.findById(id)).thenReturn(Optional.of(ann));
         when(metadataRepository.findById(id)).thenReturn(Optional.of(meta));
-        when(lockService.acquireLock(eq(id), eq("user"), anyLong())).thenReturn(true);
         when(annotazioneRepository.save(any())).thenReturn(ann);
         when(metadataRepository.save(any())).thenReturn(meta);
         when(storicoMongoRepository.save(any())).thenReturn(new AnnotazioneStoricoEntity());
@@ -66,22 +63,16 @@ class AnnotazioneServiceImplTest {
         AnnotazioneCompleta result = service.aggiornaAnnotazione(id, "nuovo", "nuova desc", "user");
 
         assertNotNull(result);
-        verify(lockService).acquireLock(eq(id), eq("user"), anyLong());
-        verify(lockService).releaseLock(id, "user");
+        verify(storicoMongoRepository).save(any());
     }
 
     @Test
-    void aggiornaAnnotazione_whenLockHeldByOther_throwsException() {
+    void aggiornaAnnotazione_whenNotFound_throwsException() {
         UUID id = UUID.randomUUID();
-        Annotazione ann = new Annotazione(id, "v1.0", "vecchio");
-        AnnotazioneMetadata meta = buildMetadata(id);
-        when(annotazioneRepository.findById(id)).thenReturn(Optional.of(ann));
-        when(metadataRepository.findById(id)).thenReturn(Optional.of(meta));
-        when(lockService.acquireLock(eq(id), eq("user"), anyLong())).thenReturn(false);
-        when(lockService.isLocked(id)).thenReturn(true);
-        when(lockService.getOwner(id)).thenReturn(Optional.of("otherUser"));
+        when(annotazioneRepository.findById(id)).thenReturn(Optional.empty());
+        when(metadataRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(Exception.class,
+        assertThrows(RuntimeException.class,
                 () -> service.aggiornaAnnotazione(id, "nuovo", "desc", "user"));
     }
 
