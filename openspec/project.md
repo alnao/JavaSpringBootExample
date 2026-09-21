@@ -142,7 +142,9 @@ Script (in `script/`, da lanciare dalla **root** del progetto):
 - test mirati: `test-sqlite-onprem.sh`, `test-kube-onprem-docker-compose.sh`,
   `test-aws-onprem.sh`, `test-minikube.sh`, `test-azure-cosmos-runlocale.sh`,
   `test-import-kafka.sh`, `test-prenotazione-annotazione.sh`
-- deploy/provisioning: `aws-ec2/`, `aws-ecs/`, `aws-eks/`, `aws-onprem/`,
+- deploy/provisioning: `aws-ec2/`, `aws-terraform-ec2/` (Terraform, stesse
+  risorse di `aws-ec2/`), `aws-ecs/`, `aws-terraform-ecs/` (Terraform, stesse
+  risorse di `aws-ecs/`), `aws-eks/`, `aws-onprem/`,
   `azure-dbremoti-*/`, `minikube/`, `sqlite-locale/`, `sqlite-ec2/`
 - immagini: `docker-build.sh`, `push-image-docker-hub.sh`
   (`alnao/gestioneannotazioni` su Docker Hub)

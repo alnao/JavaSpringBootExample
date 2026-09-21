@@ -8,6 +8,10 @@ export AWS_PAGER=""
 
 # Parametri
 REGION="eu-central-1"
+# Tag comuni a tutte le risorse (Name, Environment, Project, Owner, CostCenter, ManagedBy): vedi script/aws-tags.sh
+# Il marcatore usato da stop-all.sh per ritrovare la EC2 e' diverso da quello dello stack aws-ec2
+TAG_MARKER_KEY="gestioneannotazioni-sqlite-ec2-app"
+source "$(dirname "$0")/../aws-tags.sh" sqlite-ec2
 PARAM_KEY_NAME="gestioneannotazioni-sqlite-ec2-key"
 EC2_INSTANCE_TYPE="t3.medium"
 EC2_COUNT=1
@@ -21,7 +25,7 @@ SG_ID=$(aws ec2 create-security-group --group-name $SG_NAME --description "gesti
   echo "Security Group già esistente, recupero l'ID..."
   SG_ID=$(aws ec2 describe-security-groups --group-names $SG_NAME --region $REGION --query 'SecurityGroups[0].GroupId' --output text)
 }
-aws ec2 create-tags --resources $SG_ID --tags Key=Name,Value=gestioneannotazioni-sqlite-ec2-app Key=gestioneannotazioni-sqlite-ec2-app,Value=true --region $REGION
+aws ec2 create-tags --resources $SG_ID --tags $(aws_tags_kv $SG_NAME) Key=$TAG_MARKER_KEY,Value=true --region $REGION
 # Apre porte per app (8082), adminer (8084)
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8082 --cidr 0.0.0.0/0 --region $REGION
 # SSH solo per IP chiamante
@@ -30,7 +34,7 @@ MY_IP=$(curl -s https://checkip.amazonaws.com | tr -d '\n')
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 22 --cidr $MY_IP/32 --region $REGION
 
 # 2. Crea key pair
-aws ec2 create-key-pair --key-name $PARAM_KEY_NAME --region $REGION --query 'KeyMaterial' --output text > $PARAM_KEY_NAME.pem
+aws ec2 create-key-pair --key-name $PARAM_KEY_NAME --region $REGION --tag-specifications "$(aws_tags_spec key-pair $PARAM_KEY_NAME)" --query 'KeyMaterial' --output text > $PARAM_KEY_NAME.pem
 chmod 400 $PARAM_KEY_NAME.pem
 
 # 3. Avvio EC2 con user_data per SQLite

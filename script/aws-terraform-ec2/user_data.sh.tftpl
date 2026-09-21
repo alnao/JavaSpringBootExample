@@ -1,0 +1,70 @@
+#!/bin/bash
+# User data della EC2: trasposizione del heredoc di script/aws-ec2/start-all.sh.
+# Le variabili $${nome} sono valorizzate da Terraform (templatefile), il resto
+# e' shell eseguita sull'istanza al primo avvio (log in /var/log/cloud-init-output.log).
+sudo yum update -y
+sudo amazon-linux-extras install docker -y
+sudo yum install -y mysql
+sudo service docker start
+sudo usermod -a -G docker ec2-user
+
+AURORA_HOST="${aurora_endpoint}"
+DB_USER="${db_user}"
+DB_PASS="${db_pass}"
+DB_NAME="${db_name}"
+REGION="${region}"
+SQS_EXPORT_QUEUE_URL="${sqs_export_url}"
+SQS_IMPORT_QUEUE_URL="${sqs_import_url}"
+REDIS_HOST="${redis_host}"
+REDIS_PORT="${redis_port}"
+echo "Host=$AURORA_HOST"
+echo "User=$DB_USER"
+echo "Dbname=$DB_NAME"
+echo "Region=$REGION"
+echo "SQS_EXPORT_QUEUE_URL=$SQS_EXPORT_QUEUE_URL"
+echo "SQS_IMPORT_QUEUE_URL=$SQS_IMPORT_QUEUE_URL"
+echo "Redis=$REDIS_HOST:$REDIS_PORT"
+
+# Test connessione diretta (Terraform ha gia' atteso che l'istanza Aurora sia available)
+for i in {1..3}; do
+  echo "[EC2 user_data] Tentativo $i: controllo se Aurora risponde su $AURORA_HOST:3306..."
+  if mysql -h "$AURORA_HOST" -u"$DB_USER" -p"$DB_PASS" -e "SELECT 1" 2>/dev/null; then
+    echo "Aurora risponde."
+    break
+  fi
+  echo "Aurora non ancora pronta, attendo 30 secondi..."
+  sleep 30
+done
+
+# Contenuto di script/init-database/init-mysql.sql, incorporato da Terraform
+cat <<'EOSQL' > /tmp/init-mysql.sql
+${init_sql}
+EOSQL
+
+mysql -h "$AURORA_HOST" -u"$DB_USER" -p"$DB_PASS" < /tmp/init-mysql.sql
+
+for i in {1..3}; do
+  echo "[EC2 user_data] Avvio microservizio (tentativo $i)..."
+  sudo docker run -d -p 8080:8080 \
+    -e SPRING_PROFILES_ACTIVE=aws \
+    -e AWS_RDS_URL="jdbc:mysql://$AURORA_HOST:3306/$DB_NAME" \
+    -e AWS_RDS_USERNAME=$DB_USER \
+    -e AWS_RDS_PASSWORD=$DB_PASS \
+    -e AWS_REGION=$REGION \
+    -e DYNAMODB_ANNOTAZIONI_TABLE_NAME=annotazioni \
+    -e AWS_ACCESS_KEY_ID= \
+    -e AWS_SECRET_ACCESS_KEY= \
+    -e SQS_EXPORT_QUEUE_URL=$SQS_EXPORT_QUEUE_URL \
+    -e SQS_IMPORT_QUEUE_URL=$SQS_IMPORT_QUEUE_URL \
+    -e REDIS_HOST=$REDIS_HOST \
+    -e REDIS_PORT=$REDIS_PORT \
+    alnao/gestioneannotazioni:latest
+  echo "Attendo 10 secondi per il lancio del container..."
+  sleep 10
+  if sudo docker ps | grep alnao/gestioneannotazioni; then
+    echo "Microservizio avviato con successo."
+    break
+  fi
+  echo "Microservizio non avviato, attendo 30 secondi e riprovo..."
+  sleep 30
+done

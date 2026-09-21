@@ -1,13 +1,14 @@
 # CLAUDE.md
 
-Istruzioni per Claude Code su questo repository. Rispondi e documenta **in
-italiano**.
+Istruzioni per Claude Code su questo repository. Rispondi e documenta **in italiano**.
 
 Note importanti che NON DEVI MAI disobbedire:
 - non sei MAI autorizzato a lanciare comandi in cloud , per esempio aws-cli `aws` e azure-cli `az`
 - non sei MAI autorizzato a fare operazioni con git come commit/push/pull
 - sei autorizzato a lanciare sh SOLO se sono contenuti in questo workspace, per lanciare sh fuori dal repository chiedi conferma
 - sei autorizzato a fare operazioni su docker locale come le pull ma MAI fare push delle immagini
+- per ogni modifica che ti viene chiesta, usa openspec come framework prima delle modifiche
+
 
 ## Il progetto in tre righe
 

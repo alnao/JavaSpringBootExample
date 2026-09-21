@@ -113,7 +113,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS EC2, con
     - Attenzione: questo script elimina tutti i dati nei database, se necessario effettuare un backup prima di eseguire lo script, l'operazione di cancellazione è irreversibile.
 - Note
   - La creazione e il de-provisioning è idempotente: è possibile rilanciare gli script senza duplicare le risorse
-  - Tutte le risorse sono taggate per facile identificazione e cleanup
+  - Tutte le risorse sono taggate per facile identificazione e cleanup (vedi [Tag delle risorse AWS](#-tag-delle-risorse-aws))
   - L'infrastruttura AWS prevede dei costi, si riassume un breve preventivo:
     - Aurora: circa da 2,4 USD/giorno a 72 USD/mese
     - DynamoDB: circa da 0,01 USD/giorno a 1,25 USD/mese
@@ -198,7 +198,7 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
 
 - Note tecniche:
   - Il provisioning è idempotente: esecuzione multipla sicura senza duplicazioni
-  - Tutte le risorse sono taggate per identificazione e gestione costi
+  - Tutte le risorse sono taggate per identificazione e gestione costi (vedi [Tag delle risorse AWS](#-tag-delle-risorse-aws))
   - Service ECS configurato con health check automatici e restart in caso di failure
   - Task definition ottimizzata per Fargate con 1 vCPU e 2GB RAM
   - Networking configurato per accesso pubblico sicuro con Security Groups specifici
@@ -222,6 +222,80 @@ Questa modalità consente di eseguire l'intero stack annotazioni su AWS ECS con 
   | **TOTALE + ALB** | **~4,5 USD** | **~136 USD** | **~5,5 USD** | **~169 USD** |
   | NAT Gateway (per private subnet) | ~1,50 USD (se configurato) | ~45 USD (se configurato) | ~1,50 USD (se configurato) | ~45 USD (se configurato) |
   | **TOTALE + ALB + NAT** | **~6,0 USD** | **~181 USD** | **~7,0 USD** | **~214 USD** |
+
+### 🧱 Esecuzione su AWS EC2 con Terraform
+Stessa infrastruttura della sezione [Esecuzione su AWS EC2](#-esecuzione-su-aws-ec2) (Aurora MySQL, DynamoDB, SQS, ElastiCache Redis, EC2 con Docker) descritta in modo dichiarativo con **Terraform** nella cartella [script/aws-terraform-ec2/](script/aws-terraform-ec2/) (dettagli nel suo [README](script/aws-terraform-ec2/README.md)).
+- ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️ (stessi costi della tabella EC2 qui sopra)
+- Prerequisiti:
+  - Terraform ≥ 1.10 e AWS CLI configurata (`aws configure`); `curl` e `jq` per il test
+  - Bucket S3 per lo state (default `alnao-dev-terraform` in `eu-central-1`), oppure state locale con `TF_STATE_BUCKET=` vuoto
+  - **Lo stack bash di `script/aws-ec2` deve essere spento**: le risorse hanno gli stessi nomi (le tabelle DynamoDB sono fisse nel codice), quindi i due stack non possono coesistere nella stessa region
+- Provisioning, test e rimozione (dalla root del progetto):
+  ```bash
+  ./script/aws-terraform-ec2/start-all.sh                 # terraform init + apply, stampa IP, endpoint e comando SSH
+  ./script/aws-terraform-ec2/test-aws-terraform-ec2.sh    # health, login, export/import SQS, prenotazione (riepilogo con lib-report)
+  ./script/aws-terraform-ec2/stop-all.sh                  # terraform destroy (nessuno snapshot Aurora) e rimozione del .pem
+  ```
+  - Variabili di shell opzionali: `ENVIRONMENT` (`dev` default, `test`, `production`), `DB_PASS` (password Aurora, mai nei file versionati), `AWS_REGION`, `TF_STATE_BUCKET` / `TF_STATE_REGION` / `TF_STATE_KEY` per lo state
+  - Esempio: `ENVIRONMENT=test TF_STATE_BUCKET=mio-bucket ./script/aws-terraform-ec2/start-all.sh`
+- Note tecniche:
+  - Un file per capitolo dello stack (`iam.tf`, `network.tf`, `database.tf`, `dynamodb.tf`, `sqs.tf`, `cache.tf`, `compute.tf`), nell'ordine in cui lo script bash crea le risorse; lo user data della EC2 è lo stesso dello script (`user_data.sh.tftpl`) con `init-mysql.sql` incorporato
+  - Tag: i sei tag standard via `default_tags` del provider con `ManagedBy=Terraform` e `Project=Annotazioni.aws-terraform-ec2` (vedi [Tag delle risorse AWS](#-tag-delle-risorse-aws)); la EC2 porta il marcatore `gestioneannotazioni-terraform-app=true`, diverso da quello dello stack bash, così `script/aws-ec2/stop-all.sh` e `test-aws-ec2.sh` non la vedono
+  - State: backend S3 con configurazione parziale completata da `tf-init.sh` (`use_lockfile`, lock nativo S3, niente DynamoDB); con `TF_STATE_BUCKET=` vuoto viene generato un `backend_override.tf` ignorato da git per lo state locale
+  - Key pair generata da Terraform (`gestioneannotazioni-terraform-key.pem` nella cartella, ignorato da git): la chiave privata sta anche nello state, accettabile per uno stack demo su bucket privato
+  - Verifica senza credenziali: `terraform fmt -check`, `terraform init -backend=false`, `terraform validate` nella cartella
+  - **Non lanciare `script/aws-ec2/stop-all.sh` con lo stack Terraform attivo**: cancellerebbe per nome le risorse condivise fuori dallo state; usare sempre `script/aws-terraform-ec2/stop-all.sh`
+
+### 🧱 Esecuzione su AWS ECS Fargate con Terraform
+Stessa infrastruttura della sezione [Esecuzione su AWS ECS Fargate](#-esecuzione-su-aws-ecs-fargate) descritta con **Terraform** nella cartella [script/aws-terraform-ecs/](script/aws-terraform-ecs/) (dettagli nel suo [README](script/aws-terraform-ecs/README.md)), con in più l'inizializzazione del database eseguita dal wrapper.
+- ⚠️ L'esecuzione di questo profilo on cloud potrebbe causare costi indesiderati ⚠️ (stessi costi della tabella ECS qui sopra)
+- Prerequisiti:
+  - Terraform ≥ 1.10, Docker (build locale dell'immagine, alcuni minuti), AWS CLI configurata, `jq`
+  - Bucket S3 per lo state (default `alnao-dev-terraform` in `eu-central-1`), oppure state locale con `TF_STATE_BUCKET=` vuoto
+  - **Gli stack ECS bash ed EC2 (bash o Terraform) devono essere spenti**: i nomi delle risorse sono identici (le tabelle DynamoDB sono fisse nel codice)
+- Provisioning, test e rimozione (dalla root del progetto):
+  ```bash
+  ./script/aws-terraform-ecs/start-all.sh                 # init, apply mirato ECR+Aurora, docker build/push, init DB via task Fargate, apply completo, IP del task
+  ./script/aws-terraform-ecs/test-aws-terraform-ecs.sh    # endpoint, health, login, transizioni, import SQS, prenotazione (riepilogo con lib-report)
+  ./script/aws-terraform-ecs/stop-all.sh                  # terraform destroy, immagini ECR comprese
+  ```
+  - Variabili di shell opzionali: `ENVIRONMENT`, `DB_PASS`, `AWS_REGION`, `IMAGE_TAG`, `TF_VAR_db_engine_version` (default versione corrente AWS; `5.7.mysql_aurora.2.11.4` per replicare lo script bash), `TF_STATE_*`
+- Note tecniche:
+  - L'apply è in **due passi**: prima repository ECR e task di inizializzazione (che trascina Aurora, security group, ruoli, cluster ECS e log group), poi build/push dell'immagine e `run-task` di `gestioneannotazioni-mysql-init` (immagine `mysql:8.0`, `init-mysql.sql` incorporato dal file locale, rilanciabile), infine l'apply completo con Redis, DynamoDB, SQS, task definition e service: il container non parte mai senza immagine o senza tabelle
+  - Tag: `ManagedBy=Terraform` e `Project=Annotazioni.aws-terraform-ecs` via `default_tags`, i task ereditano i tag del service (vedi [Tag delle risorse AWS](#-tag-delle-risorse-aws))
+  - State: stesso meccanismo dello stack EC2 tramite lo script condiviso `script/aws-tf-init.sh`, chiave `annotazioni/aws-terraform-ecs/terraform.tfstate`
+  - La password di Aurora compare nelle task definition come nello stack bash (voce Roadmap "Gestione password via secret")
+  - **Non lanciare `script/aws-ecs/stop-all.sh` con lo stack Terraform attivo**: cancellerebbe per nome le risorse fuori dallo state
+
+### 🏷️ Tag delle risorse AWS
+Tutte le risorse create dagli script di provisioning (`script/aws-ec2`, `script/aws-ecs`, `script/aws-eks`, `script/sqlite-ec2`) ricevono lo stesso set di sei tag, così da poterle riconoscere in console, filtrarle con la CLI e attribuirne i costi in Cost Explorer. I valori e le funzioni che li producono stanno in un solo file, [script/aws-tags.sh](script/aws-tags.sh), caricato con `source` da ogni script.
+
+| Tag | Valore | Note |
+|-----|--------|------|
+| `Name` | nome proprio della risorsa (es. `gestioneannotazioni-sg`, `annotazioni_storico`, `gestioneannotazioni-aurora-cluster`) | per le risorse senza nome proprio (istanze EC2, volumi, task ECS, load balancer) `gestioneannotazioni-<servizio>`, es. `gestioneannotazioni-ec2`, `gestioneannotazioni-ec2-volume`, `gestioneannotazioni-eks-lb` |
+| `Environment` | `dev` (default), `test` o `production` | dalla variabile di shell `ENVIRONMENT`; un valore diverso ferma lo script prima di creare qualsiasi risorsa |
+| `Project` | `Annotazioni.<cartella>` | `Annotazioni.aws-ec2`, `Annotazioni.aws-ecs`, `Annotazioni.aws-eks`, `Annotazioni.sqlite-ec2` |
+| `Owner` | `AlNao` | fisso |
+| `CostCenter` | `Annotazioni` | fisso |
+| `ManagedBy` | `Sh` | fisso; riservati `Terraform` e `CloudFormation` per quando esisteranno template |
+
+- Per scegliere l'ambiente basta anteporre la variabile al comando:
+  ```bash
+  ENVIRONMENT=test ./script/aws-ec2/start-all.sh
+  ```
+- Le istanze EC2 portano in più il tag marcatore `gestioneannotazioni-app=true` (stack `aws-ec2`) o `gestioneannotazioni-sqlite-ec2-app=true` (stack `sqlite-ec2`): è quello che gli script `stop-all.sh` e di test usano per ritrovarle, non va rimosso.
+- Le risorse condivise fra gli stack ECS ed EKS (stesso Aurora, stesse tabelle DynamoDB, stesse code SQS, stesso ElastiCache e repository ECR) conservano il `Project` dello script che le ha create per primo.
+- I tag vengono applicati alla creazione: una risorsa che esisteva già prima di questa versione degli script mantiene i tag vecchi. Per allinearla basta un ciclo `stop-all.sh` / `start-all.sh` della sua cartella, oppure un tagging manuale dalla console.
+- Per vedere in Cost Explorer i costi per `Project` e `CostCenter` bisogna attivare i due tag come *cost allocation tags* dalla console **Billing → Cost allocation tags** (una volta sola per account; i dati compaiono dopo circa 24 ore).
+- Per verificare i tag di tutto lo stack con la CLI:
+  ```bash
+  aws resourcegroupstaggingapi get-resources --region eu-central-1 \
+    --tag-filters Key=CostCenter,Values=Annotazioni \
+    --query 'ResourceTagMappingList[].[ResourceARN, Tags[?Key==`Name`].Value | [0], Tags[?Key==`Project`].Value | [0]]' --output table
+  ```
+- **Elastic IP**: nessuno script ne alloca (le EC2 usano l'IP pubblico auto-assegnato della VPC di default, che non è un EIP). Se però all'istanza ne viene associato uno da fuori (console o altra automazione), `start-all.sh` di `aws-ec2` e `sqlite-ec2` lo rileva e lo tagga (`Name=gestioneannotazioni-ec2-eip` / `gestioneannotazioni-sqlite-ec2-eip`); `stop-all.sh` non lo rilascia, e un EIP non associato continua a costare: `aws ec2 describe-addresses` per vederli, `aws ec2 release-address --allocation-id eipalloc-…` per liberarli.
+- **SSM managed-instance**: in Tag Editor compare anche `ssm:managed-instance` senza tag per ogni EC2 dello stack. È la registrazione automatica dell'istanza in Systems Manager (SSM Agent preinstallato in Amazon Linux 2), non una risorsa creata dagli script: per le EC2 (`i-…`) l'API SSM non permette di taggarla separatamente (solo i nodi ibridi `mi-…`), non ha costo e sparisce con l'istanza. I tag validi sono quelli dell'istanza EC2.
+- Note per EKS: `eksctl create cluster --tags` propaga i tag agli stack CloudFormation e alle risorse che generano (VPC, nodi); se i nodi risultassero senza tag, si può ripetere con `eksctl create nodegroup --tags`. Il load balancer creato dal `Service` Kubernetes riceve i tag tramite l'annotation `service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags`; se il controller in uso la ignorasse, si aggiungono a mano con `aws elb add-tags --load-balancer-names <nome> --tags ...`.
 
 
 # &lt; AlNao /&gt;

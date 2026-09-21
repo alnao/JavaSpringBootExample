@@ -1,0 +1,18 @@
+# Esempio di terraform.tfvars (il file terraform.tfvars e' ignorato da git).
+# Normalmente NON serve: i wrapper start-all.sh / stop-all.sh passano tutto via
+# variabili di shell (ENVIRONMENT, DB_PASS, AWS_REGION, IMAGE_TAG, TF_STATE_*).
+# Copiarlo in terraform.tfvars solo per lanciare "terraform" a mano.
+
+# region            = "eu-central-1"
+# environment       = "dev"          # dev | test | production
+# db_engine_version = null           # "5.7.mysql_aurora.2.11.4" per replicare lo script bash
+# db_instance_class = "db.t3.medium"
+# db_username       = "gestioneannotazioni_user"
+# db_name           = "gestioneannotazioni"
+# image_tag         = "latest"
+# task_cpu          = "512"
+# task_memory       = "1024"
+# desired_count     = 1
+
+# La password NON va scritta qui in chiaro in un file versionato:
+# usare la variabile di shell TF_VAR_db_password (o DB_PASS con i wrapper).

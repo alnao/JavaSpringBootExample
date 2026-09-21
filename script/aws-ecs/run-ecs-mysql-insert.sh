@@ -11,6 +11,8 @@ export AWS_PAGER=""
 
 # === CONFIGURAZIONE ===
 AWS_REGION="eu-central-1"
+# Tag comuni a tutte le risorse (Name, Environment, Project, Owner, CostCenter, ManagedBy): vedi script/aws-tags.sh
+source "$(dirname "$0")/../aws-tags.sh" aws-ecs
 CLUSTER_NAME="gestioneannotazioni-cluster"
 SECURITY_GROUP_ID="" # Da popolare
 SUBNETS="" # Da popolare
@@ -50,6 +52,7 @@ cat > ./script/aws-ecs/mysql-task-def.json <<EOF
   "memory": "512",
   "taskRoleArn": "$TASK_ROLE_ARN",
   "executionRoleArn": "$EXEC_ROLE_ARN",
+  "tags": $(aws_tags_json $TASK_DEF_NAME),
   "containerDefinitions": [
     {
       "name": "mysql-client",
@@ -79,6 +82,7 @@ TASK_ARN=$(aws ecs run-task \
   --launch-type FARGATE \
   --task-definition $TASK_DEF_NAME:$REVISION \
   --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUP_ID],assignPublicIp=ENABLED}" \
+  --tags "$(aws_tags_json $TASK_DEF_NAME)" \
   --region $AWS_REGION \
   --query 'tasks[0].taskArn' --output text)
 

@@ -10,6 +10,8 @@ set -euo pipefail
 export AWS_PAGER=""
 
 AWS_REGION="eu-central-1"
+# Tag comuni a tutte le risorse (Name, Environment, Project, Owner, CostCenter, ManagedBy): vedi script/aws-tags.sh
+source "$(dirname "$0")/../aws-tags.sh" aws-ecs
 #AMI_ID="ami-0c55b159cbfafe1f0" # Amazon Linux 2, aggiorna se necessario
 AMI_ID=$(aws ec2 describe-images --owners amazon --filters "Name=name,Values=amzn2-ami-hvm-2.0.*-x86_64-gp2" --region $AWS_REGION --query 'Images | sort_by(@, &CreationDate)[-1].ImageId' --output text)
 INSTANCE_TYPE="t3.micro"
@@ -27,7 +29,7 @@ INSTANCE_ID=$(aws ec2 run-instances \
   --subnet-id $SUBNET_ID \
   --security-group-ids $SECURITY_GROUP_ID \
   --region $AWS_REGION \
-  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=gestioneannotazioni-mysql-client}]' \
+  --tag-specifications "$(aws_tags_spec instance gestioneannotazioni-mysql-client)" "$(aws_tags_spec volume gestioneannotazioni-mysql-client-volume)" \
   --query 'Instances[0].InstanceId' --output text)
 
 echo "EC2 avviata: $INSTANCE_ID"

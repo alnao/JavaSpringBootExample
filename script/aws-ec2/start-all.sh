@@ -23,6 +23,8 @@ run_aws_command() {
 }
 
 REGION="eu-central-1"
+# Tag comuni a tutte le risorse (Name, Environment, Project, Owner, CostCenter, ManagedBy): vedi script/aws-tags.sh
+source "$(dirname "$0")/../aws-tags.sh" aws-ec2
 PARAM_KEY_NAME="${KEY_NAME:-gestioneannotazioni-key}"
 DB_INSTANCE_CLASS="${DB_INSTANCE_CLASS:-db.t3.medium}"
 EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-t3.medium}"
@@ -44,14 +46,16 @@ POLICY_ARN3="arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 POLICY_ARN4="arn:aws:iam::aws:policy/AmazonSQSFullAccess"
 
 if ! aws iam get-role --role-name $ROLE_NAME --region $REGION &>/dev/null; then
-  aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}' --region $REGION
+  aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}' --region $REGION \
+    --tags $(aws_tags_kv $ROLE_NAME)
   aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn $POLICY_ARN --region $REGION
   aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn $POLICY_ARN2 --region $REGION
   aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn $POLICY_ARN3 --region $REGION
   aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn $POLICY_ARN4 --region $REGION
 fi
 if ! aws iam get-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME --region $REGION &>/dev/null; then
-  aws iam create-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME --region $REGION
+  aws iam create-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME --region $REGION \
+    --tags $(aws_tags_kv $INSTANCE_PROFILE_NAME)
   sleep 5
   aws iam add-role-to-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME --role-name $ROLE_NAME --region $REGION
 fi
@@ -63,7 +67,7 @@ SG_ID=$(aws ec2 create-security-group --group-name $SG_NAME --description "gesti
   SG_ID=$(aws ec2 describe-security-groups --group-names $SG_NAME --region $REGION --query 'SecurityGroups[0].GroupId' --output text)
 }
 echo "Security Group ID: $SG_ID"
-aws ec2 create-tags --resources $SG_ID --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true --region $REGION
+aws ec2 create-tags --resources $SG_ID --tags $(aws_tags_kv $SG_NAME) Key=$TAG_MARKER_KEY,Value=true --region $REGION
 
 # Apre porte per MySQL (3306), app (8080), adminer (8086), dynamodb-admin (8087)
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 3306 --cidr 0.0.0.0/0 --region $REGION 2>/dev/null || echo "Regola porta 3306 già esistente"
@@ -95,7 +99,7 @@ else
     --master-user-password $DB_PASS \
     --vpc-security-group-ids $SG_ID \
     --region $REGION \
-    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+    --tags $(aws_tags_kv $DB_CLUSTER_ID)
 fi
 
 # Controlla se l'istanza esiste già
@@ -109,7 +113,7 @@ else
     --engine aurora-mysql \
     --db-instance-class $DB_INSTANCE_CLASS \
     --region $REGION \
-    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true \
+    --tags $(aws_tags_kv $DB_INSTANCE_ID) \
     --publicly-accessible
 fi
 
@@ -152,7 +156,7 @@ else
     --key-schema AttributeName=id,KeyType=HASH \
     --billing-mode PAY_PER_REQUEST \
     --region $REGION \
-    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+    --tags $(aws_tags_kv annotazioni)
 fi
 
 # Tabella annotazioni_storico
@@ -166,7 +170,7 @@ else
     --key-schema AttributeName=id,KeyType=HASH \
     --billing-mode PAY_PER_REQUEST \
     --region $REGION \
-    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+    --tags $(aws_tags_kv annotazioni_storico)
 fi
 
 # Tabella annotazioni_storicoStati
@@ -195,7 +199,7 @@ else
     --billing-mode PROVISIONED \
     --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
     --region "$REGION" \
-    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+    --tags $(aws_tags_kv annotazioni_storicoStati)
 fi
 
 
@@ -216,7 +220,7 @@ if [ -n "$SQS_EXPORT_QUEUE_URL" ] && [ "$SQS_EXPORT_QUEUE_URL" != "None" ]; then
   echo "Aggiunta tag alla coda SQS..."
   aws sqs tag-queue \
     --queue-url "$SQS_EXPORT_QUEUE_URL" \
-    --tags "Name=gestioneannotazioni-app,gestioneannotazioni-app=true" \
+    --tags "$(aws_tags_map $SQS_EXPORT_QUEUE_NAME)" \
     --region $REGION 2>/dev/null || echo "Errore nell'aggiunta tag SQS (ignorato)"
 fi
 echo "SQS Queue URL: $SQS_EXPORT_QUEUE_URL"
@@ -237,7 +241,7 @@ SQS_IMPORT_QUEUE_URL=$(aws sqs create-queue \
 if [ -n "$SQS_IMPORT_QUEUE_URL" ] && [ "$SQS_IMPORT_QUEUE_URL" != "None" ]; then
   aws sqs tag-queue \
     --queue-url "$SQS_IMPORT_QUEUE_URL" \
-    --tags "Name=gestioneannotazioni-app,gestioneannotazioni-app=true" \
+    --tags "$(aws_tags_map $SQS_IMPORT_QUEUE_NAME)" \
     --region $REGION 2>/dev/null || echo "Errore nell'aggiunta tag SQS import (ignorato)"
 fi
 echo "SQS Import Queue URL: $SQS_IMPORT_QUEUE_URL richiesto per creare il cluster"
@@ -255,7 +259,7 @@ else
     --cache-subnet-group-description "Subnet group for gestioneannotazioni Redis" \
     --subnet-ids $SUBNET_IDS \
     --region $REGION \
-    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+    --tags $(aws_tags_kv $CACHE_SUBNET_GROUP_NAME)
 fi
 
 # Crea ElastiCache Redis cluster
@@ -273,7 +277,7 @@ else
     --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME \
     --security-group-ids $SG_ID \
     --region $REGION \
-    --tags Key=Name,Value=gestioneannotazioni-app Key=gestioneannotazioni-app,Value=true
+    --tags $(aws_tags_kv $REDIS_CLUSTER_ID)
 fi
 
 # Aggiungi regola porta Redis (6379) al security group
@@ -300,7 +304,7 @@ REDIS_PORT=$(aws elasticache describe-cache-clusters \
 echo "Redis endpoint: $REDIS_ENDPOINT:$REDIS_PORT"
 
 # 4. Crea key pair parametrica
-aws ec2 create-key-pair --key-name $PARAM_KEY_NAME --region $REGION --query 'KeyMaterial' --output text > $PARAM_KEY_NAME.pem 2>/dev/null || {
+aws ec2 create-key-pair --key-name $PARAM_KEY_NAME --region $REGION --tag-specifications "$(aws_tags_spec key-pair $PARAM_KEY_NAME)" --query 'KeyMaterial' --output text > $PARAM_KEY_NAME.pem 2>/dev/null || {
   echo "Key pair $PARAM_KEY_NAME già esistente su AWS"
   if [ ! -f "$PARAM_KEY_NAME.pem" ]; then
     echo "ERRORE: File della chiave privata $PARAM_KEY_NAME.pem non trovato localmente. Non posso procedere senza la chiave privata."
@@ -417,7 +421,7 @@ else
     --region $REGION \
     --user-data $USER_DATA \
     --iam-instance-profile Name=$INSTANCE_PROFILE_NAME \
-    --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=gestioneannotazioni-app},{Key=gestioneannotazioni-app,Value=true}]' \
+    --tag-specifications "$(aws_tags_spec instance gestioneannotazioni-ec2 $TAG_MARKER_KEY)" "$(aws_tags_spec volume gestioneannotazioni-ec2-volume)" \
     --query 'Instances[0].InstanceId' --output text)
   
   # Attendi che EC2 sia running
@@ -425,6 +429,9 @@ else
 fi
 PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --region $REGION --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
 
+echo ""
+echo "Tutte le risorse sono taggate (Project=$TAG_PROJECT, Environment=$TAG_ENVIRONMENT, CostCenter=$TAG_COSTCENTER); le EC2 anche con '$TAG_MARKER_KEY=true' per il cleanup."
+echo ""
 echo "Stack avviato! EC2 IP: $PUBLIC_IP"
 echo "Aurora MySQL: $AURORA_ENDPOINT"
 echo "ElastiCache Redis: $REDIS_ENDPOINT:$REDIS_PORT"
@@ -435,8 +442,7 @@ echo "Applicazione disponibile su: http://$PUBLIC_IP:8080"
 echo ""
 echo "Per collegarsi via SSH:"
 echo "ssh -i $PARAM_KEY_NAME.pem ec2-user@$PUBLIC_IP"
-echo ""
-echo "Tutte le risorse sono taggate con 'gestioneannotazioni-app' per facile identificazione e cleanup."
+
 
 # Vecchia versione con copia file SQL via SCP e SSH per esecuzione sostituito dallo script in user_data
 # Copia il file init-mysql.sql sulla EC2

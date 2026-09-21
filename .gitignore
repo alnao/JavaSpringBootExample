@@ -66,6 +66,16 @@ cni-plugins-linux-amd64-*
 **/dynamodb_data
 **/localstack_data
 
+# terraform (script/aws-terraform-ec2): provider scaricati, state, override del backend, variabili con password
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tflock
+*_override.tf
+backend.hcl
+*.tfvars
+!*.tfvars.example
+
 # node e open-spec
 node_modules/
 package.json

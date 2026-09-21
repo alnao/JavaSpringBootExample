@@ -96,18 +96,23 @@ Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: c
   - ✅ 📖 Capability specificate: `annotazioni-stati` e `annotazioni-lock`
   - ✅ 🛠️ Avvio interrotto se `cambiamentoStati.yaml` non è caricabile, al posto del ripiego silenzioso che faceva rifiutare ogni cambio di stato con 403 (change `fallback-transizioni-stato`)
   - ✅ 🔓 Rimozione del lock duplicato in `adapter-mongodb`, che rilascia la prenotazione dell'utente dopo un salvataggio solo sul profilo kube (change `lock-modifica-solo-nel-core`)
+- ✅ ☁️ Gestione tag e script terraform su AWS
+  - ✅ 🏷️ Tag standard su tutte le risorse create on cloud-aws `script/aws-tags.sh` (change openspec `tag-risorse-aws`)
+  - ✅ 🛠️ Test manuale versione Ec2, Ecs, sqlite-ec2
+  - ✅ 📜 Script terraform per lo stack EC2 `script/aws-terraform-ec2` (change openspec`terraform-aws-ec2`)
+  - ✅ 📜 Script terraform per lo stack ECS Fargate `script/aws-terraform-ecs` (change openspec `terraform-aws-ecs`)
 - 🚧 🛡️ Gestione password via secret
   - 🚧 🔒 Gestione password tramite secret di Kubernetes nel profilo Kube
-  - 🚧 🔒 Gestione password tramite AWS Secret manager nel profilo aws
+  - 🚧 🔒 Gestione password tramite AWS Secret manager nel profilo aws con rotazione
   - 🚧 🔒 Gestione password tramite Azure key vault nel profilo azure
   - 🚧 🔒 Gestione password tramite File statici o qualcosa docker nel profilo sqlite
-- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.0.2  
+- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.2.0  
   - 🚧 ⚙️ Sviluppo template e script per AWS-EKS (script/aws-eks)
-  - 🚧 🎯 Test con profilo sqlite
-  - 🚧 🎯 Test con profilo kube
-  - 🚧 🤖 Test con profilo AWS
-  - 🚧 🤖 Test con profilo Azure
-  - 🚧 📡 Rilascio immagine 0.0.2 su DockerHub
+  - 🚧 🎯 Test con profilo sqlite in locale e su Ec2
+  - 🚧 🎯 Test con profilo kube in locale e su EKS (da sviluppare?)
+  - 🚧 🤖 Test con profilo AWS in locale, su Ec2, Ecs, terraform Ec2 e Terraform eecs
+  - 🚧 🤖 Test con profilo Azure in locale magari ora funziona e poi su cloud!
+  - 🚧 📡 Rilascio immagine 0.2.0 su DockerHub con tag!
 - 🚧 🤖 Robot test
   - 🚧 🤖 Creare suite robot-test base
   - 🚧 🤖 Script per esecuzione in locale
@@ -119,7 +124,7 @@ Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: c
     - 🚧 👥 Social Reminders: Notifiche quando qualcuno interagisce con annotazioni modificate
   - 🚧 🧭 Sistema che gestisce la scadenza di una annotazione con spring-batch che elabora tutte le annotazioni rifiutate o scadute, con nuovo stato scadute.
   - 🚧 🔐 OAuth2/OIDC Provider: Integrazione con provider esterni (Google, Microsoft, GitHub) + SSO enterprise
-- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.0.3
+- 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.3.0
 - 🚧 ☸️ Esecuzione su Cloud in infrastruttura Kubernetes
   - 🚧 🤖 Deploy su AWS su EKS del profilo Kube
   - 🚧 📦 Deploy su Azure con Azure Container Apps (ACA non è Kubernetes *ma quasi*)
