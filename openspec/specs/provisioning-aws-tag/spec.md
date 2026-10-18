@@ -80,6 +80,18 @@ Kubernetes.
 - **AND** `ManagedBy` vale `Terraform` e `Project` vale
   `Annotazioni.aws-terraform-ec2`
 
+#### Scenario: Stack ECS Fargate via Terraform
+
+- **WHEN** viene applicata la configurazione Terraform in
+  `script/aws-terraform-ecs` su un account privo delle risorse
+- **THEN** repository ECR, i due ruoli IAM, security group, cluster e istanza
+  Aurora, tabelle DynamoDB, code SQS, subnet group e cluster ElastiCache,
+  cluster ECS, log group CloudWatch, le due task definition e il service ECS
+  riportano tutti e sei i tag
+- **AND** i task Fargate avviati dal service ereditano gli stessi tag
+- **AND** `ManagedBy` vale `Terraform` e `Project` vale
+  `Annotazioni.aws-terraform-ecs`
+
 ### Requirement: Valore del tag Name
 
 Il tag `Name` SHALL valere il nome proprio della risorsa quando la risorsa ne
