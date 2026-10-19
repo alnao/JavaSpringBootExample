@@ -59,18 +59,44 @@ sudo docker run --rm -v sqlite-data:/data busybox sh -c 'chmod 777 /data'
 # Crea file vuoto database.sqlite nel volume condiviso
 sudo docker run --rm -v sqlite-data:/data busybox sh -c 'touch /data/database.sqlite && chmod 666 /data/database.sqlite'
 
-# Avvio container Spring Boot con volume condiviso e rete
-sudo docker run -d --name gestioneannotazioni \
-  --network sqlite-net \
-  -p 8082:8082 \
-  -e SPRING_PROFILES_ACTIVE=sqlite \
-  -e SERVER_PORT=8082 \
-  -e SPRING_DATASOURCE_URL=jdbc:sqlite:/data/database.sqlite \
-  -e APP_CREATE_USERS_ENABLED=true \
-  -v sqlite-data:/data \
-  alnao/gestioneannotazioni:latest
+# Credenziali dell'applicazione (change openspec secret-sqlite): generate qui sull'istanza, leggibili
+# solo da root, mai stampate (l'output dello user-data finisce in /var/log/cloud-init-output.log).
+# Il file non viene rigenerato se esiste gia': lo aggiorna solo rotate-secret.sh.
+CONF_DIR="${CONF_DIR:-/etc/gestioneannotazioni}"
+umask 077
+sudo mkdir -p "$CONF_DIR"
+if [ ! -f "$CONF_DIR/app.env" ]; then
+  {
+    echo "JWT_SECRET=$(openssl rand -base64 64 | tr -d '\n')"
+    echo "APP_USER_ADMIN_PASSWORD=$(openssl rand -base64 18)"
+    echo "APP_USER_MODERATORE_PASSWORD=$(openssl rand -base64 18)"
+    echo "APP_USER_ALNAO_PASSWORD=$(openssl rand -base64 18)"
+  } | sudo tee "$CONF_DIR/app.env" > /dev/null
+  sudo chmod 600 "$CONF_DIR/app.env"
+fi
 
-echo "Container avviato: gestioneannotazioni (http://$PUBLIC_IP:8082)"
+# Unico punto con i parametri del container: lo usano questo avvio e rotate-secret.sh per ricrearlo
+# (le variabili d'ambiente di un container si fissano alla creazione, un docker restart non basta)
+sudo tee "$CONF_DIR/run-app.sh" > /dev/null <<RUNAPP
+#!/bin/bash
+docker rm -f gestioneannotazioni > /dev/null 2>&1 || true
+docker run -d --name gestioneannotazioni \\
+  --network sqlite-net \\
+  -p 8082:8082 \\
+  --env-file $CONF_DIR/app.env \\
+  -e SPRING_PROFILES_ACTIVE=sqlite \\
+  -e SERVER_PORT=8082 \\
+  -e SPRING_DATASOURCE_URL=jdbc:sqlite:/data/database.sqlite \\
+  -e APP_CREATE_USERS_ENABLED=true \\
+  -v sqlite-data:/data \\
+  alnao/gestioneannotazioni:latest
+RUNAPP
+sudo chmod 700 "$CONF_DIR/run-app.sh"
+
+# Avvio container Spring Boot con volume condiviso, rete e file di credenziali
+sudo "$CONF_DIR/run-app.sh"
+
+echo "Container avviato: gestioneannotazioni (porta 8082)"
 
 EOF
 )
@@ -83,12 +109,26 @@ INSTANCE_ID=$(aws ec2 run-instances \
   --security-group-ids $SG_ID \
   --region $REGION \
   --user-data "$USER_DATA" \
-  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=gestioneannotazioni-sqlite-ec2-app},{Key=gestioneannotazioni-sqlite-ec2-app,Value=true}]' \
+  --tag-specifications "$(aws_tags_spec instance gestioneannotazioni-sqlite-ec2 $TAG_MARKER_KEY)" "$(aws_tags_spec volume gestioneannotazioni-sqlite-ec2-volume)" \
   --query 'Instances[0].InstanceId' --output text)
 
 aws ec2 wait instance-running --instance-ids $INSTANCE_ID --region $REGION
+
+# Elastic IP: lo script non ne alloca; se uno e' gia' associato all'istanza (console o altra
+# automazione) riceve i tag standard. Best effort: un errore di tagging non ferma lo script.
+EIP_ALLOC_ID=$(aws ec2 describe-addresses --filters Name=instance-id,Values=$INSTANCE_ID --region $REGION --query 'Addresses[0].AllocationId' --output text 2>/dev/null || true)
+if [ -n "$EIP_ALLOC_ID" ] && [ "$EIP_ALLOC_ID" != "None" ]; then
+  aws ec2 create-tags --resources $EIP_ALLOC_ID --tags $(aws_tags_kv gestioneannotazioni-sqlite-ec2-eip) --region $REGION \
+    || echo "Avviso: tag dell'Elastic IP $EIP_ALLOC_ID non applicati"
+fi
+
 PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --region $REGION --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
 
 echo "Stack avviato! EC2 IP: $PUBLIC_IP"
 echo "Gestione annotazioni SQLite disponibile su http://$PUBLIC_IP:8082"
 echo "Per accedere via SSH: ssh -i $PARAM_KEY_NAME.pem ec2-user@$PUBLIC_IP"
+echo ""
+echo "Credenziali (generate sull'istanza al primo avvio, mai trasmesse da qui):"
+echo "  ssh -i $PARAM_KEY_NAME.pem ec2-user@$PUBLIC_IP sudo cat /etc/gestioneannotazioni/app.env"
+echo "  utente admin = APP_USER_ADMIN_PASSWORD; l'app e' pronta qualche minuto dopo l'avvio dell'istanza"
+echo "Rotazione della chiave JWT: ./script/sqlite-ec2/rotate-secret.sh JWT_SECRET (dalla root del progetto)"

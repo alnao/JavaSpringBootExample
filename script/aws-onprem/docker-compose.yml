@@ -204,6 +204,8 @@ services:
       DYNAMO_ENDPOINT: http://dynamodb:8000
     volumes:
       - ../init-database/init-dynamodb.sh:/init-database/init-dynamodb.sh:ro
+      # funzioni dei tag standard usate da init-dynamodb.sh (/init-database/../aws-tags.sh)
+      - ../aws-tags.sh:/aws-tags.sh:ro
     depends_on:
       - dynamodb
     networks:

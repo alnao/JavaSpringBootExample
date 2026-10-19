@@ -12,6 +12,14 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 echo "📁 Directory progetto: $PROJECT_ROOT"
 echo "📁 Directory script: $SCRIPT_DIR"
 
+# Le credenziali arrivano dal file .env non versionato (change openspec secret-sqlite)
+if [ ! -f "$SCRIPT_DIR/.env" ]; then
+    echo "❌ File $SCRIPT_DIR/.env non trovato: contiene le credenziali dell'applicazione."
+    echo "   Crealo dall'esempio e sostituisci tutti i valori:"
+    echo "   cp $SCRIPT_DIR/.env.example $SCRIPT_DIR/.env"
+    exit 1
+fi
+
 # Vai alla directory root del progetto
 cd "$PROJECT_ROOT"
 
@@ -83,6 +91,12 @@ echo "   📊 Stato:     docker-compose ps"
 echo "   📜 Log:       docker-compose logs -f"
 echo "   🛑 Stop:      docker-compose down"
 echo "   🧹 Cleanup:   docker-compose down -v"
+echo ""
+echo "🔐 Credenziali:"
+echo "   Le password degli utenti sono quelle del file .env (admin = APP_USER_ADMIN_PASSWORD)."
+echo "   Valgono solo per un database vuoto: con il volume sqlite-data gia' popolato restano le"
+echo "   password precedenti. Per applicare quelle del .env: docker-compose down -v e riavvio."
+echo "   Rotazione della chiave JWT: ./rotate-secret.sh JWT_SECRET"
 echo ""
 echo "🔍 Test delle API:"
 echo "   curl http://localhost:8082/actuator/health"

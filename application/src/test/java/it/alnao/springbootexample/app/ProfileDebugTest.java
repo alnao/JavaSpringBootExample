@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 
 @SpringBootTest
-@ActiveProfiles("sqlite")
+@ActiveProfiles({"sqlite", "dev"}) // dev: credenziali fisse per l'uso locale (change openspec secret-sqlite)
 public class ProfileDebugTest {
     Logger logger = Logger.getLogger(ProfileDebugTest.class.getName());
     

@@ -36,3 +36,12 @@ gestione-annotazioni:
   export-annotazioni:
     enabled: false
 #    cron-expression: "0 */5 * * * *"   # ogni 5 minuti per test rapidi
+
+# Credenziali fisse per l'uso in locale (change openspec secret-sqlite).
+# ATTENZIONE: valori PUBBLICI, versionati di proposito. Il profilo dev non va mai attivato in un
+# deploy: i deploy forniscono le stesse variabili d'ambiente da una sorgente non versionata, e una
+# variabile d'ambiente impostata prevale sempre su questi valori.
+JWT_SECRET: myVeryLongSecretKeyForHS512ThatMustBeAtLeast512BitsLongToWorkProperly1234567890abcdefghijklmnopqrstuvwxyz
+APP_USER_ADMIN_PASSWORD: admin
+APP_USER_MODERATORE_PASSWORD: cattivo
+APP_USER_ALNAO_PASSWORD: bellissimo

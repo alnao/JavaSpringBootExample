@@ -12,6 +12,9 @@ services:
       - "8082:8080"
     volumes:
       - sqlite-data:/app/data
+    # Credenziali (JWT_SECRET, APP_USER_*_PASSWORD) dal file .env non versionato: vedi .env.example
+    env_file:
+      - .env
     environment:
       - SPRING_PROFILES_ACTIVE=sqlite
       - SQLITE_DATABASE_URL=jdbc:sqlite:/app/data/database.sqlite

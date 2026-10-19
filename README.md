@@ -140,11 +140,28 @@ Gli sviluppi sono governati con [OpenSpec](https://github.com/Fission-AI/OpenSpe
     ```
     mvn clean package
     java -jar application/target/application-*.jar \
-      --spring.profiles.active=sqlite \
+      --spring.profiles.active=sqlite,dev \
       --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
       --server.port=8082
     ```
     - il sistema è disponibile all'indirizzo `localhost:8082`
+    - il profilo `dev` fornisce credenziali fisse e **pubbliche** per l'uso in locale (utenti `admin/admin`, `moderatore/cattivo`, `alnao/bellissimo` e un `JWT_SECRET` noto): non va mai attivato in un deploy, e `test-sqlite-onprem.sh` controlla che nessuno script lo faccia
+    - senza `dev` le credenziali vanno passate come variabili d'ambiente: `JWT_SECRET` e `APP_USER_ADMIN_PASSWORD`, `APP_USER_MODERATORE_PASSWORD`, `APP_USER_ALNAO_PASSWORD`; se una password manca l'applicazione non parte e il log indica la variabile mancante (con `APP_CREATE_USERS_ENABLED=false` le password non servono)
+    - le password degli utenti valgono solo quando gli utenti vengono creati, cioè su un database vuoto: cambiarle dopo non modifica gli utenti già presenti
+  - Esecuzione profilo SQLite con docker-compose (`script/sqlite-locale`): le credenziali stanno nel file `.env`, non versionato
+    ```bash
+    cd script/sqlite-locale
+    cp .env.example .env          # poi sostituire TUTTI i valori, JWT_SECRET con: openssl rand -base64 64 | tr -d '\n'
+    ./start-all.sh                # si ferma se .env non esiste
+    ./rotate-secret.sh JWT_SECRET # rotazione della chiave JWT: i token emessi prima vengono rifiutati, serve un nuovo login
+    docker-compose down -v        # necessario per applicare password utente nuove su un volume gia' popolato
+    ```
+  - Esecuzione profilo SQLite su AWS EC2 (`script/sqlite-ec2`, genera costi): lo user-data genera sull'istanza il file `/etc/gestioneannotazioni/app.env` con valori casuali, leggibile solo da root; le credenziali non escono dall'istanza
+    ```bash
+    ./script/sqlite-ec2/start-all.sh                  # dalla root del progetto, stampa il comando ssh per leggere app.env
+    ./script/sqlite-ec2/rotate-secret.sh JWT_SECRET   # genera il nuovo valore sull'istanza e ricrea il container
+    ```
+    - l'istanza usa l'immagine `alnao/gestioneannotazioni:latest` di Docker Hub: le variabili delle password valgono solo con un'immagine che include la change openspec `secret-sqlite`
 - Esecuzione profilo On-Premise con il docker-compose che avvia anche i servizi DBMS
   - Comando per la creazione di tutti i demoni/server con docker compose:
     ```bash

@@ -37,12 +37,31 @@ chmod 666 /tmp/database.sqlite
 # Assicurati che la directory /tmp sia scrivibile
 chmod 777 /tmp 2>/dev/null || true
 
+# Controllo statico (change openspec secret-sqlite): il profilo dev contiene credenziali pubbliche,
+# quindi nessuno script di deploy deve attivarlo. Solo i test in script/automatic-test possono farlo.
+cerca_attivazioni_dev() {
+    grep -rIlE --exclude-dir=automatic-test \
+        "(SPRING_PROFILES_ACTIVE|spring\.profiles\.active|spring-boot\.run\.profiles)[\"']?[[:space:]]*[=:][[:space:]]*[\"']?[A-Za-z0-9_,-]*\bdev\b" \
+        "$@" 2>/dev/null
+}
+FILE_CON_DEV=$(cerca_attivazioni_dev script Dockerfile docker-compose*.yml)
+if [ -n "$FILE_CON_DEV" ]; then
+    test_ko "Nessuno script di deploy attiva il profilo dev"
+    echo "   File che attivano il profilo dev:"
+    echo "$FILE_CON_DEV" | sed 's/^/   - /'
+else
+    test_ok "Nessuno script di deploy attiva il profilo dev"
+fi
+
 echo "Esecuzione test con profilo 'sqlite'..."
 mvn clean package -DskipTests
 
-# Avvia l'applicazione in background e salva il PID
+# Avvia l'applicazione in background e salva il PID.
+# Profilo dev: fornisce le credenziali fisse usate dai test (admin/admin, alnao/bellissimo, JWT_SECRET).
+# dev disattiva l'export, che questo test verifica: lo si riattiva da riga di comando (precedenza massima).
 java -jar application/target/application-*.jar \
-    --spring.profiles.active=sqlite \
+    --spring.profiles.active=sqlite,dev \
+    --gestione-annotazioni.export-annotazioni.enabled=true \
     --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
     --server.port=8082 \
     > /tmp/app-sqlite.log 2>&1 &

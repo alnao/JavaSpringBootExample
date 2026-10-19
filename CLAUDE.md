@@ -9,6 +9,7 @@ Note importanti che NON DEVI MAI disobbedire:
 - sei autorizzato a fare operazioni su docker locale come le pull ma MAI fare push delle immagini
 - per ogni modifica che ti viene chiesta, usa openspec come framework prima delle modifiche
 
+- non sei mai autorizzato a lanciare comandi `openspec` e `/opsx:` senza autorizzazione. Devi chiedere prima di eeguirli mostrando cosa vuoi lanciare, l'autorizzazione è solo per un comando alla volta, non esiste il "eseguili tutti assieme". Salva tutti questi comandi anche in un file .openspec-command.log
 
 ## Il progetto in tre righe
 

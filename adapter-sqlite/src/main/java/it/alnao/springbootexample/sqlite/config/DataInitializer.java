@@ -6,6 +6,7 @@ import it.alnao.springbootexample.core.domain.auth.AccountType;
 import it.alnao.springbootexample.core.repository.auth.UserRepository;
 import it.alnao.springbootexample.sqlite.service.AnnotazioneServiceSQLiteImpl;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -13,6 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Component
@@ -31,6 +34,30 @@ public class DataInitializer implements ApplicationRunner {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.properties = properties;
+    }
+
+    /**
+     * Controllo eseguito durante l'avvio del contesto, prima che il web server si metta in ascolto:
+     * con la creazione utenti attiva ogni utente iniziale deve avere una password, fornita dalla
+     * variabile d'ambiente APP_USER_<USERNAME>_PASSWORD. Il messaggio riporta solo i nomi delle variabili.
+     */
+    @PostConstruct
+    public void verificaCredenziali() {
+        if (!properties.getUsers().isEnabled()) {
+            return;
+        }
+        List<String> variabiliMancanti = properties.getUsers().getDefaultUsers().stream()
+                .filter(userConfig -> userConfig.getPassword() == null || userConfig.getPassword().isBlank())
+                .map(userConfig -> nomeVariabilePassword(userConfig.getUsername()))
+                .toList();
+        if (!variabiliMancanti.isEmpty()) {
+            throw new IllegalStateException("Credenziale mancante: " + String.join(", ", variabiliMancanti));
+        }
+    }
+
+    static String nomeVariabilePassword(String username) {
+        String nome = username == null ? "" : username.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "_");
+        return "APP_USER_" + nome + "_PASSWORD";
     }
 
     @Override

@@ -108,6 +108,71 @@ class DataInitializerTest {
     }
 
     @Test
+    void verificaCredenziali_passwordMancante_interrompeConIlNomeDellaVariabile() {
+        DataInitializerProperties.UserConfig moderatore = userConfig("moderatore", "MODERATOR");
+        moderatore.setPassword("");
+        DataInitializerProperties.UserConfig alnao = userConfig("alnao", "USER");
+        alnao.setPassword(null);
+        DataInitializerProperties.UserConfig admin = userConfig("admin", "ADMIN");
+        admin.setPassword("Altra-456");
+        properties.getUsers().setEnabled(true);
+        properties.getUsers().setDefaultUsers(List.of(admin, moderatore, alnao));
+
+        IllegalStateException e = assertThrows(IllegalStateException.class, initializer::verificaCredenziali);
+
+        assertTrue(e.getMessage().contains("APP_USER_MODERATORE_PASSWORD"));
+        assertTrue(e.getMessage().contains("APP_USER_ALNAO_PASSWORD"));
+        assertFalse(e.getMessage().contains("APP_USER_ADMIN_PASSWORD"));
+        assertFalse(e.getMessage().contains("Altra-456"));
+    }
+
+    @Test
+    void verificaCredenziali_passwordSoloSpazi_eConsiderataMancante() {
+        DataInitializerProperties.UserConfig admin = userConfig("admin", "ADMIN");
+        admin.setPassword("   ");
+        properties.getUsers().setEnabled(true);
+        properties.getUsers().setDefaultUsers(List.of(admin));
+
+        IllegalStateException e = assertThrows(IllegalStateException.class, initializer::verificaCredenziali);
+        assertTrue(e.getMessage().contains("APP_USER_ADMIN_PASSWORD"));
+    }
+
+    @Test
+    void verificaCredenziali_creazioneDisattivata_nessunControlloENessunUtente() throws Exception {
+        DataInitializerProperties.UserConfig admin = userConfig("admin", "ADMIN");
+        admin.setPassword("");
+        properties.getUsers().setEnabled(false);
+        properties.getUsers().setDefaultUsers(List.of(admin));
+
+        assertDoesNotThrow(initializer::verificaCredenziali);
+        initializer.run(applicationArguments);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void verificaCredenziali_tuttePresenti_nessunErrore() {
+        properties.getUsers().setEnabled(true);
+        properties.getUsers().setDefaultUsers(List.of(userConfig("admin", "ADMIN"), userConfig("alnao", "USER")));
+
+        assertDoesNotThrow(initializer::verificaCredenziali);
+    }
+
+    @Test
+    void verificaCredenziali_listaVuota_nessunErrore() {
+        properties.getUsers().setEnabled(true);
+        properties.getUsers().setDefaultUsers(List.of());
+
+        assertDoesNotThrow(initializer::verificaCredenziali);
+    }
+
+    @Test
+    void nomeVariabilePassword_maiuscoloECaratteriNonAlfanumericiSostituiti() {
+        assertEquals("APP_USER_MODERATORE_PASSWORD", DataInitializer.nomeVariabilePassword("moderatore"));
+        assertEquals("APP_USER_MARIO_ROSSI_PASSWORD", DataInitializer.nomeVariabilePassword("mario.rossi"));
+        assertEquals("APP_USER__PASSWORD", DataInitializer.nomeVariabilePassword(null));
+    }
+
+    @Test
     void run_withEmptyUserList_savesNothing() throws Exception {
         properties.getUsers().setEnabled(true);
         properties.getUsers().setDefaultUsers(List.of());

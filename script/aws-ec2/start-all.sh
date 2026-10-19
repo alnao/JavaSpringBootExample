@@ -427,6 +427,15 @@ else
   # Attendi che EC2 sia running
   aws ec2 wait instance-running --instance-ids $INSTANCE_ID --region $REGION
 fi
+
+# Elastic IP: lo script non ne alloca; se uno e' gia' associato all'istanza (console o altra
+# automazione) riceve i tag standard. Best effort: un errore di tagging non ferma lo script.
+EIP_ALLOC_ID=$(aws ec2 describe-addresses --filters Name=instance-id,Values=$INSTANCE_ID --region $REGION --query 'Addresses[0].AllocationId' --output text 2>/dev/null || true)
+if [ -n "$EIP_ALLOC_ID" ] && [ "$EIP_ALLOC_ID" != "None" ]; then
+  aws ec2 create-tags --resources $EIP_ALLOC_ID --tags $(aws_tags_kv gestioneannotazioni-ec2-eip) --region $REGION \
+    || echo "Avviso: tag dell'Elastic IP $EIP_ALLOC_ID non applicati"
+fi
+
 PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --region $REGION --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
 
 echo ""

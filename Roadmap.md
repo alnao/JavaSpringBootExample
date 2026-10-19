@@ -101,11 +101,12 @@ Progetto realizzato da `< AlNao />` come esempio pratico con Java Spring Boot: c
   - ✅ 🛠️ Test manuale versione Ec2, Ecs, sqlite-ec2
   - ✅ 📜 Script terraform per lo stack EC2 `script/aws-terraform-ec2` (change openspec`terraform-aws-ec2`)
   - ✅ 📜 Script terraform per lo stack ECS Fargate `script/aws-terraform-ecs` (change openspec `terraform-aws-ecs`)
-- 🚧 🛡️ Gestione password via secret
-  - 🚧 🔒 Gestione password tramite secret di Kubernetes nel profilo Kube
-  - 🚧 🔒 Gestione password tramite AWS Secret manager nel profilo aws con rotazione
-  - 🚧 🔒 Gestione password tramite Azure key vault nel profilo azure
-  - 🚧 🔒 Gestione password tramite File statici o qualcosa docker nel profilo sqlite
+- 🚧 🛡️ Gestione password allo start-up via secret 
+  - ✅ 🔒 Gestione password all'avvio nel profilo sqlite
+  - 🚧 🔒 Gestione password tramite secret di Kubernetes nel profilo Kube con rotazione tramite script
+  - 🚧 🔒 Gestione password tramite AWS Secret manager nel profilo aws con rotazione tramite script
+  - 🚧 🔒 Gestione password tramite Azure key vault nel profilo azure con rotazione tramite script
+  - 🚧 🔑 Completare il flusso dei refresh token: il login non li emette e `/api/auth/refresh` non restituisce un nuovo access token, quindi dopo una rotazione di `JWT_SECRET` serve un nuovo login (emerso nella change openspec `secret-sqlite`)
 - 🚧 🏁 Test finale di tutti i punti precedenti e tag della versione 0.2.0  
   - 🚧 ⚙️ Sviluppo template e script per AWS-EKS (script/aws-eks)
   - 🚧 🎯 Test con profilo sqlite in locale e su Ec2

@@ -57,6 +57,9 @@ logging:
     '[org.hibernate.SQL]': DEBUG
 
 # Configurazione utenti di default per SQLite
+# Le password arrivano da variabili d'ambiente (file .env, file di credenziali su EC2) o, solo in
+# locale, dal profilo dev. Il default vuoto e' voluto: con la creazione utenti attiva una password
+# vuota interrompe l'avvio indicando la variabile mancante (change openspec secret-sqlite).
 app:
   init:
     users:
@@ -64,15 +67,15 @@ app:
       default-users:
         - username: admin
           email: admin@example.com
-          password: admin
+          password: ${APP_USER_ADMIN_PASSWORD:}
           role: ADMIN
         - username: moderatore
           email: moderatore@example.com
-          password: cattivo
+          password: ${APP_USER_MODERATORE_PASSWORD:}
           role: MODERATOR
         - username: alnao
           email: alnao@example.com
-          password: bellissimo
+          password: ${APP_USER_ALNAO_PASSWORD:}
           role: USER
 
 # Configurazione export annotazioni via tabella locale

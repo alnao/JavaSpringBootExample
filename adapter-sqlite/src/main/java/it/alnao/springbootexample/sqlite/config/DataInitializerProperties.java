@@ -92,7 +92,7 @@ public class DataInitializerProperties {
             return "UserConfig{" +
                     "username='" + username + '\'' +
                     ", email='" + email + '\'' +
-                    ", password='" + password + '\'' +
+                    ", password='****'" +
                     ", role='" + role + '\'' +
                     '}';
         }

@@ -48,6 +48,9 @@ esegui_profilo() {
     echo -e "${BLUE}========================================${NC}"
 }
 
+# Controllo statico dei tag AWS negli script sh: nessuna chiamata AWS, nessun container
+esegui_profilo "Controllo statico tag AWS negli script" ./script/automatic-test/test-tag-aws-script.sh
+
 # Profilo `kube` eseguito in locale con docker compose
 esegui_profilo "Profilo kube con docker-compose" ./script/automatic-test/test-kube-onprem-docker-compose.sh
 

@@ -55,6 +55,28 @@ class DataInitializerPropertiesTest {
     }
 
     @Test
+    void userConfig_toStringMascheraLaPassword() {
+        DataInitializerProperties.UserConfig config = new DataInitializerProperties.UserConfig();
+        config.setUsername("mario");
+        config.setPassword("Segreta-123");
+        String text = config.toString();
+        assertFalse(text.contains("Segreta-123"));
+        assertTrue(text.contains("****"));
+    }
+
+    @Test
+    void users_toStringNonContieneLePassword() {
+        DataInitializerProperties.Users users = new DataInitializerProperties.Users();
+        DataInitializerProperties.UserConfig config = new DataInitializerProperties.UserConfig();
+        config.setUsername("mario");
+        config.setPassword("Segreta-123");
+        users.setDefaultUsers(List.of(config));
+        String text = users.toString();
+        assertFalse(text.contains("Segreta-123"));
+        assertTrue(text.contains("****"));
+    }
+
+    @Test
     void users_toStringIncludesEnabledFlagAndUsers() {
         DataInitializerProperties.Users users = new DataInitializerProperties.Users();
         DataInitializerProperties.UserConfig config = new DataInitializerProperties.UserConfig();

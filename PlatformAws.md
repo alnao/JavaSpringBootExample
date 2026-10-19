@@ -274,7 +274,7 @@ Tutte le risorse create dagli script di provisioning (`script/aws-ec2`, `script/
 |-----|--------|------|
 | `Name` | nome proprio della risorsa (es. `gestioneannotazioni-sg`, `annotazioni_storico`, `gestioneannotazioni-aurora-cluster`) | per le risorse senza nome proprio (istanze EC2, volumi, task ECS, load balancer) `gestioneannotazioni-<servizio>`, es. `gestioneannotazioni-ec2`, `gestioneannotazioni-ec2-volume`, `gestioneannotazioni-eks-lb` |
 | `Environment` | `dev` (default), `test` o `production` | dalla variabile di shell `ENVIRONMENT`; un valore diverso ferma lo script prima di creare qualsiasi risorsa |
-| `Project` | `Annotazioni.<cartella>` | `Annotazioni.aws-ec2`, `Annotazioni.aws-ecs`, `Annotazioni.aws-eks`, `Annotazioni.sqlite-ec2` |
+| `Project` | `Annotazioni.<cartella>` | `Annotazioni.aws-ec2`, `Annotazioni.aws-ecs`, `Annotazioni.aws-eks`, `Annotazioni.sqlite-ec2`, `Annotazioni.init-database` (tabelle DynamoDB locali di `aws-onprem`) |
 | `Owner` | `AlNao` | fisso |
 | `CostCenter` | `Annotazioni` | fisso |
 | `ManagedBy` | `Sh` | fisso; riservati `Terraform` e `CloudFormation` per quando esisteranno template |
@@ -296,6 +296,13 @@ Tutte le risorse create dagli script di provisioning (`script/aws-ec2`, `script/
 - **Elastic IP**: nessuno script ne alloca (le EC2 usano l'IP pubblico auto-assegnato della VPC di default, che non è un EIP). Se però all'istanza ne viene associato uno da fuori (console o altra automazione), `start-all.sh` di `aws-ec2` e `sqlite-ec2` lo rileva e lo tagga (`Name=gestioneannotazioni-ec2-eip` / `gestioneannotazioni-sqlite-ec2-eip`); `stop-all.sh` non lo rilascia, e un EIP non associato continua a costare: `aws ec2 describe-addresses` per vederli, `aws ec2 release-address --allocation-id eipalloc-…` per liberarli.
 - **SSM managed-instance**: in Tag Editor compare anche `ssm:managed-instance` senza tag per ogni EC2 dello stack. È la registrazione automatica dell'istanza in Systems Manager (SSM Agent preinstallato in Amazon Linux 2), non una risorsa creata dagli script: per le EC2 (`i-…`) l'API SSM non permette di taggarla separatamente (solo i nodi ibridi `mi-…`), non ha costo e sparisce con l'istanza. I tag validi sono quelli dell'istanza EC2.
 - Note per EKS: `eksctl create cluster --tags` propaga i tag agli stack CloudFormation e alle risorse che generano (VPC, nodi); se i nodi risultassero senza tag, si può ripetere con `eksctl create nodegroup --tags`. Il load balancer creato dal `Service` Kubernetes riceve i tag tramite l'annotation `service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags`; se il controller in uso la ignorasse, si aggiungono a mano con `aws elb add-tags --load-balancer-names <nome> --tags ...`.
+- **Tabelle DynamoDB locali** (`script/init-database/init-dynamodb.sh`, usato da `aws-onprem`): i `create-table` passano gli stessi sei tag delle tabelle su AWS, per uniformità fra gli script. DynamoDB Local li accetta ma non li conserva (`ListTagsOfResource` risponde "Tagging is not currently supported in DynamoDB Local"), quindi in locale non sono leggibili.
+- **Controllo statico**: [script/automatic-test/test-tag-aws-script.sh](script/automatic-test/test-tag-aws-script.sh) legge gli script sh di `script/` (senza chiamate AWS) e fallisce, indicando file e riga, se un comando che crea una risorsa (`aws ... create-*`, `run-instances`, `allocate-address`, `run-task`, `register-task-definition`, `eksctl create`) non riceve i tag dalle funzioni di `aws-tags.sh`. Fa parte di `test-all.sh` e si lancia anche da solo:
+  ```bash
+  ./script/automatic-test/test-tag-aws-script.sh                        # tutto script/
+  ./script/automatic-test/test-tag-aws-script.sh script/sqlite-ec2      # una cartella o un file
+  ```
+  Un comando è conforme se le funzioni `aws_tags_*` compaiono nel comando, nel JSON generato dallo script e passato con `--cli-input-json file://...`, oppure nel comando di tagging dedicato a quel tipo di risorsa (es. `create-queue` → `sqs tag-queue`, `create-security-group` → `ec2 create-tags`). I tag scritti a mano non sono mai conformi. Chi introduce una forma nuova di tagging la aggiunge alle regole del controllo nella stessa modifica.
 
 
 # &lt; AlNao /&gt;

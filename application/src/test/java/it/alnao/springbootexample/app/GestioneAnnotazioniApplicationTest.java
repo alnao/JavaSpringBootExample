@@ -14,7 +14,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.boot.test.context.TestConfiguration;
 
 @SpringBootTest
-@ActiveProfiles("sqlite")
+@ActiveProfiles({"sqlite", "dev"}) // dev: credenziali fisse per l'uso locale (change openspec secret-sqlite)
 @Import(TestConfig.class)
 @EnableAutoConfiguration(exclude = {
     MongoAutoConfiguration.class,

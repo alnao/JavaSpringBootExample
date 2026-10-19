@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:21-jre-jammy
 
 # Installa SQLite
 RUN apt-get update && apt-get install -y sqlite3 && rm -rf /var/lib/apt/lists/*

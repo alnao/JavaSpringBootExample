@@ -3,6 +3,11 @@
 
 set -e
 
+# Tag standard (Project=Annotazioni.init-database), come le tabelle create su AWS dagli altri script.
+# DynamoDB Local li accetta ma non li conserva: servono per uniformita' (change openspec verifica-tag-script-aws).
+# Nel container di aws-onprem lo script e' in /init-database e aws-tags.sh e' montato in /aws-tags.sh.
+source "$(dirname "$0")/../aws-tags.sh" init-database
+
 # Endpoint DynamoDB Local
 DYNAMO_ENDPOINT=${DYNAMO_ENDPOINT:-http://dynamodb:8000}
 DYNAMODB_ANNOTAZIONI_TABLE_NAME=${DYNAMODB_ANNOTAZIONI_TABLE_NAME:-annotazioni}
@@ -28,6 +33,7 @@ aws dynamodb create-table \
   --attribute-definitions AttributeName=id,AttributeType=S \
   --key-schema AttributeName=id,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST \
+  --tags $(aws_tags_kv $DYNAMODB_ANNOTAZIONI_TABLE_NAME) \
   --endpoint-url "$DYNAMO_ENDPOINT" \
   --region "$REGION" || echo "Tabella già esistente o errore ignorato."
 
@@ -38,6 +44,7 @@ aws dynamodb create-table \
   --attribute-definitions AttributeName=id,AttributeType=S \
   --key-schema AttributeName=id,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST \
+  --tags $(aws_tags_kv $DYNAMODB_STORICO_ANNOTAZIONI_TABLE_NAME) \
   --endpoint-url "$DYNAMO_ENDPOINT" \
   --region "$REGION" || echo "Tabella già esistente o errore ignorato."
 
@@ -63,6 +70,7 @@ aws dynamodb create-table \
   ]' \
   --billing-mode PROVISIONED \
   --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+  --tags $(aws_tags_kv $DYNAMODB_STORICO_STATI_TABLE_NAME) \
   --endpoint-url "$DYNAMO_ENDPOINT" \
   --region "$REGION" || echo "Tabella già esistente o errore ignorato."
 

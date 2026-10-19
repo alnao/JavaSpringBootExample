@@ -1,6 +1,8 @@
 # in sviluppo!
 script/aws-eks
 
+APPUNTI_ALNAO.txt
+.openspec-command.log
 
 automatic-test-*.log
 **/automatic-test-*.log
@@ -17,6 +19,9 @@ application/data/gestione_annotazioni.db
 
 .env-azure-dbremoti-cosmos-runlocale
 .env-azure-dbremoti-mongo-runlocale
+# File di credenziali dei deploy (change openspec secret-*): versionato solo l'esempio
+.env
+!.env.example
 
 adapter-javafx/data/gestione_annotazioni_javafx.db
 
