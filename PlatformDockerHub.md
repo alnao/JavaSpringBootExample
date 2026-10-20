@@ -83,9 +83,12 @@ Per semplificare l’avvio di tutti i servizi necessari (applicazione, PostgreSQ
         environment:
           SPRING_PROFILES_ACTIVE: kube
           POSTGRES_URL: jdbc:postgresql://postgres:5432/gestioneannotazioni
-          POSTGRES_USERNAME: gestioneannotazioni_user
-          POSTGRES_PASSWORD: gestioneannotazioni_pass
-          MONGODB_URI: mongodb://admin:admin123@mongodb:27017/gestioneannotazioni_db?authSource=admin
+          # credenziali dal file .env (vedi .env.example): nessuna password scritta nel compose
+          POSTGRES_USERNAME: ${POSTGRES_USERNAME:?crea .env da .env.example}
+          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?crea .env da .env.example}
+          MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:?}:${MONGO_ROOT_PASSWORD:?}@mongodb:27017/gestioneannotazioni_db?authSource=admin
+          JWT_SECRET: ${JWT_SECRET:?crea .env da .env.example}
+          APP_USER_ADMIN_PASSWORD: ${APP_USER_ADMIN_PASSWORD:?crea .env da .env.example}
           KAFKA_BROKER_URL: kafka-server:29092
           REDIS_HOST: redis
           REDIS_PORT: 6379
@@ -100,7 +103,7 @@ Per semplificare l’avvio di tutti i servizi necessari (applicazione, PostgreSQ
       annotazioni-network:
         driver: bridge
     ```
-- **Avvio dello stack**:
+- **Avvio dello stack** (prima `cp .env.example .env` e sostituire tutti i valori):
     ```bash
     docker-compose up -d
     ```
@@ -148,7 +151,16 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
 - Note:
     - Anche kafka e il suo kafka-ui è disponibile come ingress oppure usando freelens si crea l'endpoint
     - I dati di MongoDB e PostgreSQL sono persistenti grazie ai PVC di Kubernetes, a meno di usare lo script di `stop-all.sh` che rimuove anche i volumi persistenti.
-    - Viene usata l'immagine `alnao/gestioneannotazioni:latest` su dockerHub e non una immagine creata in sistema locale.
+    - Viene usata l'immagine `alnao/gestioneannotazioni:latest` su dockerHub e non una immagine creata in sistema locale: le credenziali da Secret e la creazione degli utenti all'avvio valgono con un'immagine che include la change openspec `secret-kube`.
+    - Credenziali: `start-all.sh` crea il Secret `gestioneannotazioni-credenziali` con valori casuali se non esiste (i manifest non contengono password). Per leggerle, per esempio la password di `admin`:
+      ```bash
+      kubectl get secret gestioneannotazioni-credenziali -n gestioneannotazioni -o jsonpath='{.data.APP_USER_ADMIN_PASSWORD}' | base64 -d
+      ```
+    - Con PVC gia' esistenti restano le password e gli utenti precedenti: per ripartire con il Secret vanno cancellate le PVC (`stop-all.sh`) prima di `start-all.sh`.
+    - Rotazione di una credenziale (cambia il valore sul database, aggiorna il Secret, riavvia i Deployment e verifica l'app):
+      ```bash
+      ./script/minikube/rotate-secret.sh JWT_SECRET|POSTGRES_PASSWORD|MONGO_ROOT_PASSWORD
+      ```
     - Per rimuovere tutto lo script da lanciare è
       ```bash
       ./script/minikube/stop-all.sh
@@ -157,7 +169,7 @@ L’applicazione e i database posso essere eseguiti anche su Minikube, l’ambie
 
 ## 📦 Versione SQLite per Cloud
 Sviluppato un adapter specifico per usare **sqlite** per tutte le basi dati necessarie al corretto funzionamento del servizio, studiato per funzionare anche nel cloud Replit.
-- La versione che usa SqLite ha una classe che crea tre utenti di prova partendo dai dati dell'application YAML, è presente proprietà per disattivare questa funzionalità. Il componente è stato creato per velocizzare gli sviluppi e i test, questo componente va rimosso in un sistema di produzione. In alternatica è sempre possibile creare gli utenti con le API:
+- Tre utenti di prova vengono creati all'avvio partendo dai dati dell'application YAML, con le password dalle variabili `APP_USER_*_PASSWORD` (componente del core usato dai profili sqlite e kube, disattivabile con `APP_CREATE_USERS_ENABLED=false`). Il componente è stato creato per velocizzare gli sviluppi e i test, questo componente va rimosso in un sistema di produzione. In alternatica è sempre possibile creare gli utenti con le API:
     ```
     curl -X POST http://localhost:8082/api/auth/register \
       -H "Content-Type: application/json" \
@@ -177,7 +189,7 @@ Sviluppato un adapter specifico per usare **sqlite** per tutte le basi dati nece
   ```
   mvn clean package
   java -jar application/target/application-*.jar \
-    --spring.profiles.active=sqlite \
+    --spring.profiles.active=sqlite,dev \
     --spring.datasource.url=jdbc:sqlite:/tmp/database.sqlite \
     --server.port=8082
   ```

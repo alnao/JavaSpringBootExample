@@ -109,7 +109,7 @@ INSTANCE_ID=$(aws ec2 run-instances \
   --security-group-ids $SG_ID \
   --region $REGION \
   --user-data "$USER_DATA" \
-  --tag-specifications "$(aws_tags_spec instance gestioneannotazioni-sqlite-ec2 $TAG_MARKER_KEY)" "$(aws_tags_spec volume gestioneannotazioni-sqlite-ec2-volume)" \
+  --tag-specifications "$(aws_tags_spec instance gestioneannotazioni-sqlite-ec2 $TAG_MARKER_KEY)" "$(aws_tags_spec volume gestioneannotazioni-sqlite-ec2-volume)" "$(aws_tags_spec network-interface gestioneannotazioni-sqlite-ec2-eni)" \
   --query 'Instances[0].InstanceId' --output text)
 
 aws ec2 wait instance-running --instance-ids $INSTANCE_ID --region $REGION

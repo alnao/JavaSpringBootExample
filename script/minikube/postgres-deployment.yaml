@@ -19,10 +19,17 @@ spec:
           env:
             - name: POSTGRES_DB
               value: gestioneannotazioni
+            # credenziali dal Secret gestioneannotazioni-credenziali creato da start-all.sh (change openspec secret-kube)
             - name: POSTGRES_USER
-              value: demo
+              valueFrom:
+                secretKeyRef:
+                  name: gestioneannotazioni-credenziali
+                  key: POSTGRES_USERNAME
             - name: POSTGRES_PASSWORD
-              value: demo
+              valueFrom:
+                secretKeyRef:
+                  name: gestioneannotazioni-credenziali
+                  key: POSTGRES_PASSWORD
           ports:
             - containerPort: 5432
           volumeMounts:

@@ -22,8 +22,9 @@ services:
     container_name: gestioneannotazioni-postgres
     environment:
       POSTGRES_DB: gestioneannotazioni
-      POSTGRES_USER: gestioneannotazioni_user
-      POSTGRES_PASSWORD: gestioneannotazioni_pass
+      # credenziali da .env (change openspec secret-kube): senza .env compose si ferma
+      POSTGRES_USER: ${POSTGRES_USERNAME:?crea .env da .env.example}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?crea .env da .env.example}
     ports:
       - "5432:5432"
     volumes:
@@ -32,7 +33,7 @@ services:
     networks:
       - gestioneannotazioni-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gestioneannotazioni_user -d gestioneannotazioni"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME:?crea .env da .env.example} -d gestioneannotazioni"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -42,8 +43,8 @@ services:
     image: mongo:7.0
     container_name: gestioneannotazioni-mongodb
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?crea .env da .env.example}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?crea .env da .env.example}
       MONGO_INITDB_DATABASE: gestioneannotazioni
     ports:
       - "27017:27017"
@@ -149,9 +150,13 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: kube
       POSTGRES_URL: jdbc:postgresql://postgres:5432/gestioneannotazioni
-      POSTGRES_USERNAME: gestioneannotazioni_user
-      POSTGRES_PASSWORD: gestioneannotazioni_pass
-      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/gestioneannotazioni_db?authSource=admin
+      POSTGRES_USERNAME: ${POSTGRES_USERNAME:?crea .env da .env.example}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?crea .env da .env.example}
+      MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:?crea .env da .env.example}:${MONGO_ROOT_PASSWORD:?crea .env da .env.example}@mongodb:27017/gestioneannotazioni_db?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:?crea .env da .env.example}
+      APP_USER_ADMIN_PASSWORD: ${APP_USER_ADMIN_PASSWORD:?crea .env da .env.example}
+      APP_USER_MODERATORE_PASSWORD: ${APP_USER_MODERATORE_PASSWORD:?crea .env da .env.example}
+      APP_USER_ALNAO_PASSWORD: ${APP_USER_ALNAO_PASSWORD:?crea .env da .env.example}
       KAFKA_BROKER_URL: kafka-server:29092
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -194,11 +199,11 @@ services:
     image: mongo-express:1.0.0
     container_name: gestioneannotazioni-mongo-express
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: admin123
-      ME_CONFIG_MONGODB_URL: mongodb://admin:admin123@mongodb:27017/
-      ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USERNAME:?crea .env da .env.example}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD:?crea .env da .env.example}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ROOT_USERNAME:?crea .env da .env.example}:${MONGO_ROOT_PASSWORD:?crea .env da .env.example}@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME:?crea .env da .env.example}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:?crea .env da .env.example}
     ports:
       - "8084:8081"
     depends_on:

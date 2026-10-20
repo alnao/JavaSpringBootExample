@@ -10,6 +10,8 @@
 #      heredoc che contiene aws_tags_json;
 #   3. non ha tag propri e lo stesso script contiene il comando di tagging dedicato previsto per
 #      quel tipo di risorsa (es. create-queue -> sqs tag-queue), che usa le funzioni condivise.
+# Per ec2 run-instances le funzioni devono coprire istanza, volumi e interfaccia di rete
+# (aws_tags_spec instance / volume / network-interface: change openspec tag-eni-ec2).
 # Tag presenti ma scritti a mano (senza le funzioni condivise) non sono mai conformi.
 # Una forma nuova di tagging va aggiunta qui, nella change che la introduce.
 #
@@ -125,6 +127,13 @@ analizza_file() {
             if (c ~ / create-tags$/) continue
             n++; cmd[n] = c; riga_cmd[n] = inizio; funzioni[n] = usa_funzioni
             tag_propri[n] = (riga ~ /--tags?[ \t=]|--tag-specifications/)
+            # run-instances crea istanza, volumi e interfaccia di rete: servono tutti e tre i tipi
+            manca[n] = ""
+            if (c == "ec2 run-instances") {
+                split("instance volume network-interface", tipi, " ")
+                for (k = 1; k <= 3; k++)
+                    if (riga !~ ("aws_tags_spec[ \t]+" tipi[k] "[ \t]")) manca[n] = manca[n] " " tipi[k]
+            }
             json[n] = ""
             if (match(riga, /--cli-input-json[ \t]+file:\/\/[^ \t"]+/)) {
                 j = substr(riga, RSTART, RLENGTH); sub(/.*file:\/\//, "", j); json[n] = normalizza(j)
@@ -134,6 +143,7 @@ analizza_file() {
     END {
         for (i = 1; i <= n; i++) {
             c = cmd[i]
+            if (funzioni[i] && manca[i] != "") { print "KO\t" riga_cmd[i] "\t" c "\tmanca aws_tags_spec per:" manca[i]; continue }
             if (funzioni[i]) { print "OK\t" riga_cmd[i] "\t" c; continue }
             if (json[i] != "" && json_taggato[json[i]]) { print "OK\t" riga_cmd[i] "\t" c; continue }
             if (tag_propri[i]) { print "KO\t" riga_cmd[i] "\t" c "\ttag scritti a mano, non dalle funzioni di aws-tags.sh"; continue }

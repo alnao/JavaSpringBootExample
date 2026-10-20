@@ -19,19 +19,27 @@ portare, appena creata, i sei tag `Name`, `Environment`, `Project`, `Owner`,
 `Terraform` per le risorse create da una configurazione Terraform.
 
 Le risorse taggabili coinvolte SHALL comprendere, dove lo script le crea:
-security group, istanze EC2 e relativi volumi, key pair, ruoli IAM e instance
-profile, cluster e istanze Aurora, tabelle DynamoDB, code SQS, subnet group e
-cluster ElastiCache, repository ECR, cluster, task definition, service e task
-ECS, log group CloudWatch, cluster EKS e load balancer generato dal `Service`
-Kubernetes.
+security group, istanze EC2 con i relativi volumi e le relative interfacce di
+rete (ENI), key pair, ruoli IAM e instance profile, cluster e istanze Aurora,
+tabelle DynamoDB, code SQS, subnet group e cluster ElastiCache, repository
+ECR, cluster, task definition, service e task ECS, log group CloudWatch,
+cluster EKS e load balancer generato dal `Service` Kubernetes.
+
+L'indirizzo IPv4 pubblico assegnato automaticamente (dalla subnet a
+un'istanza EC2, da ECS a un task Fargate) non è una risorsa AWS e non può
+ricevere tag: per le istanze EC2 SHALL essere riconducibile al progetto
+tramite i tag dell'ENI a cui è associato. Le interfacce di rete create e
+gestite da AWS per i task Fargate e per i nodi EKS non sono create dagli
+script e sono escluse da questo requisito.
 
 #### Scenario: Stack EC2
 
 - **WHEN** viene eseguito lo script di avvio dello stack in `script/aws-ec2`
   su un account privo delle risorse
-- **THEN** security group, istanza EC2 e i suoi volumi, key pair, ruolo IAM,
-  instance profile, cluster e istanza Aurora, le tre tabelle DynamoDB, le due
-  code SQS, subnet group e cluster ElastiCache riportano tutti e sei i tag
+- **THEN** security group, istanza EC2 con i suoi volumi e la sua interfaccia
+  di rete, key pair, ruolo IAM, instance profile, cluster e istanza Aurora, le
+  tre tabelle DynamoDB, le due code SQS, subnet group e cluster ElastiCache
+  riportano tutti e sei i tag
 - **AND** `Project` vale `Annotazioni.aws-ec2`
 
 #### Scenario: Stack ECS Fargate
@@ -59,8 +67,8 @@ Kubernetes.
 #### Scenario: EC2 con profilo sqlite
 
 - **WHEN** viene eseguito lo script di avvio in `script/sqlite-ec2`
-- **THEN** security group, key pair, istanza EC2 e i suoi volumi riportano
-  tutti e sei i tag
+- **THEN** security group, key pair, istanza EC2 con i suoi volumi e la sua
+  interfaccia di rete riportano tutti e sei i tag
 - **AND** `Project` vale `Annotazioni.sqlite-ec2`
 
 #### Scenario: Task Fargate di servizio
@@ -70,13 +78,21 @@ Kubernetes.
 - **THEN** la task definition temporanea e il task avviato riportano tutti e
   sei i tag con `Project` uguale a `Annotazioni.aws-ecs`
 
+#### Scenario: EC2 di servizio per MySQL
+
+- **WHEN** viene eseguito lo script `deprecato-launch-ec2-mysql-client.sh` in
+  `script/aws-ecs`
+- **THEN** l'istanza, i suoi volumi e la sua interfaccia di rete riportano
+  tutti e sei i tag con `Project` uguale a `Annotazioni.aws-ecs`
+
 #### Scenario: Stack EC2 via Terraform
 
 - **WHEN** viene applicata la configurazione Terraform in
   `script/aws-terraform-ec2` su un account privo delle risorse
-- **THEN** security group, istanza EC2 e i suoi volumi, key pair, ruolo IAM,
-  instance profile, cluster e istanza Aurora, le tre tabelle DynamoDB, le due
-  code SQS, subnet group e cluster ElastiCache riportano tutti e sei i tag
+- **THEN** security group, istanza EC2 con i suoi volumi e la sua interfaccia
+  di rete primaria, key pair, ruolo IAM, instance profile, cluster e istanza
+  Aurora, le tre tabelle DynamoDB, le due code SQS, subnet group e cluster
+  ElastiCache riportano tutti e sei i tag
 - **AND** `ManagedBy` vale `Terraform` e `Project` vale
   `Annotazioni.aws-terraform-ec2`
 
@@ -92,14 +108,24 @@ Kubernetes.
 - **AND** `ManagedBy` vale `Terraform` e `Project` vale
   `Annotazioni.aws-terraform-ecs`
 
+#### Scenario: IPv4 pubblico automatico di un'istanza EC2
+
+- **WHEN** un'istanza creata da uno script ha un IPv4 pubblico assegnato
+  automaticamente e non un Elastic IP
+- **THEN** cercando le interfacce di rete con il tag `Project` dello stack,
+  l'interfaccia dell'istanza risulta associata a quell'IPv4 pubblico
+- **AND** nessuno script tenta di taggare l'indirizzo in sé
+
 ### Requirement: Valore del tag Name
 
 Il tag `Name` SHALL valere il nome proprio della risorsa quando la risorsa ne
 ha uno (identificatore del cluster o dell'istanza, nome del gruppo, della
 tabella, della coda, del ruolo, del repository, del log group, della key pair,
 della task definition, del service). Per le risorse senza un nome proprio
-(istanze EC2, volumi, task ECS, load balancer) `Name` SHALL seguire lo schema
-`gestioneannotazioni-<servizio>`.
+(istanze EC2, volumi, interfacce di rete, task ECS, load balancer) `Name`
+SHALL seguire lo schema `gestioneannotazioni-<servizio>`; per volumi e
+interfacce di rete di un'istanza il nome è quello dell'istanza seguito da
+`-volume` o `-eni`.
 
 #### Scenario: Risorsa con nome proprio
 
@@ -116,6 +142,8 @@ della task definition, del service). Per le risorse senza un nome proprio
   `gestioneannotazioni-sqlite-ec2`
 - **AND** i volumi delle due istanze valgono `gestioneannotazioni-ec2-volume`
   e `gestioneannotazioni-sqlite-ec2-volume`
+- **AND** le interfacce di rete delle due istanze valgono
+  `gestioneannotazioni-ec2-eni` e `gestioneannotazioni-sqlite-ec2-eni`
 
 ### Requirement: Ambiente configurabile
 
@@ -222,12 +250,13 @@ allocate-address`, `aws ecs run-task`, `aws ecs register-task-definition`,
 `eksctl create`), verifica che i sei tag standard siano applicati tramite le
 funzioni condivise di `script/aws-tags.sh`: nel comando stesso, nel file JSON
 passato al comando oppure con un comando di tagging della stessa risorsa nello
-stesso script. Tag scritti a mano non soddisfano il controllo, perché non
-garantiscono i sei tag. Il controllo MUST NOT eseguire chiamate verso AWS. In
-caso di violazione SHALL terminare con errore elencando file e riga di ogni
-comando non conforme. Il controllo SHALL essere lanciabile da solo e SHALL far
-parte della regressione completa `test-all.sh`, con l'esito registrato nel
-riepilogo.
+stesso script. Per `aws ec2 run-instances` i tag SHALL coprire l'istanza, i
+volumi e l'interfaccia di rete. Tag scritti a mano non soddisfano il
+controllo, perché non garantiscono i sei tag. Il controllo MUST NOT eseguire
+chiamate verso AWS. In caso di violazione SHALL terminare con errore elencando
+file e riga di ogni comando non conforme. Il controllo SHALL essere lanciabile
+da solo e SHALL far parte della regressione completa `test-all.sh`, con
+l'esito registrato nel riepilogo.
 
 #### Scenario: Repository conforme
 
@@ -247,6 +276,14 @@ riepilogo.
 - **WHEN** uno script analizzato crea un'istanza con
   `--tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=prova}]'`
 - **THEN** il controllo termina con errore indicando file e riga
+
+#### Scenario: Istanza senza tag sull'interfaccia di rete
+
+- **WHEN** uno script analizzato crea un'istanza con `aws ec2 run-instances`
+  e `--tag-specifications` costruite con le funzioni condivise solo per
+  `instance` e `volume`
+- **THEN** il controllo termina con errore indicando file e riga e la mancanza
+  del tag sull'interfaccia di rete
 
 #### Scenario: Tagging con comando dedicato
 

@@ -67,3 +67,14 @@ resource "aws_instance" "app" {
     tags = merge(local.common_tags, { Name = "${local.ec2_name}-volume" })
   }
 }
+
+# Interfaccia di rete primaria dell'istanza (porta l'IPv4 pubblico automatico, che non e' taggabile):
+# aws_instance non la tagga e aws_ec2_tag non riceve i default_tags, quindi i tag comuni sono espliciti.
+# Un tag per risorsa: nessun'altra risorsa di questa configurazione gestisce i tag dell'ENI
+# (change openspec tag-eni-ec2).
+resource "aws_ec2_tag" "eni" {
+  for_each    = merge(local.common_tags, { Name = "${local.ec2_name}-eni" })
+  resource_id = aws_instance.app.primary_network_interface_id
+  key         = each.key
+  value       = each.value
+}

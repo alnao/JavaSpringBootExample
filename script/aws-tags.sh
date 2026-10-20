@@ -62,6 +62,8 @@ aws_tags_json() {
 }
 
 # Formato "ResourceType=t,Tags=[{Key=k,Value=v},...]": ec2 run-instances e create-key-pair (--tag-specifications)
+# Per run-instances servono tre specifiche: instance, volume e network-interface (ENI primaria, change
+# openspec tag-eni-ec2); l'IPv4 pubblico automatico non e' taggabile ed e' riconducibile tramite l'ENI.
 # Uso: --tag-specifications "$(aws_tags_spec instance NOME "$TAG_MARKER_KEY")" "$(aws_tags_spec volume NOME-volume)"
 # Il terzo argomento, se presente, aggiunge il tag marcatore <chiave>=true: va usato solo per le istanze EC2,
 # perche' gli script stop-all.sh e di test ritrovano le istanze proprio con quel tag.

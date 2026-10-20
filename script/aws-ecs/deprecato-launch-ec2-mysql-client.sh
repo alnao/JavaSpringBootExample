@@ -29,7 +29,7 @@ INSTANCE_ID=$(aws ec2 run-instances \
   --subnet-id $SUBNET_ID \
   --security-group-ids $SECURITY_GROUP_ID \
   --region $AWS_REGION \
-  --tag-specifications "$(aws_tags_spec instance gestioneannotazioni-mysql-client)" "$(aws_tags_spec volume gestioneannotazioni-mysql-client-volume)" \
+  --tag-specifications "$(aws_tags_spec instance gestioneannotazioni-mysql-client)" "$(aws_tags_spec volume gestioneannotazioni-mysql-client-volume)" "$(aws_tags_spec network-interface gestioneannotazioni-mysql-client-eni)" \
   --query 'Instances[0].InstanceId' --output text)
 
 echo "EC2 avviata: $INSTANCE_ID"

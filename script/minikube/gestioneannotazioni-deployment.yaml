@@ -17,14 +17,53 @@ spec:
         - name: gestioneannotazioni
           image: alnao/gestioneannotazioni:latest
           env:
-            - name: SPRING_DATASOURCE_URL
+            # nomi delle variabili allineati ad application-kube.yml e al docker-compose.yml di root
+            - name: POSTGRES_URL
               value: jdbc:postgresql://postgres:5432/gestioneannotazioni
-            - name: SPRING_DATASOURCE_USERNAME
-              value: demo
-            - name: SPRING_DATASOURCE_PASSWORD
-              value: demo
-            - name: SPRING_DATA_MONGODB_URI
-              value: mongodb://demo:demo@mongo:27017/gestioneannotazioni_db?authSource=admin
+            # credenziali dal Secret gestioneannotazioni-credenziali creato da start-all.sh (change openspec secret-kube)
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: gestioneannotazioni-credenziali
+                  key: POSTGRES_USERNAME
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gestioneannotazioni-credenziali
+                  key: POSTGRES_PASSWORD
+            - name: MONGO_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: gestioneannotazioni-credenziali
+                  key: MONGO_ROOT_USERNAME
+            - name: MONGO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gestioneannotazioni-credenziali
+                  key: MONGO_ROOT_PASSWORD
+            # composto dalle due variabili precedenti (Kubernetes risolve $(NOME) fra variabili gia' definite)
+            - name: MONGODB_URI
+              value: mongodb://$(MONGO_ROOT_USERNAME):$(MONGO_ROOT_PASSWORD)@mongo:27017/gestioneannotazioni_db?authSource=admin
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: gestioneannotazioni-credenziali
+                  key: JWT_SECRET
+            - name: APP_USER_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gestioneannotazioni-credenziali
+                  key: APP_USER_ADMIN_PASSWORD
+            - name: APP_USER_MODERATORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gestioneannotazioni-credenziali
+                  key: APP_USER_MODERATORE_PASSWORD
+            - name: APP_USER_ALNAO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gestioneannotazioni-credenziali
+                  key: APP_USER_ALNAO_PASSWORD
             - name: KAFKA_BROKER_URL
               value: kafka-service:9092
             - name: REDIS_HOST

@@ -1,15 +1,14 @@
-package it.alnao.springbootexample.sqlite.config;
+package it.alnao.springbootexample.core.config.init;
 
 import it.alnao.springbootexample.core.domain.auth.User;
 import it.alnao.springbootexample.core.domain.auth.UserRole;
 import it.alnao.springbootexample.core.domain.auth.AccountType;
 import it.alnao.springbootexample.core.repository.auth.UserRepository;
-import it.alnao.springbootexample.sqlite.service.AnnotazioneServiceSQLiteImpl;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -18,19 +17,24 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+/**
+ * Crea all'avvio gli utenti iniziali che non esistono ancora. Attivo solo con app.init.users.enabled=true
+ * (profili sqlite e kube): dove la creazione non e' attiva il bean non esiste e non richiede UserRepository,
+ * che il profilo azure non implementa. Nessun riferimento ai profili: decide la configurazione.
+ */
 @Component
-@Profile("sqlite")
-public class DataInitializer implements ApplicationRunner {
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DataInitializer.class);
+@ConditionalOnProperty(prefix = "app.init.users", name = "enabled", havingValue = "true")
+public class UtentiInizialiInitializer implements ApplicationRunner {
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UtentiInizialiInitializer.class);
 
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final DataInitializerProperties properties;
+    private final UtentiInizialiProperties properties;
 
-    public DataInitializer(UserRepository userRepository, 
+    public UtentiInizialiInitializer(UserRepository userRepository, 
                           PasswordEncoder passwordEncoder,
-                          DataInitializerProperties properties) {
+                          UtentiInizialiProperties properties) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.properties = properties;
@@ -62,14 +66,14 @@ public class DataInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        logger.info("DataInitializer start con le properties {}", properties.getUsers().toString());
+        logger.info("UtentiInizialiInitializer start con le properties {}", properties.getUsers().toString());
         if (properties.getUsers().isEnabled()) {
             createDefaultUsers();
         }
     }
 
     private void createDefaultUsers() {
-        for (DataInitializerProperties.UserConfig userConfig : properties.getUsers().getDefaultUsers()) {
+        for (UtentiInizialiProperties.UserConfig userConfig : properties.getUsers().getDefaultUsers()) {
             logger.info("Verifica esistenza utente: " + userConfig.getUsername());
             if (!userRepository.existsByUsername(userConfig.getUsername())) {
                 logger.info("Creazione utente: " + userConfig.getUsername());

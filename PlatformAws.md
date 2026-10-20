@@ -272,7 +272,7 @@ Tutte le risorse create dagli script di provisioning (`script/aws-ec2`, `script/
 
 | Tag | Valore | Note |
 |-----|--------|------|
-| `Name` | nome proprio della risorsa (es. `gestioneannotazioni-sg`, `annotazioni_storico`, `gestioneannotazioni-aurora-cluster`) | per le risorse senza nome proprio (istanze EC2, volumi, task ECS, load balancer) `gestioneannotazioni-<servizio>`, es. `gestioneannotazioni-ec2`, `gestioneannotazioni-ec2-volume`, `gestioneannotazioni-eks-lb` |
+| `Name` | nome proprio della risorsa (es. `gestioneannotazioni-sg`, `annotazioni_storico`, `gestioneannotazioni-aurora-cluster`) | per le risorse senza nome proprio (istanze EC2, volumi, task ECS, load balancer) `gestioneannotazioni-<servizio>`, es. `gestioneannotazioni-ec2`, `gestioneannotazioni-ec2-volume`, `gestioneannotazioni-ec2-eni`, `gestioneannotazioni-eks-lb` |
 | `Environment` | `dev` (default), `test` o `production` | dalla variabile di shell `ENVIRONMENT`; un valore diverso ferma lo script prima di creare qualsiasi risorsa |
 | `Project` | `Annotazioni.<cartella>` | `Annotazioni.aws-ec2`, `Annotazioni.aws-ecs`, `Annotazioni.aws-eks`, `Annotazioni.sqlite-ec2`, `Annotazioni.init-database` (tabelle DynamoDB locali di `aws-onprem`) |
 | `Owner` | `AlNao` | fisso |
@@ -293,6 +293,13 @@ Tutte le risorse create dagli script di provisioning (`script/aws-ec2`, `script/
     --tag-filters Key=CostCenter,Values=Annotazioni \
     --query 'ResourceTagMappingList[].[ResourceARN, Tags[?Key==`Name`].Value | [0], Tags[?Key==`Project`].Value | [0]]' --output table
   ```
+- **Interfacce di rete e IPv4 pubblico**: ogni EC2 creata dagli script (`aws-ec2`, `sqlite-ec2`, `aws-terraform-ec2`, lo script deprecato di `aws-ecs`) ha i sei tag anche sulla sua interfaccia di rete primaria (ENI), con `Name` = `<istanza>-eni`. L'IPv4 pubblico assegnato in automatico dalla subnet non è una risorsa AWS e **non si può taggare**: si ritrova tramite l'ENI che lo porta:
+  ```bash
+  aws ec2 describe-network-interfaces --region eu-central-1 \
+    --filters Name=tag:Project,Values=Annotazioni.aws-ec2 \
+    --query 'NetworkInterfaces[].[NetworkInterfaceId,Association.PublicIp,TagSet[?Key==`Name`].Value|[0]]' --output table
+  ```
+  Le ENI dei task Fargate (`aws-ecs`, `aws-terraform-ecs`) e dei nodi EKS le crea e gestisce AWS, non gli script: restano senza tag, come l'IPv4 pubblico dei task (change openspec `tag-eni-ec2`).
 - **Elastic IP**: nessuno script ne alloca (le EC2 usano l'IP pubblico auto-assegnato della VPC di default, che non è un EIP). Se però all'istanza ne viene associato uno da fuori (console o altra automazione), `start-all.sh` di `aws-ec2` e `sqlite-ec2` lo rileva e lo tagga (`Name=gestioneannotazioni-ec2-eip` / `gestioneannotazioni-sqlite-ec2-eip`); `stop-all.sh` non lo rilascia, e un EIP non associato continua a costare: `aws ec2 describe-addresses` per vederli, `aws ec2 release-address --allocation-id eipalloc-…` per liberarli.
 - **SSM managed-instance**: in Tag Editor compare anche `ssm:managed-instance` senza tag per ogni EC2 dello stack. È la registrazione automatica dell'istanza in Systems Manager (SSM Agent preinstallato in Amazon Linux 2), non una risorsa creata dagli script: per le EC2 (`i-…`) l'API SSM non permette di taggarla separatamente (solo i nodi ibridi `mi-…`), non ha costo e sparisce con l'istanza. I tag validi sono quelli dell'istanza EC2.
 - Note per EKS: `eksctl create cluster --tags` propaga i tag agli stack CloudFormation e alle risorse che generano (VPC, nodi); se i nodi risultassero senza tag, si può ripetere con `eksctl create nodegroup --tags`. Il load balancer creato dal `Service` Kubernetes riceve i tag tramite l'annotation `service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags`; se il controller in uso la ignorasse, si aggiungono a mano con `aws elb add-tags --load-balancer-names <nome> --tags ...`.
@@ -302,7 +309,7 @@ Tutte le risorse create dagli script di provisioning (`script/aws-ec2`, `script/
   ./script/automatic-test/test-tag-aws-script.sh                        # tutto script/
   ./script/automatic-test/test-tag-aws-script.sh script/sqlite-ec2      # una cartella o un file
   ```
-  Un comando è conforme se le funzioni `aws_tags_*` compaiono nel comando, nel JSON generato dallo script e passato con `--cli-input-json file://...`, oppure nel comando di tagging dedicato a quel tipo di risorsa (es. `create-queue` → `sqs tag-queue`, `create-security-group` → `ec2 create-tags`). I tag scritti a mano non sono mai conformi. Chi introduce una forma nuova di tagging la aggiunge alle regole del controllo nella stessa modifica.
+  Un comando è conforme se le funzioni `aws_tags_*` compaiono nel comando, nel JSON generato dallo script e passato con `--cli-input-json file://...`, oppure nel comando di tagging dedicato a quel tipo di risorsa (es. `create-queue` → `sqs tag-queue`, `create-security-group` → `ec2 create-tags`). Per `run-instances` le funzioni devono coprire istanza, volumi e interfaccia di rete (`aws_tags_spec instance`, `volume`, `network-interface`). I tag scritti a mano non sono mai conformi. Chi introduce una forma nuova di tagging la aggiunge alle regole del controllo nella stessa modifica.
 
 
 # &lt; AlNao /&gt;

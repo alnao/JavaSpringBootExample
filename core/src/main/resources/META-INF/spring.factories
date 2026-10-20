@@ -1,0 +1,3 @@
+# Controllo delle credenziali obbligatorie prima della creazione del contesto (change openspec secret-kube)
+org.springframework.boot.env.EnvironmentPostProcessor=\
+it.alnao.springbootexample.core.config.init.CredenzialiObbligatoriePostProcessor

@@ -1,4 +1,4 @@
-package it.alnao.springbootexample.sqlite.config;
+package it.alnao.springbootexample.core.config.init;
 
 import org.junit.jupiter.api.Test;
 
@@ -6,11 +6,11 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class DataInitializerPropertiesTest {
+class UtentiInizialiPropertiesTest {
 
     @Test
     void defaults_areEnabledWithEmptyUserList() {
-        DataInitializerProperties properties = new DataInitializerProperties();
+        UtentiInizialiProperties properties = new UtentiInizialiProperties();
         assertNotNull(properties.getUsers());
         assertTrue(properties.getUsers().isEnabled());
         assertTrue(properties.getUsers().getDefaultUsers().isEmpty());
@@ -18,8 +18,8 @@ class DataInitializerPropertiesTest {
 
     @Test
     void users_settersReplaceTheWholeBlock() {
-        DataInitializerProperties properties = new DataInitializerProperties();
-        DataInitializerProperties.Users users = new DataInitializerProperties.Users();
+        UtentiInizialiProperties properties = new UtentiInizialiProperties();
+        UtentiInizialiProperties.Users users = new UtentiInizialiProperties.Users();
         users.setEnabled(false);
         properties.setUsers(users);
         assertFalse(properties.getUsers().isEnabled());
@@ -27,13 +27,13 @@ class DataInitializerPropertiesTest {
 
     @Test
     void userConfig_defaultsToUserRole() {
-        DataInitializerProperties.UserConfig config = new DataInitializerProperties.UserConfig();
+        UtentiInizialiProperties.UserConfig config = new UtentiInizialiProperties.UserConfig();
         assertEquals("USER", config.getRole());
     }
 
     @Test
     void userConfig_gettersAndSettersWork() {
-        DataInitializerProperties.UserConfig config = new DataInitializerProperties.UserConfig();
+        UtentiInizialiProperties.UserConfig config = new UtentiInizialiProperties.UserConfig();
         config.setUsername("mario");
         config.setEmail("mario@test.it");
         config.setPassword("pwd");
@@ -46,7 +46,7 @@ class DataInitializerPropertiesTest {
 
     @Test
     void userConfig_toStringIncludesUsernameAndRole() {
-        DataInitializerProperties.UserConfig config = new DataInitializerProperties.UserConfig();
+        UtentiInizialiProperties.UserConfig config = new UtentiInizialiProperties.UserConfig();
         config.setUsername("mario");
         config.setRole("ADMIN");
         String text = config.toString();
@@ -56,7 +56,7 @@ class DataInitializerPropertiesTest {
 
     @Test
     void userConfig_toStringMascheraLaPassword() {
-        DataInitializerProperties.UserConfig config = new DataInitializerProperties.UserConfig();
+        UtentiInizialiProperties.UserConfig config = new UtentiInizialiProperties.UserConfig();
         config.setUsername("mario");
         config.setPassword("Segreta-123");
         String text = config.toString();
@@ -66,8 +66,8 @@ class DataInitializerPropertiesTest {
 
     @Test
     void users_toStringNonContieneLePassword() {
-        DataInitializerProperties.Users users = new DataInitializerProperties.Users();
-        DataInitializerProperties.UserConfig config = new DataInitializerProperties.UserConfig();
+        UtentiInizialiProperties.Users users = new UtentiInizialiProperties.Users();
+        UtentiInizialiProperties.UserConfig config = new UtentiInizialiProperties.UserConfig();
         config.setUsername("mario");
         config.setPassword("Segreta-123");
         users.setDefaultUsers(List.of(config));
@@ -78,8 +78,8 @@ class DataInitializerPropertiesTest {
 
     @Test
     void users_toStringIncludesEnabledFlagAndUsers() {
-        DataInitializerProperties.Users users = new DataInitializerProperties.Users();
-        DataInitializerProperties.UserConfig config = new DataInitializerProperties.UserConfig();
+        UtentiInizialiProperties.Users users = new UtentiInizialiProperties.Users();
+        UtentiInizialiProperties.UserConfig config = new UtentiInizialiProperties.UserConfig();
         config.setUsername("mario");
         users.setDefaultUsers(List.of(config));
         users.setEnabled(true);

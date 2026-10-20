@@ -25,8 +25,27 @@ echo "Directory di lavoro: $(pwd)"
 #echo "Costruzione immagine Docker..."
 #./script/docker-build.sh 
 
+# Credenziali di test (change openspec secret-kube): file temporaneo passato con --env-file, cosi' il
+# test non legge ne' modifica il .env di chi sviluppa. Password dei database e JWT_SECRET generate a ogni
+# esecuzione; password degli utenti note, perche' i test (anche test-prenotazione-annotazione.sh) fanno
+# login con admin/admin e alnao/bellissimo.
+TEST_ENV_FILE="$(mktemp)"
+chmod 600 "$TEST_ENV_FILE"
+cat > "$TEST_ENV_FILE" <<EOF
+POSTGRES_USERNAME=gestioneannotazioni_user
+POSTGRES_PASSWORD=$(openssl rand -hex 24)
+MONGO_ROOT_USERNAME=admin
+MONGO_ROOT_PASSWORD=$(openssl rand -hex 24)
+MONGO_EXPRESS_USERNAME=admin
+MONGO_EXPRESS_PASSWORD=$(openssl rand -hex 16)
+JWT_SECRET=$(openssl rand -base64 64 | tr -d '\n')
+APP_USER_ADMIN_PASSWORD=admin
+APP_USER_MODERATORE_PASSWORD=cattivo
+APP_USER_ALNAO_PASSWORD=bellissimo
+EOF
+
 echo  "Avvio stack Docker necessario per i test..."
-docker-compose up -d --build
+docker-compose --env-file "$TEST_ENV_FILE" up -d --build
 
 
 
@@ -35,7 +54,8 @@ cleanup() {
     # Limitato alle risorse dichiarate in questo docker-compose: container,
     # rete, volumi e immagini costruite localmente. Non tocca immagini e volumi
     # di altri progetti presenti sulla macchina.
-    docker-compose down --volumes --remove-orphans --rmi local
+    docker-compose --env-file "$TEST_ENV_FILE" down --volumes --remove-orphans --rmi local
+    rm -f "$TEST_ENV_FILE"
     echo "Script test-kube-onprem-docker-compose concluso"
 }
 trap 'RC=$?; cleanup; report_chiusura $RC' EXIT

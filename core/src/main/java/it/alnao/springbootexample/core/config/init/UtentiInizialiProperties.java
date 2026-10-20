@@ -1,51 +1,21 @@
-package it.alnao.springbootexample.sqlite.config;
+package it.alnao.springbootexample.core.config.init;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.ArrayList;
 
+/**
+ * Utenti iniziali creati all'avvio (prefisso app.init.users). La lista e' dichiarata in application.yml
+ * con le password lette da APP_USER_<USERNAME>_PASSWORD; ogni profilo decide se attivare la creazione
+ * con app.init.users.enabled (change openspec secret-sqlite e secret-kube).
+ */
 @Component
-@Profile("sqlite")
-//@EnableConfigurationProperties
 @ConfigurationProperties(prefix = "app.init")
-public class DataInitializerProperties {
-    
+public class UtentiInizialiProperties {
+
     private Users users = new Users();
-/*  NOTA: versione alternativa che prevede un file "defaultUsers.yaml" in resources del adapter-sqlite, 
-    ma commentata perchè il blocco è stato posizionato nel application.yaml globale dell'applicazione
-    e quindi non serve più.
 
-    private final ResourceLoader resourceLoader;
-    private static final Logger logger = LoggerFactory.getLogger(DataInitializerProperties.class);
-    public DataInitializerProperties(ResourceLoader resourceLoader) {
-        this.resourceLoader = resourceLoader;
-    }
-    @PostConstruct
-    public void initUsers() {
-        logger.info("Inizializzazione utenti di default...");
-        this.users = caricaUtentiDaYaml();
-        logger.info("Caricati {} utenti di default", users.getDefaultUsers().size());
-    }
-
-    private Users caricaUtentiDaYaml() {
-        try {
-            // Carica il file defaultUsers.yaml dalla cartella resources
-            InputStream inputStream = resourceLoader.getResource("classpath:defaultUsers.yaml").getInputStream();
-            Yaml yaml = new Yaml();
-            Users loadedUsers = yaml.loadAs(inputStream, Users.class);
-            logger.info("Utenti caricati da defaultUsers.yaml: {}", loadedUsers);
-            return loadedUsers;
-        } catch (Exception e) {
-            logger.error("Errore caricamento defaultUsers.yaml", e);
-            return this.users; // fallback su configurazione vuota
-        }
-    }
-    
-*/
-
-    
     public Users getUsers() { return users; }
     public void setUsers(Users users) { this.users = users; }
     

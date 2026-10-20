@@ -99,32 +99,6 @@ INSERT INTO annotazioni_metadata (
     'user1', 'Seconda annotazione di esempio', 'Note', 'esempio,privato', false, 1, 'INSERITA'
 ) ON CONFLICT (id) DO NOTHING;
 
--- Inserimento utenti di esempio
-INSERT INTO users (
-    id, username, email, password, first_name, last_name, role, account_type, 
-    enabled, email_verified, created_at
-) VALUES 
-(
-    '1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p', 'alnao', 'alnao@example.com', 
-    '$2b$12$hFoVfPak5m77PJD0cIIe8u1Yo5out7B.h8PWvwfbaloys/ndX9Zpi', 
-    'Alberto', 'Nao', 'USER', 'LOCAL', true, true, NOW()
-), -- bellissimo
-(
-    '2b3c4d5e-6f7g-8h9i-0j1k-2l3m4n5o6p7q', 'admin', 'admin@example.com', 
-    '$2b$12$TUQyZEAT4R.5nsyGJYm6Z.HQMiD.Z8dRs8nc6k1fHZf31sKt4lUOa', 
-    'Admin', 'User', 'ADMIN', 'LOCAL', true, true, NOW()
-), -- admin
-(
-    '3c4d5e6f-7g8h-9i0j-1k2l-3m4n5o6p7q8r', 'moderatore', 'moderatore@example.com', 
-    '$2b$12$hLQdX/4p6la8/CnpGtvB0uBVOzUOVZkIRFxV4BySpfn6Sn9f1wKFm', 
-    'Moderatore', 'User', 'MODERATOR', 'LOCAL', true, true, NOW() -- cattivo
-) ON CONFLICT (username) DO NOTHING;
-
-
---python3 -c "
---import bcrypt
---passwords = {    'bellissimo': 'bellissimo',    'admin': 'admin',     'cattivo': 'cattivo'}
---for name, pwd in passwords.items():
---    hashed = bcrypt.hashpw(pwd.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
---    print(f'{name}: {hashed}')
---"
+-- Utenti iniziali: non piu' inseriti qui. Li crea l'applicazione all'avvio con le password lette da
+-- APP_USER_ADMIN_PASSWORD, APP_USER_MODERATORE_PASSWORD e APP_USER_ALNAO_PASSWORD
+-- (change openspec secret-kube).

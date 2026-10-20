@@ -1,4 +1,4 @@
-package it.alnao.springbootexample.sqlite.config;
+package it.alnao.springbootexample.core.config.init;
 
 import it.alnao.springbootexample.core.domain.auth.AccountType;
 import it.alnao.springbootexample.core.domain.auth.User;
@@ -18,24 +18,24 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-class DataInitializerTest {
+class UtentiInizialiInitializerTest {
 
     @Mock UserRepository userRepository;
     @Mock PasswordEncoder passwordEncoder;
     @Mock ApplicationArguments applicationArguments;
 
-    private DataInitializerProperties properties;
-    private DataInitializer initializer;
+    private UtentiInizialiProperties properties;
+    private UtentiInizialiInitializer initializer;
 
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
-        properties = new DataInitializerProperties();
-        initializer = new DataInitializer(userRepository, passwordEncoder, properties);
+        properties = new UtentiInizialiProperties();
+        initializer = new UtentiInizialiInitializer(userRepository, passwordEncoder, properties);
     }
 
-    private DataInitializerProperties.UserConfig userConfig(String username, String role) {
-        DataInitializerProperties.UserConfig c = new DataInitializerProperties.UserConfig();
+    private UtentiInizialiProperties.UserConfig userConfig(String username, String role) {
+        UtentiInizialiProperties.UserConfig c = new UtentiInizialiProperties.UserConfig();
         c.setUsername(username);
         c.setEmail(username + "@test.it");
         c.setPassword("secret");
@@ -109,11 +109,11 @@ class DataInitializerTest {
 
     @Test
     void verificaCredenziali_passwordMancante_interrompeConIlNomeDellaVariabile() {
-        DataInitializerProperties.UserConfig moderatore = userConfig("moderatore", "MODERATOR");
+        UtentiInizialiProperties.UserConfig moderatore = userConfig("moderatore", "MODERATOR");
         moderatore.setPassword("");
-        DataInitializerProperties.UserConfig alnao = userConfig("alnao", "USER");
+        UtentiInizialiProperties.UserConfig alnao = userConfig("alnao", "USER");
         alnao.setPassword(null);
-        DataInitializerProperties.UserConfig admin = userConfig("admin", "ADMIN");
+        UtentiInizialiProperties.UserConfig admin = userConfig("admin", "ADMIN");
         admin.setPassword("Altra-456");
         properties.getUsers().setEnabled(true);
         properties.getUsers().setDefaultUsers(List.of(admin, moderatore, alnao));
@@ -128,7 +128,7 @@ class DataInitializerTest {
 
     @Test
     void verificaCredenziali_passwordSoloSpazi_eConsiderataMancante() {
-        DataInitializerProperties.UserConfig admin = userConfig("admin", "ADMIN");
+        UtentiInizialiProperties.UserConfig admin = userConfig("admin", "ADMIN");
         admin.setPassword("   ");
         properties.getUsers().setEnabled(true);
         properties.getUsers().setDefaultUsers(List.of(admin));
@@ -139,7 +139,7 @@ class DataInitializerTest {
 
     @Test
     void verificaCredenziali_creazioneDisattivata_nessunControlloENessunUtente() throws Exception {
-        DataInitializerProperties.UserConfig admin = userConfig("admin", "ADMIN");
+        UtentiInizialiProperties.UserConfig admin = userConfig("admin", "ADMIN");
         admin.setPassword("");
         properties.getUsers().setEnabled(false);
         properties.getUsers().setDefaultUsers(List.of(admin));
@@ -167,9 +167,9 @@ class DataInitializerTest {
 
     @Test
     void nomeVariabilePassword_maiuscoloECaratteriNonAlfanumericiSostituiti() {
-        assertEquals("APP_USER_MODERATORE_PASSWORD", DataInitializer.nomeVariabilePassword("moderatore"));
-        assertEquals("APP_USER_MARIO_ROSSI_PASSWORD", DataInitializer.nomeVariabilePassword("mario.rossi"));
-        assertEquals("APP_USER__PASSWORD", DataInitializer.nomeVariabilePassword(null));
+        assertEquals("APP_USER_MODERATORE_PASSWORD", UtentiInizialiInitializer.nomeVariabilePassword("moderatore"));
+        assertEquals("APP_USER_MARIO_ROSSI_PASSWORD", UtentiInizialiInitializer.nomeVariabilePassword("mario.rossi"));
+        assertEquals("APP_USER__PASSWORD", UtentiInizialiInitializer.nomeVariabilePassword(null));
     }
 
     @Test

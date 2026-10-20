@@ -1,0 +1,5 @@
+# File di credenziali: non devono entrare nel contesto di build ne' nei layer intermedi
+# (change openspec secret-kube). Restano inclusi solo gli esempi versionati.
+.env
+**/.env
+!**/.env.example

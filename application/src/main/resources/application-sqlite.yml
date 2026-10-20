@@ -56,27 +56,12 @@ logging:
     '[org.springframework.web]': DEBUG
     '[org.hibernate.SQL]': DEBUG
 
-# Configurazione utenti di default per SQLite
-# Le password arrivano da variabili d'ambiente (file .env, file di credenziali su EC2) o, solo in
-# locale, dal profilo dev. Il default vuoto e' voluto: con la creazione utenti attiva una password
-# vuota interrompe l'avvio indicando la variabile mancante (change openspec secret-sqlite).
+# Utenti iniziali: la lista sta in application.yml, qui si attiva solo la creazione
+# (change openspec secret-sqlite e secret-kube).
 app:
   init:
     users:
       enabled: ${APP_CREATE_USERS_ENABLED:true}
-      default-users:
-        - username: admin
-          email: admin@example.com
-          password: ${APP_USER_ADMIN_PASSWORD:}
-          role: ADMIN
-        - username: moderatore
-          email: moderatore@example.com
-          password: ${APP_USER_MODERATORE_PASSWORD:}
-          role: MODERATOR
-        - username: alnao
-          email: alnao@example.com
-          password: ${APP_USER_ALNAO_PASSWORD:}
-          role: USER
 
 # Configurazione export annotazioni via tabella locale
 gestione-annotazioni:

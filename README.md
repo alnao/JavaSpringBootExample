@@ -163,10 +163,22 @@ Gli sviluppi sono governati con [OpenSpec](https://github.com/Fission-AI/OpenSpe
     ```
     - l'istanza usa l'immagine `alnao/gestioneannotazioni:latest` di Docker Hub: le variabili delle password valgono solo con un'immagine che include la change openspec `secret-sqlite`
 - Esecuzione profilo On-Premise con il docker-compose che avvia anche i servizi DBMS
+  - Le credenziali (PostgreSQL, MongoDB, mongo-express, `JWT_SECRET`, password degli utenti iniziali) stanno nel file `.env` della root, non versionato: senza `.env` docker-compose si ferma indicando la variabile mancante
+    ```bash
+    cp .env.example .env          # poi sostituire TUTTI i valori (openssl rand -hex 24; JWT_SECRET con openssl rand -base64 64)
+    ```
   - Comando per la creazione di tutti i demoni/server con docker compose:
     ```bash
     docker-compose up -d --build
     ```
+  - Gli utenti iniziali (`admin`, `moderatore`, `alnao`) li crea l'applicazione al primo avvio con le password `APP_USER_*_PASSWORD` del `.env`; non sono piu' nello script SQL. Con volumi gia' popolati restano utenti e password precedenti: per applicare il `.env` serve `docker-compose down -v`
+  - Rotazione di una credenziale (cambia il valore sul database, aggiorna `.env`, ricrea i container e attende l'app):
+    ```bash
+    ./script/docker-compose-rotate-secret.sh JWT_SECRET            # i token emessi prima vengono rifiutati
+    ./script/docker-compose-rotate-secret.sh POSTGRES_PASSWORD
+    ./script/docker-compose-rotate-secret.sh MONGO_ROOT_PASSWORD
+    ```
+  - Anche `script/docker-run-kube-profile.sh` (avvio con solo `docker run`) legge le credenziali dallo stesso `.env`
   - Riferimenti web
     - `http://localhost:8082/` applicazione principale
     - `http://localhost:8083/` database postgres explorer (adminer)

@@ -25,6 +25,28 @@ echo "Avvio Minikube..."
 minikube start --memory=6096 --cpus=3
 
 
+# Secret di test creato prima di start-all.sh, che quindi non lo rigenera (change openspec secret-kube):
+# password dei database e JWT_SECRET generate, password degli utenti note perche' i test fanno login con
+# admin/admin e alnao/bellissimo. Il Secret sparisce con "minikube delete" nel cleanup.
+kubectl apply -f script/minikube/namespace.yaml
+TEST_SECRET_FILE="$(mktemp)"
+chmod 600 "$TEST_SECRET_FILE"
+cat > "$TEST_SECRET_FILE" <<EOF
+POSTGRES_USERNAME=gestioneannotazioni_user
+POSTGRES_PASSWORD=$(openssl rand -hex 24)
+MONGO_ROOT_USERNAME=admin
+MONGO_ROOT_PASSWORD=$(openssl rand -hex 24)
+MONGO_EXPRESS_USERNAME=admin
+MONGO_EXPRESS_PASSWORD=$(openssl rand -hex 16)
+JWT_SECRET=$(openssl rand -base64 64 | tr -d '\n')
+APP_USER_ADMIN_PASSWORD=admin
+APP_USER_MODERATORE_PASSWORD=cattivo
+APP_USER_ALNAO_PASSWORD=bellissimo
+EOF
+kubectl create secret generic gestioneannotazioni-credenziali --namespace=gestioneannotazioni \
+    --from-env-file="$TEST_SECRET_FILE" > /dev/null
+rm -f "$TEST_SECRET_FILE"
+
 echo "Avvio stack Minikube necessario per i test..."
 ./script/minikube/start-all.sh
 

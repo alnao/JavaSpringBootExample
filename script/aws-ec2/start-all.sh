@@ -421,7 +421,7 @@ else
     --region $REGION \
     --user-data $USER_DATA \
     --iam-instance-profile Name=$INSTANCE_PROFILE_NAME \
-    --tag-specifications "$(aws_tags_spec instance gestioneannotazioni-ec2 $TAG_MARKER_KEY)" "$(aws_tags_spec volume gestioneannotazioni-ec2-volume)" \
+    --tag-specifications "$(aws_tags_spec instance gestioneannotazioni-ec2 $TAG_MARKER_KEY)" "$(aws_tags_spec volume gestioneannotazioni-ec2-volume)" "$(aws_tags_spec network-interface gestioneannotazioni-ec2-eni)" \
     --query 'Instances[0].InstanceId' --output text)
   
   # Attendi che EC2 sia running

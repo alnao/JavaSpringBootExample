@@ -15,7 +15,8 @@ spring:
   datasource:
     url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/gestione_annotazioni}
     username: ${POSTGRES_USERNAME:gestione_annotazioni_user}
-    password: ${POSTGRES_PASSWORD:gestione_annotazioni_pass}
+    # credenziale senza default in chiaro: arriva da .env / Secret, o dal profilo dev in locale
+    password: ${POSTGRES_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -38,7 +39,8 @@ spring:
   # Configurazione MongoDB
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/gestione_annotazioni}
+      # contiene le credenziali di Mongo: nessun default in chiaro (vedi POSTGRES_PASSWORD)
+      uri: ${MONGODB_URI:}
       auto-index-creation: true
 
   # Configurazione Kafka
@@ -81,3 +83,12 @@ gestione-annotazioni:
       security-protocol: "${KAFKA_SECURITY_PROTOCOL:}"  
     #enabled: ${ANNOTAZIONE_INVIO_ENABLED:true}
     #cron-expression: "0 */5 * * * *"  # ogni 5 minuti
+
+# Credenziali (change openspec secret-kube): l'avvio si interrompe, prima di collegarsi ai database,
+# se manca una delle variabili elencate; gli utenti iniziali sono creati dall'applicazione.
+app:
+  credenziali:
+    obbligatorie: POSTGRES_PASSWORD, MONGODB_URI
+  init:
+    users:
+      enabled: ${APP_CREATE_USERS_ENABLED:true}

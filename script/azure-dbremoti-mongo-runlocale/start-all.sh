@@ -467,13 +467,33 @@ az resource list \
 # 14. Salvataggio variabili d'ambiente in file .env
 echo ""
 echo "💾 Salvataggio variabili d'ambiente in .env..."
-cat > .env-azure-dbremoti-mongo-runlocale << EOF
+# JWT_SECRET e password degli utenti iniziali (change openspec secret-kube): l'app usa il profilo kube, che
+# crea gli utenti all'avvio e si ferma se mancano. Generate al primo avvio e riusate da quelli successivi:
+# il file viene riscritto, quindi i valori gia' presenti si rileggono prima.
+FILE_ENV_LOCALE=.env-azure-dbremoti-mongo-runlocale
+valore_salvato() { [ -f "$FILE_ENV_LOCALE" ] && grep "^$1=" "$FILE_ENV_LOCALE" | head -1 | cut -d= -f2- || true; }
+JWT_SECRET="$(valore_salvato JWT_SECRET)"
+[ -n "$JWT_SECRET" ] || JWT_SECRET="$(openssl rand -base64 64 | tr -d '\n')"
+APP_USER_ADMIN_PASSWORD="$(valore_salvato APP_USER_ADMIN_PASSWORD)"
+[ -n "$APP_USER_ADMIN_PASSWORD" ] || APP_USER_ADMIN_PASSWORD="$(openssl rand -hex 12)"
+APP_USER_MODERATORE_PASSWORD="$(valore_salvato APP_USER_MODERATORE_PASSWORD)"
+[ -n "$APP_USER_MODERATORE_PASSWORD" ] || APP_USER_MODERATORE_PASSWORD="$(openssl rand -hex 12)"
+APP_USER_ALNAO_PASSWORD="$(valore_salvato APP_USER_ALNAO_PASSWORD)"
+[ -n "$APP_USER_ALNAO_PASSWORD" ] || APP_USER_ALNAO_PASSWORD="$(openssl rand -hex 12)"
+# nomi delle variabili allineati ad application-kube.yml; passati al container con "-e NOME" (vedi sotto)
+export POSTGRES_USERNAME="$POSTGRES_ADMIN" POSTGRES_PASSWORD MONGODB_URI
+export JWT_SECRET APP_USER_ADMIN_PASSWORD APP_USER_MODERATORE_PASSWORD APP_USER_ALNAO_PASSWORD
+( umask 077; cat > "$FILE_ENV_LOCALE" << EOF
 SPRING_PROFILES_ACTIVE=kube
 POSTGRES_HOST=$POSTGRES_HOST
 POSTGRES_URL=jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DATABASE}?sslmode=require
 POSTGRES_DATABASE=$POSTGRES_DATABASE
-SPRING_DATASOURCE_USERNAME=$POSTGRES_ADMIN
-SPRING_DATASOURCE_PASSWORD=$POSTGRES_PASSWORD
+POSTGRES_USERNAME=$POSTGRES_ADMIN
+POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+JWT_SECRET=$JWT_SECRET
+APP_USER_ADMIN_PASSWORD=$APP_USER_ADMIN_PASSWORD
+APP_USER_MODERATORE_PASSWORD=$APP_USER_MODERATORE_PASSWORD
+APP_USER_ALNAO_PASSWORD=$APP_USER_ALNAO_PASSWORD
 SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
 MONGODB_URI=${MONGODB_URI}
 SPRING_DATA_MONGODB_URI=mongodb://demo:demo@${MONGODB_URI}:27017/${COSMOSDB_DATABASE}?authSource=admin
@@ -487,7 +507,8 @@ KAFKA_TOPIC=$EVENT_HUB_NAME
 EVENTHUBS_CONNECTION_STRING=$EVENTHUBS_CONNECTION_STRING
 EVENTHUBS_KAFKA_ENDPOINT=$EVENTHUBS_KAFKA_ENDPOINT
 EOF
-echo "✅ File .env-azure-dbremoti-mongo-runlocale creato"
+)
+echo "✅ File .env-azure-dbremoti-mongo-runlocale creato (password degli utenti iniziali, es. APP_USER_ADMIN_PASSWORD, in questo file)"
 
 # 15. Stampa riepilogo connessioni
 echo ""
@@ -513,11 +534,15 @@ fi
 
 docker run --rm -p 8082:8080  --name azure-dbremoti-mongo-runlocale \
     -e SPRING_PROFILES_ACTIVE=kube \
-    -e SPRING_DATASOURCE_URL="jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DATABASE}?sslmode=require" \
-    -e SPRING_DATASOURCE_USERNAME=$POSTGRES_ADMIN \
-    -e SPRING_DATASOURCE_PASSWORD=$POSTGRES_PASSWORD \
+    -e POSTGRES_URL="jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DATABASE}?sslmode=require" \
+    -e POSTGRES_USERNAME \
+    -e POSTGRES_PASSWORD \
     -e SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver \
-    -e SPRING_DATA_MONGODB_URI=$MONGODB_URI \
+    -e MONGODB_URI \
+    -e JWT_SECRET \
+    -e APP_USER_ADMIN_PASSWORD \
+    -e APP_USER_MODERATORE_PASSWORD \
+    -e APP_USER_ALNAO_PASSWORD \
     -e SPRING_DATA_MONGODB_DATABASE=$COSMOSDB_DATABASE \
     -e REDIS_HOST=$REDIS_HOST \
     -e REDIS_PORT=$REDIS_PORT \
